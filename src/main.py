@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-import gym
 import argparse
 import pprint as pp
 from ddpg.logger import Logger
@@ -114,7 +113,7 @@ if __name__ == '__main__':
     boolean_flag(parser, 'invert-grads', default=True)
     boolean_flag(parser, 'target-clip', default=True)
 
-    parser.add_argument('--env', help='choose the gym2 env', default='Reacher_e-v0')
+    parser.add_argument('--env', help='choose the gym env', default='FetchReach_e-v1')
     parser.add_argument('--her', help='hindsight strategy', default='no_no')
     parser.add_argument('--n-her-goals', default=4)
     parser.add_argument('--n-split', help='number of split comparisons', default=10)
