@@ -12,7 +12,7 @@ class FetchReach_e(Wrapper):
         super(FetchReach_e, self).__init__(env)
 
         self.goal = []
-        self.goal_space = Box(np.array([-np.inf, -np.inf, -np.inf]), np.array([np.inf, np.inf, np.inf])) # TODO
+        self.goal_space = Box(np.array([-np.inf, -np.inf, -np.inf]), np.array([np.inf, np.inf, np.inf]))
         self.reached = False
         self.reward = 0
         self.XY = [0,1,2]

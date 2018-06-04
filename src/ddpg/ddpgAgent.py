@@ -1,9 +1,6 @@
-import os
 import time
-
 import numpy as np
 import tensorflow as tf
-import random as rnd
 
 RENDER_TRAIN = False
 TARGET_CLIP = True
@@ -22,27 +19,24 @@ class DDPG_agent():
                  eval_freq):
 
         self.sess = sess
-        self.batch_size = 64
-        self.max_steps = max_steps
-
+        self.actor = actor
+        self.critic = critic
+        self.env = env
         self.logger_step = logger_step
         self.logger_episode = logger_episode
         self.step_stats = {}
         self.episode_stats = {}
+
         self.ep_steps = ep_steps
-
         self.eval_freq = eval_freq
-
-        self.actor = actor
-        self.critic = critic
-        self.env = env
+        self.batch_size = 64
+        self.max_steps = max_steps
 
         self.env_step = 0
         self.episode = 0
         self.episode_step = 0
         self.episode_reward = 0
         self.goal_reached = 0
-        self.video = []
 
     def train_critic(self, experiences):
 
