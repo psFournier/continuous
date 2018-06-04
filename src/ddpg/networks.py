@@ -86,7 +86,7 @@ class Network(object):
         print (self.model.get_weights())
 
 class ActorNetwork(Network):
-    def __init__(self, sess, state_size, action_size, tau, learning_rate):
+    def __init__(self, sess, state_size, action_size, tau=0.001, learning_rate=0.0001):
         super(ActorNetwork, self).__init__(sess, state_size, action_size, tau, learning_rate)
 
         #Now create the model
@@ -135,7 +135,7 @@ class ActorNetwork(Network):
         return self.model.predict_on_batch(states)
 
 class CriticNetwork(Network):
-    def __init__(self, sess, state_size, action_size, gamma, tau, learning_rate):
+    def __init__(self, sess, state_size, action_size, gamma=0.99, tau=0.001, learning_rate=0.001):
         super(CriticNetwork, self).__init__(sess, state_size, action_size, tau, learning_rate)
         self.gamma = gamma
 

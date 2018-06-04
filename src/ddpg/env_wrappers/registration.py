@@ -1,3 +1,5 @@
+""" This whole file is almost identical to the gym.envs.registration file. The only difference is the addition of a wrapper_entry_point attribute to the EnvSpec class. I just dit not want to modify the original gym package."""
+
 import re
 from gym import error, logger
 
@@ -41,6 +43,7 @@ class EnvSpec(object):
         # Environment properties
         self.nondeterministic = nondeterministic
 
+        # ADDED BY PIERRE FOURNIER
         self.wrapper_entry_point = wrapper_entry_point
 
         if tags is None:

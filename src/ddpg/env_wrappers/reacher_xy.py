@@ -6,7 +6,7 @@ from ddpg.replayBuffer import ReplayBuffer
 import random as rnd
 
 class Reacher_xy(Wrapper):
-    def __init__(self, env, epsilon, nRegions, beta_xy, her, buffer_size):
+    def __init__(self, env, epsilon, nRegions, beta_xy, her, buffer_size=1e6):
         super(Reacher_xy, self).__init__(env)
 
         self.goal = []
