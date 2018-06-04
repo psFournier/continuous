@@ -1,4 +1,4 @@
-# continuous
+# DDPG and goal selection
 
 This repo contains an implementaiton of the Deep Deterministic Policy Gradients algorithm and Hindsight Experience Replay, along with two additional ingredients:
   - environment wrappers classes inherited from the OpenAI gym and augmented to implement Universal Value Function Approximators (UVFA)
