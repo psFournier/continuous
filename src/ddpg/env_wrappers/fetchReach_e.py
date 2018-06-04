@@ -139,17 +139,10 @@ class FetchReach_e(Wrapper):
 
         dictObs = self.env.reset()
         obs = dictObs['observation']
+
+        # TODO : for now the goal selection mechanism here is from the openai env, but it seems weird (sampled only around a precise location with no further explanation)
         self.goal = dictObs['desired_goal']
-        print('goal: ', self.goal)
-        # qpos = self.unwrapped.sim.data.qpos.flatten()
-        # qvel = self.unwrapped.sim.data.qvel.flatten()
-        #
-        # while True:
-        #     self.goal = np.random.uniform(low=self.goal_space.low, high=self.goal_space.high)
-        #     if self.is_reachable(): break
-        # qpos[[2,3]] = self.goal
-        # self.unwrapped.set_state(qpos, qvel)
-        # obs = self.unwrapped._get_obs()
+
         self.reached = False
 
         self.epsilon = self.sample_epsilon()

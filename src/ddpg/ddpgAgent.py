@@ -89,7 +89,7 @@ class DDPG_agent():
             logger.logkv(key, stats[key])
         logger.dumpkvs()
 
-    def init_var(self):
+    def init_variables(self):
         variables = tf.global_variables()
         uninitialized_variables = []
         for v in variables:
@@ -99,12 +99,9 @@ class DDPG_agent():
                 v._keras_initialized = True
         self.sess.run(tf.variables_initializer(uninitialized_variables))
 
-    def init_training(self):
-        self.update_targets()
-
     def run(self):
-        self.init_var()
-        self.init_training()
+        self.init_variables()
+        self.update_targets()
         self.start_time = time.time()
 
         state0 = self.env.reset()
