@@ -11,6 +11,7 @@ from ddpg.util import load, boolean_flag
 import json
 import os
 from ddpg.env_wrappers.base import Base
+from ddpg.env_wrappers.registration import make
 
 def main(args):
     """Despite following the directives of https://keras.io/getting-started/faq/#how-can-i-obtain-reproducible-results-using-keras-during-development, fully reproducible results could not be obtained. See here : https://github.com/keras-team/keras/issues/2280 for any improvements"""
@@ -39,19 +40,18 @@ def main(args):
     logger_memory = Logger(dir=os.path.join(log_dir,'log_memory'), format_strs=['json', 'stdout'])
 
     # Make calls EnvRegistry.make, which builds the environment from its specs defined in gym2.envs.init end then builds a timeLimit wrapper around the environment to set the max amount of steps to run
-    train_env = gym.make(args['env'])
+    train_env = make(args['env'])
 
     # Wraps each environment in a goal_wrapper to override basic env methods and be able to access goal space properties, or modify the environment simulation according to sampled goals. The wrapper classes paths corresponding to each environment are defined in gym2.envs.int
-    try:
-        if train_env.spec._goal_wrapper_entry_point is not None:
-            wrapper_cls = load(train_env.spec._goal_wrapper_entry_point)
-            train_env = wrapper_cls(train_env,
-                                    float(args['eps']),
-                                    int(args['R']),
-                                    float(args['beta']),
-                                    args['her'],
-                                    int(args['buffer_size']))
-    except:
+    if train_env.spec.wrapper_entry_point is not None:
+        wrapper_cls = load(train_env.spec.wrapper_entry_point)
+        train_env = wrapper_cls(train_env,
+                                float(args['eps']),
+                                int(args['R']),
+                                float(args['beta']),
+                                args['her'],
+                                int(args['buffer_size']))
+    else:
         train_env = Base(train_env, int(args['buffer_size']))
 
     with tf.Session() as sess:
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     boolean_flag(parser, 'invert-grads', default=True)
     boolean_flag(parser, 'target-clip', default=True)
 
-    parser.add_argument('--env', help='choose the gym2 env', default='FetchReach-v1')
+    parser.add_argument('--env', help='choose the gym2 env', default='Reacher_e-v0')
     parser.add_argument('--her', help='hindsight strategy', default='no_no')
     parser.add_argument('--n-her-goals', default=4)
     parser.add_argument('--n-split', help='number of split comparisons', default=10)
@@ -130,7 +130,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--max-steps', help='max num of episodes to do while training', default=500000)
     parser.add_argument('--log-dir', help='directory for storing run info',
-                        default='/home/pierre/PycharmProjects/deep-rl/log/local/')
+                        default='/home/pierre/PycharmProjects/continuous/log/local/')
     parser.add_argument('--resume-timestamp', help='directory to retrieve weights of actor and critic',
                         default=None)
     parser.add_argument('--resume-step', help='resume_step', default=None)

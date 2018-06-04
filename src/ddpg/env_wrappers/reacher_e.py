@@ -1,6 +1,6 @@
 import numpy as np
-from gym2 import Wrapper
-from gym2.spaces import Box
+from gym import Wrapper
+from gym.spaces import Box
 from ddpg.replayBuffer import ReplayBuffer
 from ddpg.competenceQueue import CompetenceQueue
 import random as rnd
@@ -140,8 +140,8 @@ class Reacher_e(Wrapper):
             self.hindsight()
 
         _ = self.env.reset()
-        qpos = self.unwrapped.model.data.qpos.flatten()
-        qvel = self.unwrapped.model.data.qvel.flatten()
+        qpos = self.unwrapped.sim.data.qpos.flatten()
+        qvel = self.unwrapped.sim.data.qvel.flatten()
 
         while True:
             self.goal = np.random.uniform(low=self.goal_space.low, high=self.goal_space.high)

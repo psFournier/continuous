@@ -1,4 +1,4 @@
-from gym2.spaces import Box
+from gym.spaces import Box
 import numpy as np
 from ddpg.competenceQueue import CompetenceQueue
 

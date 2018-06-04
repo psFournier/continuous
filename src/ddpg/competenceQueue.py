@@ -1,5 +1,5 @@
 from collections import deque
-from gym2.spaces import Box
+from gym.spaces import Box
 import itertools
 import numpy as np
 

@@ -1,6 +1,6 @@
 import numpy as np
-from gym2 import Wrapper
-from gym2.spaces import Box
+from gym import Wrapper
+from gym.spaces import Box
 from ddpg.regionTree import RegionTree
 from ddpg.replayBuffer import ReplayBuffer
 import random as rnd
@@ -105,8 +105,8 @@ class Reacher_xy(Wrapper):
             self.hindsight()
 
         _ = self.env.reset()
-        qpos = self.unwrapped.model.data.qpos.flatten()
-        qvel = self.unwrapped.model.data.qvel.flatten()
+        qpos = self.unwrapped.sim.data.qpos.flatten()
+        qvel = self.unwrapped.sim.data.qvel.flatten()
 
         region = self.regionTree.sample(rnd_prop = max(0.1, 1 - self.episode//200))
         while True:
