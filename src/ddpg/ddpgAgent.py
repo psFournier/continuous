@@ -131,7 +131,7 @@ class DDPG_agent():
 
                 if self.env_step > 3*self.batch_size:
                     self.critic_stats, self.actor_stats = self.train()
-                    self.log_step_stats()
+            self.log_step_stats()
 
     def log_step_stats(self):
         if self.env_step % self.eval_freq == 0:
