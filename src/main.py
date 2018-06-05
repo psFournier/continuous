@@ -36,28 +36,28 @@ def main(args):
     # Wrapper to override basic env methods and be able to access goal space properties. The wrapper classes paths corresponding to each environment are defined in ddpg.env_wrappers.init.
     if env.spec.wrapper_entry_point is not None:
         wrapper_cls = load(env.spec.wrapper_entry_point)
-        train_env = wrapper_cls(env,
+        env = wrapper_cls(env,
                                 float(args['eps']),
                                 int(args['R']),
                                 float(args['beta']),
                                 args['her'])
     else:
-        train_env = Base(env, int(args['buffer_size']))
+        env = Base(env, int(args['buffer_size']))
 
 
     with tf.Session() as sess:
         if args['random_seed'] is not None:
             np.random.seed(int(args['random_seed']))
             tf.set_random_seed(int(args['random_seed']))
-            train_env.seed(int(args['random_seed']))
+            env.seed(int(args['random_seed']))
 
         actor = ActorNetwork(sess,
-                             train_env.state_dim,
-                             train_env.action_dim)
+                             env.state_dim,
+                             env.action_dim)
 
         critic = CriticNetwork(sess,
-                               train_env.state_dim,
-                               train_env.action_dim)
+                               env.state_dim,
+                               env.action_dim)
 
         agent = DDPG_agent(sess,
                            actor,
@@ -89,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--log-dir', help='directory for storing run info',
                         default='/home/pierre/PycharmProjects/continuous/log/local/')
     parser.add_argument('--episode-steps', help='number of steps in the environment during evaluation', default=50)
+    parser.add_argument('--eval-freq', help='freq for critic and actor stats computation', default=1000)
 
     args = vars(parser.parse_args())
     

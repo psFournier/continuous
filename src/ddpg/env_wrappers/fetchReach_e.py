@@ -8,7 +8,7 @@ import math
 
 
 class FetchReach_e(Wrapper):
-    def __init__(self, env, epsilon = 0.02, nRegions = 4, beta = 1, her = 'no_no', buffer_size = 1e6):
+    def __init__(self, env, epsilon = 0.02, nRegions = 4, beta = 1, her = 'no_no', buffer_size = int(1e6)):
         super(FetchReach_e, self).__init__(env)
 
         self.goal = []
