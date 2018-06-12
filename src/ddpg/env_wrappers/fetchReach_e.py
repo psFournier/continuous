@@ -140,7 +140,7 @@ class FetchReach_e(Wrapper):
         dictObs = self.env.reset()
         obs = dictObs['observation']
 
-        # TODO : for now the goal selection mechanism here is from the openai env, but it seems weird (sampled only around a precise location with no further explanation)
+        # TODO : for now the goal selection mechanism here is from the openai envs, but it seems weird (sampled only around a precise location with no further explanation)
         self.goal = dictObs['desired_goal']
 
         self.reached = False

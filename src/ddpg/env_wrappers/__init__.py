@@ -23,3 +23,9 @@ register(
     entry_point='gym.envs.robotics:FetchReachEnv',
     wrapper_entry_point='ddpg.env_wrappers.fetchReach_e:FetchReach_e'
 )
+
+register(
+    id='Reacher_xy-v1',
+    entry_point='ddpg.envs:ReacherEnv',
+    wrapper_entry_point='ddpg.env_wrappers.reacher_xy_sagg:Reacher_xy'
+)

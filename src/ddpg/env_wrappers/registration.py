@@ -4,7 +4,7 @@ import re
 from gym import error, logger
 
 # This format is true today, but it's *not* an official spec.
-# [username/](env-name)-v(version)    env-name is group 1, version is group 2
+# [username/](envs-name)-v(version)    envs-name is group 1, version is group 2
 #
 # 2016-10-31: We're experimentally expanding the environment ID format
 # to include an optional username.
@@ -82,7 +82,7 @@ class EnvSpec(object):
     def make(self):
         """Instantiates an instance of the environment with appropriate kwargs"""
         if self._entry_point is None:
-            raise error.Error('Attempting to make deprecated env {}. (HINT: is there a newer registered version of this env?)'.format(self.id))
+            raise error.Error('Attempting to make deprecated envs {}. (HINT: is there a newer registered version of this envs?)'.format(self.id))
 
         elif callable(self._entry_point):
             env = self._entry_point()
@@ -108,7 +108,7 @@ class EnvSpec(object):
 
 
 class EnvRegistry(object):
-    """Register an env by ID. IDs remain stable over time and are
+    """Register an envs by ID. IDs remain stable over time and are
     guaranteed to resolve to the same environment dynamics (or be
     desupported). The goal is that results on a particular environment
     should always be comparable, and not depend on the version of the
@@ -119,7 +119,7 @@ class EnvRegistry(object):
         self.env_specs = {}
 
     def make(self, id):
-        logger.info('Making new env: %s', id)
+        logger.info('Making new envs: %s', id)
         spec = self.spec(id)
         env = spec.make()
         # We used to have people override _reset/_step rather than
@@ -147,15 +147,15 @@ class EnvRegistry(object):
         try:
             return self.env_specs[id]
         except KeyError:
-            # Parse the env name and check to see if it matches the non-version
-            # part of a valid env (could also check the exact number here)
+            # Parse the envs name and check to see if it matches the non-version
+            # part of a valid envs (could also check the exact number here)
             env_name = match.group(1)
             matching_envs = [valid_env_name for valid_env_name, valid_env_spec in self.env_specs.items()
                              if env_name == valid_env_spec._env_name]
             if matching_envs:
                 raise error.DeprecatedEnv('Env {} not found (valid versions include {})'.format(id, matching_envs))
             else:
-                raise error.UnregisteredEnv('No registered env with id: {}'.format(id))
+                raise error.UnregisteredEnv('No registered envs with id: {}'.format(id))
 
     def register(self, id, **kwargs):
         if id in self.env_specs:

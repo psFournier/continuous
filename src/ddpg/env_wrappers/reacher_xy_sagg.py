@@ -14,12 +14,12 @@ class Reacher_xy(Wrapper):
         self.reward = 0
         self.XY = [6,7]
         self.target_XY = [8,9]
-        self.goal_space = Box(np.array([-0.2, -0.2]), np.array([0.2, 0.2]))
+        self.goal_space = Box(np.array([-0.6, -0.6]), np.array([0.6, 0.6]))
         self.regionTree = RegionTree(space=self.goal_space,
                                      nRegions=nRegions,
-                                     auto=False,
+                                     auto = True,
                                      beta=beta_xy,
-                                     render=False)
+                                     render=True)
 
         self.epsilon = epsilon
 
@@ -110,9 +110,7 @@ class Reacher_xy(Wrapper):
         qvel = self.unwrapped.sim.data.qvel.flatten()
 
         region = self.regionTree.sample(rnd_prop = max(0.1, 1 - self.episode//200))
-        while True:
-            self.goal = region.sample().flatten()
-            if self.is_reachable(): break
+        self.goal = region.sample().flatten()
         qpos[[2,3]] = self.goal
         self.reached = False
 

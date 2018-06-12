@@ -6,7 +6,7 @@ RENDER_TRAIN = False
 TARGET_CLIP = True
 INVERTED_GRADIENTS = True
 
-class DDPG_agent():
+class TD3():
     def __init__(self,
                  sess,
                  actor,
@@ -148,7 +148,7 @@ class DDPG_agent():
             self.goal_reached = 0
 
     def log_episode_stats(self):
-        if self.episode % 10 == 0:
+        if self.episode % 100 == 0:
             self.episode_stats['Episode'] = self.episode
             if self.env.goal_parameterized:
                 self.episode_stats['Goal'] = self.env.goal

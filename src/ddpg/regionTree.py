@@ -3,17 +3,17 @@ from ddpg.region import Region
 import numpy as np
 
 
-# import matplotlib.pyplot as plt
-# import matplotlib.lines as lines
-# import matplotlib.patches as patches
-# from matplotlib.collections import PatchCollection
-# Blues = plt.get_cmap('Blues')
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.collections import PatchCollection
+Blues = plt.get_cmap('Blues')
 
 class RegionTree():
-    def __init__(self, space, nRegions, beta, render):
+    def __init__(self, space, nRegions, auto, beta, render):
         self.n_split = 10
-        self.split_min = 0.0001
+        self.split_min = 0.00000001
         self.nRegions = nRegions
+        self.auto = auto
         self.beta = beta
         self.dims = range(space.low.shape[0])
 
@@ -24,23 +24,20 @@ class RegionTree():
 
         self.region_array = [Region() for _ in range(2 * self.capacity)]
         self.n_leaves = 0
+        self.n_points = 0
+
         self.initialize(space)
         self.update_CP_tree()
 
         self.render = render
-        # self.ax = None
-        # self.figure = None
-        # self.lines = []
-        # self.patches = []
-        # self.points = []
-        # self.history = []
-
+        if self.render: self.init_display()
 
     def initialize(self, space):
         self.region_array[1] = Region(space.low, space.high)
         self.n_leaves += 1
         assert self.nRegions & (self.nRegions - 1) == 0  # n must be a power of 2
-        self._divide(1, self.nRegions, 0)
+        if not self.auto:
+            self._divide(1, self.nRegions, 0)
 
     def _divide(self, idx , n, dim_idx):
         if n > 1:
@@ -49,7 +46,7 @@ class RegionTree():
             low = region.low[dim]
             high = region.high[dim]
             val_split = (high+low)/2
-            self.region_array[2 * idx], self.region_array[2 * idx + 1] = region.split(dim, val_split)
+            self.region_array[2 * idx], self.region_array[2 * idx + 1], _ = region.split(dim, val_split)
             region.dim_split = dim
             region.val_split = val_split
             self.n_leaves += 1
@@ -62,9 +59,20 @@ class RegionTree():
         success = point[1]
         regions_idx = self.find_regions(target)
         for idx in regions_idx:
-            self.region_array[idx].add((target, success))
+            region = self.region_array[idx]
+            region.add((target, success))
+            self.n_points += 1
+            to_split = self.auto and region.queue.full and idx < self.capacity and region.is_leaf
+            if to_split:
+                self.region_array[2 * idx], self.region_array[2 * idx + 1] = region.best_split(self.dims, self.n_split, self.split_min)
+                if not region.is_leaf:
+                    self.n_leaves += 1
+                    self.ax.add_line(region.line)
+
+
         self.update_CP_tree()
-        # self.update_display()
+        if self.render:
+            self.update_display()
 
     def find_regions(self, sample):
         regions = self._find_regions(sample, 1)
@@ -104,8 +112,8 @@ class RegionTree():
             mass = np.random.random() * sum
             region = self.find_prop_region(mass)
         else:
-            leaf = np.random.randint(self.n_leaves)
-            region = self.region_array[self.capacity + leaf]
+            leaf = np.random.choice(self.list_leaves)
+            region = self.region_array[leaf]
         region.freq += 1
         return region
 
@@ -129,7 +137,7 @@ class RegionTree():
 
     def stats(self):
         stats = {}
-        # stats['list_goal'] = [goal[self.buffer.env.internal] for goal in self.goal_set]
+        # stats['list_goal'] = [goal[self.buffer.envs.internal] for goal in self.goal_set]
         stats['list_CP'] = self.list_CP
         stats['list_comp'] = self.list_comp
         stats['list_freq'] = self.region_freq
@@ -137,84 +145,22 @@ class RegionTree():
         # stats['min_CP'] = self.min_CP
         return stats
 
-    # def update_display(self):
-    #     if self.render:
-    #         self.compute_image()
-    #         if self.figure is None:
-    #             self.init_display()
-    #         self.plot_image()
-    #
-    # def compute_image(self):
-    #     self.lines.clear()
-    #     self.patches.clear()
-    #     self.points.clear()
-    #     self._compute_image(1)
-    #
-    # def _compute_image(self, idx):
-    #     region = self.region_array[idx]
-    #     low1 = region.low[1]
-    #     high1 = region.high[1]
-    #
-    #     if region.is_leaf:
-    #         angle = (region.low[0], low1)
-    #         width = region.high[0] - region.low[0]
-    #         height = high1 - low1
-    #         self.patches.append({'angle': angle,
-    #                              'width': width,
-    #                              'height': height,
-    #                              # 'max_cp': self.max_CP,
-    #                              # 'min_cp': self.min_CP,
-    #                              'cp': region.queue.CP,
-    #                              'freq': region.freq
-    #                              })
-    #     else:
-    #         if region.dim_split == 0:
-    #             line1_xs = 2 * [region.val_split]
-    #             line1_ys = [low1, high1]
-    #             self.lines.append({'xdata': line1_xs,
-    #                                'ydata': line1_ys})
-    #         elif region.dim_split == 1:
-    #             line1_ys = 2 * [region.val_split]
-    #             line1_xs = [region.low[0], region.high[0]]
-    #             self.lines.append({'xdata': line1_xs,
-    #                            'ydata': line1_ys})
-    #
-    #         self._compute_image(2 * idx)
-    #         self._compute_image(2 * idx + 1)
-    #
-    # def init_display(self):
-    #     self.figure = plt.figure()
-    #     self.ax = plt.axes()
-    #     self.ax.set_xlim(self.root.low[0], self.root.high[0])
-    #     self.ax.set_ylim(self.root.low[1], self.root.high[1])
-    #     plt.ion()
-    #     plt.show()
-    #
-    # def plot_image(self):
-    #     self.ax.lines.clear()
-    #     self.ax.collections.clear()
-    #     colors = []
-    #     patch_list = []
-    #     for line_dict in self.lines:
-    #         self.ax.add_line(lines.Line2D(xdata=line_dict['xdata'],
-    #                                       ydata=line_dict['ydata'],
-    #                                       linewidth=2,
-    #                                       color='blue'))
-    #     for patch_dict in self.patches:
-    #         colors.append(patch_dict['cp'])
-    #         patch_list.append(patches.Rectangle(xy=patch_dict['angle'],
-    #                                             width=patch_dict['width'],
-    #                                             height=patch_dict['height'],
-    #                                             fill=True,
-    #                                             edgecolor=None,
-    #                                             alpha=0.8))
-    #     p = PatchCollection(patch_list)
-    #     p.set_array(np.array(colors))
-    #     self.ax.add_collection(p)
-    #     self.cb = self.figure.colorbar(p, ax=self.ax)
-    #     plt.draw()
-    #     plt.pause(0.001)
-    #     self.cb.remove()
+    def update_display(self):
+        if self.n_points % 10 == 0:
+            plt.draw()
+            plt.pause(0.001)
+
+    def init_display(self):
+        self.figure = plt.figure()
+        self.ax = plt.axes()
+        self.ax.set_xlim(self.root.low[0], self.root.high[0])
+        self.ax.set_ylim(self.root.low[1], self.root.high[1])
+        plt.ion()
+        plt.show()
+
+    @property
+    def list_leaves(self):
+        return [i for i in range(1, 2 * self.n_leaves) if self.region_array[i].is_leaf]
 
     @property
     def list_CP(self):

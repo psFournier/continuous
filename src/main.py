@@ -13,7 +13,7 @@ from ddpg.env_wrappers.base import Base
 from ddpg.env_wrappers.registration import make
 
 def main(args):
-    params = [str(args['env']),
+    params = [str(args['envs']),
              str(args['her']),
              str(args['n_her_goals']),
              str(args['eps']),
@@ -31,9 +31,9 @@ def main(args):
     logger_episode = Logger(dir=os.path.join(log_dir,'log_episodes'), format_strs=['stdout', 'json'])
 
     # Make calls env_wrappers.registration.make, not the exact make function from the gym.
-    env = make(args['env'])
+    env = make(args['envs'])
 
-    # Wrapper to override basic env methods and be able to access goal space properties. The wrapper classes paths corresponding to each environment are defined in ddpg.env_wrappers.init.
+    # Wrapper to override basic envs methods and be able to access goal space properties. The wrapper classes paths corresponding to each environment are defined in ddpg.env_wrappers.init.
     if env.spec.wrapper_entry_point is not None:
         wrapper_cls = load(env.spec.wrapper_entry_point)
         env = wrapper_cls(env,
@@ -42,7 +42,7 @@ def main(args):
                                 float(args['beta']),
                                 args['her'])
     else:
-        env = Base(env, int(args['buffer_size']))
+        env = Base(env)
 
 
     with tf.Session() as sess:
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='provide arguments for DDPG agent')
 
     parser.add_argument('--random-seed', help='random seed for repeatability', default=None)
-    parser.add_argument('--env', help='choose the gym env', default='FetchReach_e-v1')
+    parser.add_argument('--envs', help='choose the gym envs', default='Reacher_xy-v1')
     parser.add_argument('--her', help='hindsight strategy', default='no_no')
     parser.add_argument('--n-her-goals', default=4)
     parser.add_argument('--n-split', help='number of split comparisons', default=10)
