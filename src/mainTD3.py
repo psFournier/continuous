@@ -28,8 +28,8 @@ def main(args):
     os.makedirs(log_dir, exist_ok=True)
     with open(os.path.join(log_dir, 'config.txt'), 'w') as config_file:
         config_file.write(json.dumps(args))
-    logger_step = Logger(dir=os.path.join(log_dir,'log_steps'), format_strs=['stdout', 'json'])
-    logger_episode = Logger(dir=os.path.join(log_dir,'log_episodes'), format_strs=['stdout', 'json'])
+    logger_step = Logger(dir=os.path.join(log_dir,'log_steps'), format_strs=['stdout', 'tensorboard_1'])
+    logger_episode = Logger(dir=os.path.join(log_dir,'log_episodes'), format_strs=['stdout', 'tensorboard_1'])
 
     # Make calls env_wrappers.registration.make, not the exact make function from the gym.
     env = make(args['envs'])
@@ -86,11 +86,11 @@ if __name__ == '__main__':
     parser.add_argument('--R', help='number of regions in goal space', default=4)
     parser.add_argument('--n-points', help='number of points stored in region', default=100)
     parser.add_argument('--beta', default=1)
-    parser.add_argument('--max-steps', help='max num of episodes to do while training', default=500000)
+    parser.add_argument('--max-steps', help='max num of episodes to do while training', default=1000000)
     parser.add_argument('--log-dir', help='directory for storing run info',
                         default='/home/pierre/PycharmProjects/continuous/log/local/')
-    parser.add_argument('--episode-steps', help='number of steps in the environment during evaluation', default=50)
-    parser.add_argument('--eval-freq', help='freq for critic and actor stats computation', default=1000)
+    parser.add_argument('--episode-steps', help='number of steps in the environment during evaluation', default=1000)
+    parser.add_argument('--eval-freq', help='freq for critic and actor stats computation', default=5000)
 
     args = vars(parser.parse_args())
     

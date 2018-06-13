@@ -126,6 +126,7 @@ class TD3():
             if RENDER_TRAIN: self.env.render(mode='human')
 
             action = np.random.uniform(self.env.action_space.low, self.env.action_space.high)
+
             state1, reward, terminal, _ = self.env.step(action[0])
 
             self.episode_reward += reward
@@ -151,6 +152,8 @@ class TD3():
             if RENDER_TRAIN: self.env.render(mode='human')
 
             action = self.actor.model.predict(np.reshape(state0, (1, self.actor.s_dim[0])))
+            noise = np.random.normal(0., 0.1, size=action.shape)
+            action = noise + action
             action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
 
             state1, reward, terminal, _ = self.env.step(action[0])
@@ -167,7 +170,7 @@ class TD3():
                 self.episode += 1
                 if terminal: self.goal_reached += 1
                 state0 = self.env.reset()
-                self.log_episode_stats()
+                # self.log_episode_stats()
                 self.episode_step = 0
                 self.episode_reward = 0
 
@@ -175,17 +178,32 @@ class TD3():
 
     def log_step_stats(self):
         if self.env_step % self.eval_freq == 0:
-            critic_stats_mean = self.critic_stats.mean(axis=0)
-            actor_stats_mean = self.actor_stats.mean(axis=0)
-            for name, stat in zip(self.critic.stat_names, critic_stats_mean):
-                self.step_stats[name] = stat
-            for name, stat in zip(self.actor.stat_names, actor_stats_mean):
-                self.step_stats[name] = stat
-            self.step_stats['env_step'] = self.env_step
-
-            self.step_stats['accuracy'] = self.goal_reached / 20
+            returns = []
+            for _ in range(10):
+                state = self.env.reset()
+                r = 0
+                for _ in range(self.ep_steps):
+                    action = self.actor.model.predict(np.reshape(state, (1, self.actor.s_dim[0])))
+                    action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
+                    state, reward, terminal, _ = self.env.step(action[0])
+                    r += reward
+                returns.append(r)
+            self.step_stats['avg_return'] = np.mean(returns)
             self.log(self.step_stats, self.logger_step)
-            self.goal_reached = 0
+
+    # def log_step_stats(self):
+    #     if self.env_step % self.eval_freq == 0:
+    #         critic_stats_mean = self.critic_stats.mean(axis=0)
+    #         actor_stats_mean = self.actor_stats.mean(axis=0)
+    #         for name, stat in zip(self.critic.stat_names, critic_stats_mean):
+    #             self.step_stats[name] = stat
+    #         for name, stat in zip(self.actor.stat_names, actor_stats_mean):
+    #             self.step_stats[name] = stat
+    #         self.step_stats['env_step'] = self.env_step
+    #
+    #         self.step_stats['avg_return'] = self.goal_reached / 20
+    #         self.log(self.step_stats, self.logger_step)
+    #         self.goal_reached = 0
 
     def log_episode_stats(self):
         if self.episode % 100 == 0:
