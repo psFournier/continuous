@@ -76,7 +76,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='provide arguments for DDPG agent')
 
     parser.add_argument('--random-seed', help='random seed for repeatability', default=None)
-    parser.add_argument('--envs', help='choose the gym envs', default='Reacher_xy-v0')
+    parser.add_argument('--envs', help='choose the gym envs', default='HalfCheetah-v2')
     parser.add_argument('--her', help='hindsight strategy', default='no_no')
     parser.add_argument('--n-her-goals', default=4)
     parser.add_argument('--n-split', help='number of split comparisons', default=10)

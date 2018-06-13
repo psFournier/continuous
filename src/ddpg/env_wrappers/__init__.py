@@ -19,6 +19,12 @@ register(
 )
 
 register(
+    id='HalfCheetah-v2',
+    entry_point='gym.envs.mujoco:HalfCheetahEnv',
+    wrapper_entry_point=None
+)
+
+register(
     id='FetchReach_e-v1',
     entry_point='gym.envs.robotics:FetchReachEnv',
     wrapper_entry_point='ddpg.env_wrappers.fetchReach_e:FetchReach_e'

@@ -121,7 +121,7 @@ class TD3():
 
         state0 = self.env.reset()
 
-        while self.env_step < 1000:
+        while self.env_step < 10000:
 
             if RENDER_TRAIN: self.env.render(mode='human')
 
