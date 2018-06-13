@@ -28,8 +28,8 @@ def main(args):
     os.makedirs(log_dir, exist_ok=True)
     with open(os.path.join(log_dir, 'config.txt'), 'w') as config_file:
         config_file.write(json.dumps(args))
-    logger_step = Logger(dir=os.path.join(log_dir,'log_steps'), format_strs=['stdout', 'tensorboard_1'])
-    logger_episode = Logger(dir=os.path.join(log_dir,'log_episodes'), format_strs=['stdout', 'tensorboard_1'])
+    logger_step = Logger(dir=os.path.join(log_dir,'log_steps'), format_strs=['stdout', 'tensorboard_{}'.format(args['eval_freq'])])
+    logger_episode = Logger(dir=os.path.join(log_dir,'log_episodes'), format_strs=['stdout', 'tensorboard_{}'.format(args['eval_freq'])])
 
     # Make calls env_wrappers.registration.make, not the exact make function from the gym.
     env = make(args['envs'])
