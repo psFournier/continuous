@@ -2,14 +2,8 @@ from ddpg.region import Region
 
 import numpy as np
 
-
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from matplotlib.collections import PatchCollection
-Blues = plt.get_cmap('Blues')
-
 class RegionTree():
-    def __init__(self, space, nRegions, auto, beta, render):
+    def __init__(self, space, nRegions, auto, beta):
         self.n_split = 10
         self.split_min = 0.00000001
         self.nRegions = nRegions
@@ -28,9 +22,6 @@ class RegionTree():
 
         self.initialize(space)
         self.update_CP_tree()
-
-        self.render = render
-        if self.render: self.init_display()
 
     def initialize(self, space):
         self.region_array[1] = Region(space.low, space.high)
@@ -67,12 +58,8 @@ class RegionTree():
                 self.region_array[2 * idx], self.region_array[2 * idx + 1] = region.best_split(self.dims, self.n_split, self.split_min)
                 if not region.is_leaf:
                     self.n_leaves += 1
-                    self.ax.add_line(region.line)
-
-
         self.update_CP_tree()
-        if self.render:
-            self.update_display()
+
 
     def find_regions(self, sample):
         regions = self._find_regions(sample, 1)
@@ -123,16 +110,12 @@ class RegionTree():
     def _update_CP_tree(self, idx):
         region = self.region_array[idx]
         if region.is_leaf:
-            # region.max_CP = region.queue.CP
-            # region.min_CP = region.queue.CP
             region.sum_CP = region.queue.CP
         else:
             self._update_CP_tree(2 * idx)
             self._update_CP_tree(2 * idx + 1)
             left = self.region_array[2 * idx]
             right = self.region_array[2 * idx + 1]
-            # region.max_CP = np.max([left.max_CP, right.max_CP])
-            # region.min_CP = np.min([left.min_CP, right.min_CP])
             region.sum_CP = np.sum([left.sum_CP, right.sum_CP])
 
     def stats(self):
@@ -144,19 +127,6 @@ class RegionTree():
         # stats['max_CP'] = self.max_CP
         # stats['min_CP'] = self.min_CP
         return stats
-
-    def update_display(self):
-        if self.n_points % 10 == 0:
-            plt.draw()
-            plt.pause(0.001)
-
-    def init_display(self):
-        self.figure = plt.figure()
-        self.ax = plt.axes()
-        self.ax.set_xlim(self.root.low[0], self.root.high[0])
-        self.ax.set_ylim(self.root.low[1], self.root.high[1])
-        plt.ion()
-        plt.show()
 
     @property
     def list_leaves(self):
@@ -177,14 +147,6 @@ class RegionTree():
     @property
     def root(self):
         return self.region_array[1]
-    #
-    # @property
-    # def max_CP(self):
-    #     return self.root.max_CP
-    #
-    # @property
-    # def min_CP(self):
-    #     return self.root.min_CP
 
     @property
     def sum_CP(self):

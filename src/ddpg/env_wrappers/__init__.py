@@ -25,7 +25,13 @@ register(
 )
 
 register(
-    id='Reacher_xy-v1',
+    id='Reacher_xy_sagg-v0',
     entry_point='ddpg.envs:ReacherEnv',
     wrapper_entry_point='ddpg.env_wrappers.reacher_xy_sagg:Reacher_xy'
+)
+
+register(
+    id='Reacher_xy_sagg_plot-v0',
+    entry_point='ddpg.envs:ReacherEnv',
+    wrapper_entry_point='ddpg.env_wrappers.reacher_xy_sagg_plot:Reacher_xy'
 )

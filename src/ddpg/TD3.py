@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 RENDER_TRAIN = False
-TARGET_CLIP = True
+TARGET_CLIP = False
 INVERTED_GRADIENTS = True
 
 class TD3():
@@ -29,7 +29,7 @@ class TD3():
 
         self.ep_steps = ep_steps
         self.eval_freq = eval_freq
-        self.batch_size = 64
+        self.batch_size = 100
         self.max_steps = max_steps
 
         self.env_step = 0
@@ -38,14 +38,27 @@ class TD3():
         self.episode_reward = 0
         self.goal_reached = 0
 
+    def train(self):
+        critic_stats = []
+        actor_stats = []
+        batch_idxs, experiences = self.env.buffer.sample(self.batch_size)
+        critic_stats.append(self.train_critic(experiences))
+        if self.env_step % 2 == 0:
+            actor_stats.append(self.train_actor(experiences))
+            self.actor.target_train()
+            self.critic.target_train()
+        return np.array(critic_stats), np.array(actor_stats)
+
     def train_critic(self, experiences):
 
         # Calculate targets
-        target_q = self.critic.predict_target(
-            experiences['state1'],
-            self.actor.predict_target(experiences['state1'])
-        )
-
+        actions = self.actor.target_model.predict_on_batch(experiences['state1'])
+        actions = np.clip(actions, self.env.action_space.low, self.env.action_space.high)
+        noise = np.clip(np.random.normal(0., 0.2, size=actions.shape), -0.5, 0.5)
+        actions = actions + noise
+        target_q1 = self.critic.target_model1.predict_on_batch([experiences['state1'], actions])
+        target_q2 = self.critic.target_model2.predict_on_batch([experiences['state1'], actions])
+        target_q = np.minimum(target_q1, target_q2)
         y_i = []
         for k in range(self.batch_size):
             if TARGET_CLIP:
@@ -58,13 +71,18 @@ class TD3():
             else:
                 y_i.append(experiences['reward'][k] + self.critic.gamma * target_q[k])
 
-        # Update the critic given the targets
-        stats = self.critic.train(experiences['state0'], experiences['action'], np.reshape(y_i, (self.batch_size, 1)))
-        return stats
+        # Update the critics given the targets
+        self.critic.model1.train_on_batch([experiences['state0'], experiences['action']], np.reshape(y_i, (self.batch_size, 1)))
+        self.critic.model2.train_on_batch([experiences['state0'], experiences['action']], np.reshape(y_i, (self.batch_size, 1)))
+        critic_stats1 = self.sess.run(self.critic.stat_ops, feed_dict={
+            self.critic.state1: experiences['state0'],
+            self.critic.action1: experiences['action']})
+
+        return critic_stats1
 
     def train_actor(self, experiences):
 
-        a_outs = self.actor.predict(experiences['state0'])
+        a_outs = self.actor.model.predict_on_batch(experiences['state0'])
         q_vals, grads = self.critic.gradients(experiences['state0'], a_outs)
         if INVERTED_GRADIENTS:
             """Gradient inverting as described in https://arxiv.org/abs/1511.04143"""
@@ -79,10 +97,6 @@ class TD3():
                         grads[k][d] *= (a_outs[k][d]-low[d])/width
         stats = self.actor.train(experiences['state0'], grads)
         return stats
-
-    def update_targets(self):
-        self.actor.target_train()
-        self.critic.target_train()
 
     def log(self, stats, logger):
         for key in sorted(stats.keys()):
@@ -101,10 +115,36 @@ class TD3():
 
     def run(self):
         self.init_variables()
-        self.update_targets()
+        self.actor.target_train()
+        self.critic.target_train()
         self.start_time = time.time()
 
         state0 = self.env.reset()
+
+        while self.env_step < 1000:
+
+            if RENDER_TRAIN: self.env.render(mode='human')
+
+            action = np.random.uniform(self.env.action_space.low, self.env.action_space.high)
+            state1, reward, terminal, _ = self.env.step(action[0])
+
+            self.episode_reward += reward
+            self.env_step += 1
+            self.episode_step += 1
+            state0 = state1
+
+            if self.env_step > 3 * self.batch_size:
+                self.critic_stats, self.actor_stats = self.train()
+
+            if (terminal or self.episode_step >= self.ep_steps):
+                self.episode += 1
+                if terminal: self.goal_reached += 1
+                state0 = self.env.reset()
+                self.log_episode_stats()
+                self.episode_step = 0
+                self.episode_reward = 0
+
+            self.log_step_stats()
 
         while self.env_step < self.max_steps:
 
@@ -120,8 +160,10 @@ class TD3():
             self.episode_step += 1
             state0 = state1
 
-            if (terminal or self.episode_step >= self.ep_steps):
+            if self.env_step > 3 * self.batch_size:
+                self.critic_stats, self.actor_stats = self.train()
 
+            if (terminal or self.episode_step >= self.ep_steps):
                 self.episode += 1
                 if terminal: self.goal_reached += 1
                 state0 = self.env.reset()
@@ -129,8 +171,6 @@ class TD3():
                 self.episode_step = 0
                 self.episode_reward = 0
 
-                if self.env_step > 3*self.batch_size:
-                    self.critic_stats, self.actor_stats = self.train()
             self.log_step_stats()
 
     def log_step_stats(self):
@@ -160,13 +200,3 @@ class TD3():
             for name, stat in memory_stats.items():
                 self.episode_stats[name] = stat
             self.log(self.episode_stats, self.logger_episode)
-
-    def train(self):
-        critic_stats = []
-        actor_stats = []
-        for _ in range(self.ep_steps):
-            batch_idxs, experiences = self.env.buffer.sample(self.batch_size)
-            critic_stats.append(self.train_critic(experiences))
-            actor_stats.append(self.train_actor(experiences))
-            self.update_targets()
-        return np.array(critic_stats), np.array(actor_stats)

@@ -1,7 +1,7 @@
 import numpy as np
 from gym import Wrapper
 from gym.spaces import Box
-from ddpg.regionTree import RegionTree
+from ddpg.regionTreePlot import RegionTreePlot
 from ddpg.replayBuffer import ReplayBuffer
 import random as rnd
 
@@ -15,7 +15,7 @@ class Reacher_xy(Wrapper):
         self.XY = [6,7]
         self.target_XY = [8,9]
         self.goal_space = Box(np.array([-0.6, -0.6]), np.array([0.6, 0.6]))
-        self.regionTree = RegionTree(space=self.goal_space,
+        self.regionTree = RegionTreePlot(space=self.goal_space,
                                      nRegions=nRegions,
                                      auto = True,
                                      beta=beta_xy)

@@ -18,8 +18,7 @@ class Reacher_xy(Wrapper):
         self.regionTree = RegionTree(space=self.goal_space,
                                      nRegions=nRegions,
                                      auto=False,
-                                     beta=beta_xy,
-                                     render=False)
+                                     beta=beta_xy)
 
         self.epsilon = epsilon
 

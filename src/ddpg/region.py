@@ -65,7 +65,6 @@ class Region(Box):
                     best_right = right
                     self.val_split = split_val
                     self.dim_split = dim
-        self.compute_line()
         return best_left, best_right
 
     def compute_line(self):

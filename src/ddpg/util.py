@@ -1,6 +1,8 @@
 import tensorflow as tf
 from gym import wrappers
 import pkg_resources
+import keras.backend as K
+import numpy as np
 
 
 def reduce_var(x, axis=None, keepdims=False):
@@ -42,3 +44,25 @@ def boolean_flag(parser, name, default=False, help=None):
     dest = name.replace('-', '_')
     parser.add_argument("--" + name, action="store_true", default=default, dest=dest, help=help)
     parser.add_argument("--no-" + name, action="store_false", dest=dest)
+
+def kl_divergence(x, y):
+    x = (x+1)/2
+    y = (y+1)/2
+    x = np.clip(x, K.epsilon(), 1)
+    y = np.clip(y, K.epsilon(), 1)
+    aux = x * np.log(x / y)
+    return np.sum(aux, axis=0)
+
+def huber_loss(y_true, y_pred, delta_clip):
+    err = y_true - y_pred
+    L2 = 0.5 * K.square(err)
+
+    # Deal separately with infinite delta (=no clipping)
+    if np.isinf(delta_clip):
+        return K.mean(L2)
+
+    cond = K.abs(err) < delta_clip
+    L1 = delta_clip * (K.abs(err) - 0.5 * delta_clip)
+    loss = tf.where(cond, L2, L1)
+
+    return K.mean(loss)

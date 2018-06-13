@@ -4,9 +4,9 @@ import argparse
 import pprint as pp
 from ddpg.logger import Logger
 import datetime
-from ddpg.criticDdpg import CriticDDPG
-from ddpg.actorDdpg import ActorDDPG
-from ddpg.ddpgAgent import DDPG_agent
+from ddpg.actorTD3 import ActorTD3
+from ddpg.criticTD3 import CriticTD3
+from ddpg.TD3 import TD3
 from ddpg.util import load, boolean_flag
 import json
 import os
@@ -52,15 +52,15 @@ def main(args):
             tf.set_random_seed(int(args['random_seed']))
             env.seed(int(args['random_seed']))
 
-        actor = ActorDDPG(sess,
+        actor = ActorTD3(sess,
                              env.state_dim,
                              env.action_dim)
 
-        critic = CriticDDPG(sess,
+        critic = CriticTD3(sess,
                                env.state_dim,
                                env.action_dim)
 
-        agent = DDPG_agent(sess,
+        agent = TD3(sess,
                            actor,
                            critic,
                            env,
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='provide arguments for DDPG agent')
 
     parser.add_argument('--random-seed', help='random seed for repeatability', default=None)
-    parser.add_argument('--envs', help='choose the gym envs', default='Reacher_xy-v1')
+    parser.add_argument('--envs', help='choose the gym envs', default='Reacher_xy-v0')
     parser.add_argument('--her', help='hindsight strategy', default='no_no')
     parser.add_argument('--n-her-goals', default=4)
     parser.add_argument('--n-split', help='number of split comparisons', default=10)
