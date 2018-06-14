@@ -25,11 +25,7 @@ class Reacher_xy(Wrapper):
         self.rec = None
 
         self.buffer = ReplayBuffer(limit = buffer_size,
-                          content_shape = {'state0': self.state_dim,
-                           'action': self.action_dim,
-                           'state1': self.state_dim,
-                           'reward': (1,),
-                           'terminal': (1,)})
+                          names = ['state0', 'action', 'state1', 'reward', 'terminal'])
 
         self.episode = 0
         self.episode_exp = []

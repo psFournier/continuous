@@ -58,9 +58,15 @@ class DDPG_agent():
             else:
                 y_i.append(experiences['reward'][k] + self.critic.gamma * target_q[k])
 
+        targets = np.reshape(y_i, (self.batch_size, 1))
         # Update the critic given the targets
-        stats = self.critic.train(experiences['state0'], experiences['action'], np.reshape(y_i, (self.batch_size, 1)))
-        return stats
+        td_errors = self.critic.train([experiences['state0'], experiences['action'], targets, experiences['weights']])
+        # td_errors, stats = self.sess.run([self.critic.td_errors, self.critic.train] + self.critic.stat_ops, feed_dict={self.critic.state: experiences['state0'],
+        #                                               self.critic.action: experiences['action'],
+        #                                               self.critic.targets: targets,
+        #                                               self.critic.imp_weights: experiences['weights']})
+
+        return td_errors, None
 
     def train_actor(self, experiences):
 
@@ -135,12 +141,12 @@ class DDPG_agent():
 
     def log_step_stats(self):
         if self.env_step % self.eval_freq == 0:
-            critic_stats_mean = self.critic_stats.mean(axis=0)
-            actor_stats_mean = self.actor_stats.mean(axis=0)
-            for name, stat in zip(self.critic.stat_names, critic_stats_mean):
-                self.step_stats[name] = stat
-            for name, stat in zip(self.actor.stat_names, actor_stats_mean):
-                self.step_stats[name] = stat
+            # critic_stats_mean = self.critic_stats.mean(axis=0)
+            # actor_stats_mean = self.actor_stats.mean(axis=0)
+            # for name, stat in zip(self.critic.stat_names, critic_stats_mean):
+            #     self.step_stats[name] = stat
+            # for name, stat in zip(self.actor.stat_names, actor_stats_mean):
+            #     self.step_stats[name] = stat
             self.step_stats['env_step'] = self.env_step
 
             self.step_stats['accuracy'] = self.goal_reached / 20
@@ -165,8 +171,11 @@ class DDPG_agent():
         critic_stats = []
         actor_stats = []
         for _ in range(self.ep_steps):
-            batch_idxs, experiences = self.env.buffer.sample(self.batch_size)
-            critic_stats.append(self.train_critic(experiences))
+            experiences = self.env.buffer.sample(self.batch_size)
+            td_errors, stats = self.train_critic(experiences)
+            critic_stats.append(stats)
+            if self.env.buffer.beta != 0:
+                self.env.buffer.update_priorities(list(experiences['indices']), np.abs(td_errors))
             actor_stats.append(self.train_actor(experiences))
             self.update_targets()
         return np.array(critic_stats), np.array(actor_stats)

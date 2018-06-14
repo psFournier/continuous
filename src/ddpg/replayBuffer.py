@@ -10,23 +10,27 @@ def array_min2d(x):
 
 
 class ReplayBuffer(object):
-    def __init__(self, limit, content_shape):
+    def __init__(self, limit, names):
         self.contents = {}
-        self.length = 0
-        for content, shape in content_shape.items():
-            self.contents[content] = RingBuffer(limit, shape=shape)
+        self.limit = limit
+        self._next_idx = 0
+        self.beta = 0
+        for name in names:
+            self.contents[name] = RingBuffer()
 
     def append(self, buffer_item):
         for name, value in self.contents.items():
-            value.append(buffer_item[name])
+            value.append(buffer_item[name], self._next_idx)
+        self._next_idx = (self._next_idx + 1) % self.limit
 
     def sample(self, batch_size):
-        # Draw such that we always have a proceeding element.
-        batch_idxs = np.random.random_integers(self.nb_entries - 2, size=batch_size)
+        batch_idxs = [np.random.randint(0, self.nb_entries) for _ in range(batch_size)]
         result = {}
         for name, value in self.contents.items():
             result[name] = array_min2d(value.get_batch(batch_idxs))
-        return batch_idxs, result
+        result['indices'] = array_min2d(batch_idxs)
+        result['weights'] = array_min2d([1] * batch_size)
+        return result
 
     @property
     def nb_entries(self):
