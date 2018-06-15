@@ -175,7 +175,7 @@ class DDPG_agent():
             td_errors, stats = self.train_critic(experiences)
             critic_stats.append(stats)
             if self.env.buffer.beta != 0:
-                self.env.buffer.update_priorities(list(experiences['indices']), np.abs(td_errors))
+                self.env.buffer.update_priorities(experiences['indices'], np.abs(td_errors[0]))
             actor_stats.append(self.train_actor(experiences))
             self.update_targets()
         return np.array(critic_stats), np.array(actor_stats)

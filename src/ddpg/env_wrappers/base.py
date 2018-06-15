@@ -1,5 +1,6 @@
 from gym import Wrapper
 from ddpg.replayBuffer import ReplayBuffer
+from ddpg.prioritizedReplayBuffer import PrioritizedReplayBuffer
 
 # Wrappers override step, reset functions, as well as the defintion of action, observation and goal spaces.
 
@@ -7,12 +8,10 @@ class Base(Wrapper):
     def __init__(self, env, buffer_size=int(1e6)):
         super(Base, self).__init__(env)
         self.rec = None
-        self.buffer = ReplayBuffer(limit = buffer_size,
-                          content_shape = {'state0': self.state_dim,
-                           'action': self.action_dim,
-                           'state1': self.state_dim,
-                           'reward': (1,),
-                           'terminal': (1,)})
+        self.buffer = PrioritizedReplayBuffer(limit = buffer_size,
+                                              names=['state0', 'action', 'state1', 'reward', 'terminal'],
+                                              alpha=1,
+                                              beta=1)
         self.episode = 0
 
     def _step(self,action):

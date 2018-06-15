@@ -1,5 +1,4 @@
 import numpy as np
-from ddpg.ringBuffer import RingBuffer
 from ddpg.segment_tree import SumSegmentTree, MinSegmentTree
 from ddpg.replayBuffer import ReplayBuffer
 
@@ -104,6 +103,8 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             transitions at the sampled idxes denoted by
             variable `idxes`.
         """
+        idxes = list(idxes.squeeze())
+        priorities = list(priorities.squeeze())
         assert len(idxes) == len(priorities)
         for idx, priority in zip(idxes, priorities):
             assert priority > 0
