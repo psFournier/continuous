@@ -3,13 +3,15 @@ from ddpg.region import Region
 import numpy as np
 
 class RegionTree():
-    def __init__(self, space, nRegions, auto, beta):
+    def __init__(self, space, nRegions, auto, beta, window=10):
         self.n_split = 10
-        self.split_min = 0.00000001
+        self.split_min = 0
         self.nRegions = nRegions
         self.auto = auto
         self.beta = beta
         self.dims = range(space.low.shape[0])
+        self.lines = []
+        self.window = window
 
         capacity = 1
         while capacity < self.nRegions:
@@ -24,7 +26,7 @@ class RegionTree():
         self.update_CP_tree()
 
     def initialize(self, space):
-        self.region_array[1] = Region(space.low, space.high)
+        self.region_array[1] = Region(space.low, space.high, window=self.window, maxlen=int(1e5))
         self.n_leaves += 1
         assert self.nRegions & (self.nRegions - 1) == 0  # n must be a power of 2
         if not self.auto:
@@ -58,6 +60,8 @@ class RegionTree():
                 self.region_array[2 * idx], self.region_array[2 * idx + 1] = region.best_split(self.dims, self.n_split, self.split_min)
                 if not region.is_leaf:
                     self.n_leaves += 1
+                    region.compute_line()
+                    self.lines.append(region.line)
         self.update_CP_tree()
 
 
@@ -151,4 +155,8 @@ class RegionTree():
     @property
     def sum_CP(self):
         return self.root.sum_CP
+
+    @property
+    def points(self):
+        return self.root.queue.points
 

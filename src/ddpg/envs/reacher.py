@@ -24,22 +24,24 @@ class ReacherEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
     def reset_model(self):
         qpos = self.np_random.uniform(low=-0.1, high=0.1, size=self.model.nq) + self.init_qpos
-        while True:
-            self.goal = self.np_random.uniform(low=-.2, high=.2, size=2)
-            if np.linalg.norm(self.goal) < 2:
-                break
-        qpos[-2:] = self.goal
+        qpos[-2:] = np.array([0, 0.1])
         qvel = self.init_qvel + self.np_random.uniform(low=-.005, high=.005, size=self.model.nv)
         qvel[-2:] = 0
         self.set_state(qpos, qvel)
         return self._get_obs()
 
     def _get_obs(self):
+        """
+        position :
+        cos(theta1), cos(theta2), sin(theta1), sin(theta2), theta1', theta2'
+        fingertip_x, fingertip_y
+
+        total size : 8
+        """
         theta = self.sim.data.qpos.flat[:2]
         return np.concatenate([
             np.cos(theta),
             np.sin(theta),
-            self.sim.data.qpos.flat[2:],
             self.sim.data.qvel.flat[:2],
-            self.get_body_com("fingertip") - self.get_body_com("target")
+            self.get_body_com("fingertip")[:2]
         ])

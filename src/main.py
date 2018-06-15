@@ -41,7 +41,8 @@ def main(args):
                                 float(args['eps']),
                                 int(args['R']),
                                 float(args['beta']),
-                                args['her'])
+                                args['her'],
+                          )
     else:
         env = Base(env)
 
@@ -64,6 +65,7 @@ def main(args):
                            actor,
                            critic,
                            env,
+                           log_dir,
                            logger_step,
                            logger_episode,
                            int(args['episode_steps']),
@@ -76,21 +78,21 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='provide arguments for DDPG agent')
 
     parser.add_argument('--random-seed', help='random seed for repeatability', default=None)
-    parser.add_argument('--envs', help='choose the gym envs', default='HalfCheetah-v2')
+    parser.add_argument('--envs', help='choose the gym envs', default='Reacher_xy_sagg_plot-v0')
     parser.add_argument('--her', help='hindsight strategy', default='no_no')
     parser.add_argument('--n-her-goals', default=4)
     parser.add_argument('--n-split', help='number of split comparisons', default=10)
     parser.add_argument('--split-min', help='minimum cp difference to allow split', default=0.0001)
     parser.add_argument('--n-window', help='length of running window used to compute cp', default=3)
     parser.add_argument('--eps', default=0.02)
-    parser.add_argument('--R', help='number of regions in goal space', default=4)
+    parser.add_argument('--R', help='number of regions in goal space', default=128)
     parser.add_argument('--n-points', help='number of points stored in region', default=100)
     parser.add_argument('--beta', default=0)
     parser.add_argument('--max-steps', help='max num of episodes to do while training', default=500000)
     parser.add_argument('--log-dir', help='directory for storing run info',
                         default='/home/pierre/PycharmProjects/continuous/log/local/')
-    parser.add_argument('--episode-steps', help='number of steps in the environment during evaluation', default=1000)
-    parser.add_argument('--eval-freq', help='freq for critic and actor stats computation', default=5000)
+    parser.add_argument('--episode-steps', help='number of steps in the environment during evaluation', default=50)
+    parser.add_argument('--eval-freq', help='freq for critic and actor stats computation', default=1000)
 
     args = vars(parser.parse_args())
     

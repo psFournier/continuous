@@ -5,6 +5,7 @@ from ddpg.regionTreePlot import RegionTreePlot
 from ddpg.replayBuffer import ReplayBuffer
 import random as rnd
 
+
 class Reacher_xy(Wrapper):
     def __init__(self, env, epsilon, nRegions, beta_xy, her, buffer_size=int(1e6)):
         super(Reacher_xy, self).__init__(env)
@@ -25,11 +26,7 @@ class Reacher_xy(Wrapper):
         self.rec = None
 
         self.buffer = ReplayBuffer(limit = buffer_size,
-                          content_shape = {'state0': self.state_dim,
-                           'action': self.action_dim,
-                           'state1': self.state_dim,
-                           'reward': (1,),
-                           'terminal': (1,)})
+                                   names=['state0', 'action', 'state1', 'reward', 'terminal'])
 
         self.episode = 0
         self.episode_exp = []
@@ -100,6 +97,7 @@ class Reacher_xy(Wrapper):
 
         if self.episode > 0:
             self.regionTree.append((self.goal, int(self.reached)))
+            self.regionTree.append((self.episode_exp[-1]['state1'][self.XY], 1))
 
         if self.her_xy_strat != 'no':
             self.hindsight()

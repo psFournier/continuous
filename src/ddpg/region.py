@@ -1,13 +1,12 @@
 from gym.spaces import Box
 import numpy as np
 from ddpg.competenceQueue import CompetenceQueue
-import matplotlib.lines as lines
 
 class Region(Box):
 
-    def __init__(self, low = np.array([-np.inf]), high=np.array([np.inf]), dtype='float32'):
+    def __init__(self, low = np.array([-np.inf]), high=np.array([np.inf]), window=10, maxlen=20, dtype='float32'):
         super(Region, self).__init__(low=low, high=high, dtype=dtype)
-        self.queue = CompetenceQueue()
+        self.queue = CompetenceQueue(window=window, maxlen=maxlen)
         self.dim_split = None
         self.val_split = None
         self.line = None
@@ -65,6 +64,7 @@ class Region(Box):
                     best_right = right
                     self.val_split = split_val
                     self.dim_split = dim
+                    best = eval
         return best_left, best_right
 
     def compute_line(self):
@@ -75,18 +75,15 @@ class Region(Box):
             else:
                 line1_ys = 2 * [self.val_split]
                 line1_xs = [self.low[0], self.high[0]]
-            self.line = lines.Line2D(xdata=line1_xs,
-                                          ydata=line1_ys,
-                                          linewidth=2,
-                                          color='blue')
+            self.line = [line1_xs, line1_ys]
 
     @property
     def is_leaf(self):
-        return (self.dim_split is None)
+        return (self.dim_split is None and self.is_init)
 
     @property
     def is_init(self):
-        return (self.high is not np.inf)
+        return (not np.isinf(self.high[0]))
 
     @property
     def CP(self):

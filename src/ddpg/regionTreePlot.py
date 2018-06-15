@@ -1,5 +1,6 @@
 from ddpg.regionTree import RegionTree
 import numpy as np
+import matplotlib.lines as lines
 
 
 import matplotlib.pyplot as plt
@@ -24,7 +25,11 @@ class RegionTreePlot(RegionTree):
                 if not region.is_leaf:
                     self.n_leaves += 1
                     region.compute_line()
-                    self.ax.add_line(region.line)
+                    self.lines.append(region.line)
+                    self.ax.add_line(lines.Line2D(xdata=region.line[0],
+                                          ydata=region.line[1],
+                                          linewidth=2,
+                                          color='blue')  )
         self.update_CP_tree()
         self.update_display()
 

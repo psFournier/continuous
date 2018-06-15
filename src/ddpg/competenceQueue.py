@@ -4,9 +4,9 @@ import itertools
 import numpy as np
 
 class CompetenceQueue():
-    def __init__(self, window = 5):
+    def __init__(self, window = 10, maxlen=20):
         self.window = window
-        self.points = deque(maxlen=2 * self.window)
+        self.points = deque(maxlen=maxlen)
         self.CP = 0.001
         self.competence = 0.001
 
@@ -29,4 +29,4 @@ class CompetenceQueue():
 
     @property
     def full(self):
-        return self.size == self.points.maxlen
+        return self.size >= 2 * self.window

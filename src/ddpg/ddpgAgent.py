@@ -1,7 +1,10 @@
 import time
 import numpy as np
 import tensorflow as tf
+import json_tricks
+import pickle
 
+import os
 RENDER_TRAIN = False
 TARGET_CLIP = True
 INVERTED_GRADIENTS = True
@@ -12,6 +15,7 @@ class DDPG_agent():
                  actor,
                  critic,
                  env,
+                 log_dir,
                  logger_step,
                  logger_episode,
                  ep_steps,
@@ -24,6 +28,7 @@ class DDPG_agent():
         self.env = env
         self.logger_step = logger_step
         self.logger_episode = logger_episode
+        self.log_dir = log_dir
         self.step_stats = {}
         self.episode_stats = {}
 
@@ -111,33 +116,43 @@ class DDPG_agent():
         self.start_time = time.time()
 
         state0 = self.env.reset()
+        try:
+            while self.env_step < self.max_steps:
 
-        while self.env_step < self.max_steps:
+                if RENDER_TRAIN: self.env.render(mode='human')
 
-            if RENDER_TRAIN: self.env.render(mode='human')
+                action = self.actor.model.predict(np.reshape(state0, (1, self.actor.s_dim[0])))
+                action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
 
-            action = self.actor.model.predict(np.reshape(state0, (1, self.actor.s_dim[0])))
-            action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
+                state1, reward, terminal, _ = self.env.step(action[0])
 
-            state1, reward, terminal, _ = self.env.step(action[0])
+                self.episode_reward += reward
+                self.env_step += 1
+                self.episode_step += 1
+                state0 = state1
 
-            self.episode_reward += reward
-            self.env_step += 1
-            self.episode_step += 1
-            state0 = state1
+                if (terminal or self.episode_step >= self.ep_steps):
 
-            if (terminal or self.episode_step >= self.ep_steps):
+                    self.episode += 1
+                    if terminal: self.goal_reached += 1
+                    state0 = self.env.reset()
+                    self.log_episode_stats()
+                    self.episode_step = 0
+                    self.episode_reward = 0
 
-                self.episode += 1
-                if terminal: self.goal_reached += 1
-                state0 = self.env.reset()
-                self.log_episode_stats()
-                self.episode_step = 0
-                self.episode_reward = 0
+                    if self.env_step > 3*self.batch_size:
+                        self.critic_stats, self.actor_stats = self.train()
+                self.log_step_stats()
+        except KeyboardInterrupt:
+            print("Keybord interruption")
+            self.save_regions()
 
-                if self.env_step > 3*self.batch_size:
-                    self.critic_stats, self.actor_stats = self.train()
-            self.log_step_stats()
+        self.save_regions()
+
+    def save_regions(self):
+        with open(os.path.join(self.log_dir, 'regionTree.pkl'), 'wb') as output:
+            pickle.dump(self.env.regionTree, output)
+
 
     def log_step_stats(self):
         if self.env_step % self.eval_freq == 0:
