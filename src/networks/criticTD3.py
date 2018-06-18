@@ -4,7 +4,7 @@ from keras.layers import Dense, Input
 from keras.optimizers import Adam
 import tensorflow as tf
 from keras.layers.merge import concatenate
-from ddpg.util import reduce_std
+import keras.backend as K
 
 class CriticTD3(object):
     def __init__(self, sess, s_dim, a_dim, gamma=0.99, tau=0.005, learning_rate=0.001):
@@ -31,16 +31,15 @@ class CriticTD3(object):
         self.out1 = self.model1.output
         self.action_grads1 = tf.gradients(self.out1, self.action1)
 
-        # Setting up stats
-        self.stat_ops += [tf.reduce_mean(self.out1)]
-        self.stat_names += ['mean_Q_values']
-        self.stat_ops += [tf.reduce_mean(self.action_grads1)]
-        self.stat_names += ['mean_action_grads']
-
-        self.stat_ops += [reduce_std(self.out1)]
-        self.stat_names += ['std_Q_values']
-        self.stat_ops += [reduce_std(self.action_grads1)]
-        self.stat_names += ['std_action_grads']
+        self.targets = K.placeholder(dtype=tf.float32, shape=(None, 1), name="targets")
+        self.imp_weights = K.placeholder(dtype=tf.float32, shape=(None, 1), name="weights")
+        self.td_errors1 = self.out1 - self.targets
+        self.weighted_error = K.mean(K.square(self.td_errors1), axis=-1)
+        self.optimizer = Adam()
+        self.updates = Adam().get_updates(self.model1.trainable_weights, [], self.weighted_error)
+        self.train = K.function([self.state1, self.action1, self.targets, self.imp_weights],
+                                [self.td_errors1, self.action_grads1],
+                                updates=self.updates)
 
     def target_train(self):
 
@@ -56,13 +55,6 @@ class CriticTD3(object):
             target_weights2[i] = self.tau * weights2[i] + (1 - self.tau) * target_weights2[i]
         self.target_model2.set_weights(target_weights2)
 
-    def gradients(self, states, actions):
-        out, grads =  self.sess.run([self.out1, self.action_grads1], feed_dict={
-            self.state1: states,
-            self.action1: actions
-        })
-        return out, grads[0]
-
     def create_critic_network(self, s_dim, a_dim):
         S = Input(shape=s_dim)
         A = Input(shape=a_dim, name='action2')
@@ -76,3 +68,4 @@ class CriticTD3(object):
         adam = Adam(lr=self.learning_rate)
         model.compile(loss='mse', optimizer=adam)
         return model, A, S
+

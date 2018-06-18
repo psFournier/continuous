@@ -3,15 +3,14 @@ from keras.models import Model
 from keras.layers import Dense, Input
 import tensorflow as tf
 import keras.backend as K
-from ddpg.util import reduce_std
 import numpy as np
 
 class ActorTD3(object):
-    def __init__(self, sess, state_size, action_size, tau=0.005, learning_rate=0.001):
+    def __init__(self, sess, s_dim, a_dim, tau=0.005, learning_rate=0.001):
         self.sess = sess
         self.tau = tau
-        self.s_dim = state_size
-        self.a_dim = action_size
+        self.s_dim = s_dim
+        self.a_dim = a_dim
         self.learning_rate = learning_rate
         self.stat_ops = []
         self.stat_names = []
@@ -26,12 +25,6 @@ class ActorTD3(object):
         self.params_grad = tf.gradients(self.out, self.weights, -self.action_gradient)
         grads = zip(self.params_grad, self.weights)
         self.optimize = tf.train.AdamOptimizer(learning_rate).apply_gradients(grads)
-
-        # Setting up stats
-        self.stat_ops += [tf.reduce_mean(self.out[:, i]) for i in range(self.a_dim[0])]
-        self.stat_names += ['mean_actions_{}'.format(i) for i in range(self.a_dim[0])]
-        self.stat_ops += [reduce_std(self.out[:, i]) for i in range(self.a_dim[0])]
-        self.stat_names += ['std_actions_{}'.format(i) for i in range(self.a_dim[0])]
 
     def target_train(self):
         weights = self.model.get_weights()
@@ -57,8 +50,4 @@ class ActorTD3(object):
 
         return res[1:]
 
-    def get_output(self, states):
-        out = self.sess.run(self.out, feed_dict={
-            self.state: states
-        })
-        return out
+

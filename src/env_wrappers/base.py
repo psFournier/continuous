@@ -1,6 +1,6 @@
 from gym import Wrapper
-from ddpg.replayBuffer import ReplayBuffer
-from ddpg.prioritizedReplayBuffer import PrioritizedReplayBuffer
+from buffers.replayBuffer import ReplayBuffer
+from buffers.prioritizedReplayBuffer import PrioritizedReplayBuffer
 
 # Wrappers override step, reset functions, as well as the defintion of action, observation and goal spaces.
 

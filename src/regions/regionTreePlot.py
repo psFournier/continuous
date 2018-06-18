@@ -1,4 +1,4 @@
-from ddpg.regionTree import RegionTree
+from regions.regionTree import RegionTree
 import numpy as np
 import matplotlib.lines as lines
 
@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 Blues = plt.get_cmap('Blues')
 
 class RegionTreePlot(RegionTree):
-    def __init__(self, space, nRegions, auto, beta):
-        super(RegionTreePlot, self).__init__(space, nRegions, auto, beta)
+    def __init__(self, space, nRegions, auto, beta, window):
+        super(RegionTreePlot, self).__init__(space, nRegions, auto, beta, window)
         self.init_display()
 
     def append(self, point):

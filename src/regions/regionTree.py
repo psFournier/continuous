@@ -1,17 +1,17 @@
-from ddpg.region import Region
+from regions.region import Region
 
 import numpy as np
 
 class RegionTree():
-    def __init__(self, space, nRegions, auto, beta, window=10):
+    def __init__(self, space, R=128, auto=True, theta=1, window=100, queue_len=200):
         self.n_split = 10
         self.split_min = 0
-        self.nRegions = nRegions
+        self.nRegions = R
         self.auto = auto
-        self.beta = beta
         self.dims = range(space.low.shape[0])
         self.lines = []
         self.window = window
+        self.queue_len = queue_len
 
         capacity = 1
         while capacity < self.nRegions:

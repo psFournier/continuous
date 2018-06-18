@@ -1,6 +1,6 @@
 import numpy as np
-from ddpg.segment_tree import SumSegmentTree, MinSegmentTree
-from ddpg.replayBuffer import ReplayBuffer
+from buffers.segment_tree import SumSegmentTree, MinSegmentTree
+from buffers.replayBuffer import ReplayBuffer
 
 def array_min2d(x):
     x = np.array(x)
@@ -107,7 +107,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         priorities = list(priorities.squeeze())
         assert len(idxes) == len(priorities)
         for idx, priority in zip(idxes, priorities):
-            assert priority > 0
+            assert priority >= 0
             priority = priority + self.epsilon
             assert 0 <= idx < self.nb_entries
             self._it_sum[idx] = priority ** self.alpha

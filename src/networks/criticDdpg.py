@@ -5,54 +5,35 @@ from keras.optimizers import Adam
 import tensorflow as tf
 import keras.backend as K
 from keras.layers.merge import concatenate
-from ddpg.util import reduce_std
-from keras.losses import mse
 
 class CriticDDPG(object):
-    def __init__(self, sess, state_size, action_size, gamma=0.99, tau=0.005, learning_rate=0.001):
+    def __init__(self, sess, s_dim, a_dim, gamma=0.99, tau=0.001, learning_rate=0.001):
         self.sess = sess
         self.tau = tau
-        self.s_dim = state_size
-        self.a_dim = action_size
+        self.s_dim = s_dim
+        self.a_dim = a_dim
         self.learning_rate = learning_rate
         self.stat_ops = []
         self.stat_names = []
-        K.set_session(sess)
         self.model = None
         self.target_model = None
         self.td_errors = None
-
         self.gamma = gamma
+
+        K.set_session(sess)
 
         # Now create the model
         self.model, self.action, self.state = self.create_critic_network(self.s_dim, self.a_dim)
         self.target_model, self.target_action, self.target_state = self.create_critic_network(self.s_dim, self.a_dim)
         self.out = self.model.output
 
-        # # Setting up stats
-        # self.stat_ops += [tf.reduce_mean(self.out)]
-        # self.stat_names += ['mean_Q_values']
-        # self.stat_ops += [tf.reduce_mean(self.action_grads)]
-        # self.stat_names += ['mean_action_grads']
-        #
-        # self.stat_ops += [reduce_std(self.out)]
-        # self.stat_names += ['std_Q_values']
-        # self.stat_ops += [reduce_std(self.action_grads)]
-        # self.stat_names += ['std_action_grads']
-
-
         self.action_grads = tf.gradients(self.out, self.action)
         self.targets = K.placeholder(dtype=tf.float32, shape=(None,1), name="targets")
         self.imp_weights = K.placeholder(dtype=tf.float32, shape=(None,1), name="weights")
         self.td_errors = self.out - self.targets
         self.weighted_error = K.mean(K.square(self.td_errors), axis=-1)
-        self.optimizer = Adam()
-        self.updates = Adam().get_updates(self.model.trainable_weights, [], self.weighted_error)
+        self.updates = Adam(lr=self.learning_rate).get_updates(self.model.trainable_weights, [], self.weighted_error)
         self.train = K.function([self.state, self.action, self.targets, self.imp_weights], [self.td_errors], updates=self.updates)
-
-
-
-
 
     def target_train(self):
         weights = self.model.get_weights()
@@ -68,19 +49,6 @@ class CriticDDPG(object):
         })
         return out, grads[0]
 
-    def predict_target(self, states, actions):
-        return self.target_model.predict_on_batch([states, actions])
-
-    def predict(self, states, actions):
-        return self.model.predict_on_batch([states, actions])
-
-    def train(self, states, actions, targets):
-        self.model.train_on_batch([states, actions], targets)
-        critic_stats = self.sess.run(self.stat_ops, feed_dict={
-            self.state: states,
-            self.action: actions})
-        return critic_stats
-
     def create_critic_network(self, state_size, action_dim):
         S = Input(shape=state_size)
         A = Input(shape=action_dim, name='action2')
@@ -93,3 +61,5 @@ class CriticDDPG(object):
         adam = Adam(lr=self.learning_rate)
         model.compile(loss='mse', optimizer=adam)
         return model, A, S
+
+

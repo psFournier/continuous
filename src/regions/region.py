@@ -1,6 +1,6 @@
 from gym.spaces import Box
 import numpy as np
-from ddpg.competenceQueue import CompetenceQueue
+from regions.competenceQueue import CompetenceQueue
 
 class Region(Box):
 

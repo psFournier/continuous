@@ -1,5 +1,5 @@
 import numpy as np
-from ddpg.ringBuffer import RingBuffer
+from buffers.ringBuffer import RingBuffer
 
 
 def array_min2d(x):
