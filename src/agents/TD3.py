@@ -36,9 +36,6 @@ class TD3(Agent):
 
         self.env.buffer.append(exp)
 
-        critic_stats = []
-        actor_stats = []
-
         if self.env_step > 3 * self.batch_size:
             experiences = self.env.buffer.sample(self.batch_size)
             td_errors = self.train_critic(experiences)
@@ -47,8 +44,6 @@ class TD3(Agent):
             if self.env_step % 2 == 0:
                 self.train_actor(experiences)
                 self.target_train()
-
-        return np.array(critic_stats), np.array(actor_stats)
 
     def init_targets(self):
         self.actor.target_train()

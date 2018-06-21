@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-runs = glob.glob('../../log/local/td3_Ant-v2_0_0.4_128_no_no_0_0_10/20180621001323_058909/')
+runs = glob.glob('../../log/local/qlearning_Taxi-v1_1/20180621172948_320717/')
 frames = []
 
 for run in runs:
@@ -21,7 +21,7 @@ for run in runs:
 
 # Creating the complete dataframe with all dat
 df = pd.concat(frames, ignore_index=True)
-df = df[['step', 'avg_return']]
+df = df[['step', 'CP_0', 'CP_1', 'freq_0', 'freq_1', 'comp_0', 'comp_1']]
 print(df.head())
 
 # def _0(x) : return x[0]
@@ -32,8 +32,19 @@ print(df.head())
 # agg.columns = agg.columns.map(''.join)
 # df = pd.concat([df, agg], axis=1).drop(['list_returns'], axis=1)
 
-fig, ax = plt.subplots(figsize=(18,10))
+fig, axes = plt.subplots(3, 1, figsize=(18,10))
 # ax.plot(df['step'], df['list_returns_0'].rolling(10).mean())
-ax.plot(df['step'], df['avg_return'].rolling(10).mean())
+axes[0].plot(df['step'], df['comp_0'].rolling(10).mean(), label='pick_up')
+axes[0].plot(df['step'], df['comp_1'].rolling(10).mean(), label='drop-off')
+axes[0].legend()
+
+axes[1].plot(df['step'], df['CP_0'].rolling(10).mean(), label='pick_up')
+axes[1].plot(df['step'], df['CP_1'].rolling(10).mean(), label='drop-off')
+axes[1].legend()
+
+axes[2].plot(df['step'], df['freq_0'].rolling(10).mean(), label='pick_up')
+axes[2].plot(df['step'], df['freq_1'].rolling(10).mean(), label='drop-off')
+axes[2].legend()
+
 
 plt.show()

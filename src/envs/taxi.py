@@ -53,7 +53,7 @@ class TaxiEnv(discrete.DiscreteEnv):
                         for a in range(nA):
                             # defaults
                             newrow, newcol, newpassidx = row, col, passidx
-                            reward = -1
+                            reward = 0
                             done = False
                             taxiloc = (row, col)
 

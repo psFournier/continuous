@@ -21,8 +21,6 @@ class Agent():
         self.eval_freq = args['eval_freq']
         self.batch_size = 64
         self.max_steps = args['max_steps']
-        self.her_xy = args['her_xy']
-        self.her_eps = args['her_eps']
 
         self.env_step = 0
         self.episode = 0

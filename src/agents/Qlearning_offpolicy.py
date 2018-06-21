@@ -1,23 +1,73 @@
 import numpy as np
 from agents.agent import Agent
+from buffers.replayBuffer import ReplayBuffer
 
-class Qlearning(Agent):
+class Qlearning_offPolicy(Agent):
 
-    def __init__(self, args, sess, env, env_test, logger):
+    def __init__(self, args, sess, env, env_test, env_tutor, logger):
 
-        super(Qlearning, self).__init__(args, sess, env, env_test, logger)
+        super(Qlearning_offPolicy, self).__init__(args, sess, env, env_test, logger)
 
-        self.Q = np.zeros(shape=(env.state_dim + env.action_dim))
+        self.env.buffer = ReplayBuffer(limit=int(1e6),
+                                       names=['state0', 'action', 'state1', 'reward', 'terminal'])
+        self.batch_size = 32
         self.gamma = 0.99
-        self.lr = 0.5
+        self.lr = 0.1
+        self.lr_tutor = 1
+
+        self.env_tutor = env_tutor
+        self.Q_tutor = np.zeros(shape=(env.state_dim + env.action_dim))
+        self.train_tutor()
+        self.init_buffer()
+        self.Q = np.zeros(shape=(env.state_dim + env.action_dim))
+
+
+    def train_tutor(self):
+        for _ in range(1000):
+            state = self.env_tutor.reset()
+            r = 0
+            terminal = False
+            step = 0
+            while (not terminal and step < self.ep_steps):
+
+                action = self.tutor_act(state, noise=False)
+                exp = self.env_tutor.step(action)
+
+                reward = exp['reward'] - 1 #optimistic init
+                target = reward
+                if not exp['terminal']:
+                    target += exp['gamma'] * np.max(self.Q_tutor[tuple(exp['state1'])])
+                self.Q_tutor[tuple(exp['state0'])][exp['action']] = self.lr_tutor * target + \
+                                                              (1 - self.lr_tutor) * self.Q_tutor[tuple(exp['state0'])][
+                                                                  exp['action']]
+
+                r += reward
+                terminal = exp['terminal']
+                state = exp['state1']
+                step += 1
+
+            print(r)
+
+    def init_buffer(self):
+        # TODO: mettre des expériences avec Q_tutor dans le replay buffer
+        pass
 
     def train(self, exp):
 
-        target = exp['reward']
-        if not exp['terminal']:
-            target += exp['gamma'] * np.max(self.Q[tuple(exp['state1'])])
-        self.Q[tuple(exp['state0'])][exp['action']] = self.lr * target + \
-                                               (1 - self.lr) * self.Q[tuple(exp['state0'])][exp['action']]
+        self.env.buffer.append(exp)
+
+        if self.env_step > 3 * self.batch_size:
+            experiences = self.env.buffer.sample(self.batch_size)
+            self.train_critic(experiences)
+
+    def train_critic(self, exp):
+
+        for k in range(self.batch_size):
+            target = exp['reward'][k][0]
+            if not exp['terminal'][k]:
+                target += self.gamma * np.max(self.Q[tuple(exp['state1'][k])])
+            self.Q[tuple(exp['state0'][k])][exp['action'][k]] = self.lr * target + \
+                                                   (1 - self.lr) * self.Q[tuple(exp['state0'][k])][exp['action'][k]]
         # new_s0 = exp['state0'].copy()
         # new_s0[1] = 1 - new_s0[1]
         # new_s1 = exp['state1'].copy()
@@ -32,6 +82,13 @@ class Qlearning(Agent):
             action = np.random.randint(self.env.action_space.n)
         else:
             action = np.argmax(self.Q[tuple(state)])
+        return action
+
+    def tutor_act(self, state, noise=True):
+        if noise and np.random.rand() < 0.2:
+            action = np.random.randint(self.env.action_space.n)
+        else:
+            action = np.argmax(self.Q_tutor[tuple(state)])
         return action
 
     def hindsight(self):

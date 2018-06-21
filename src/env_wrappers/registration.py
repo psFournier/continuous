@@ -2,6 +2,7 @@
 
 import re
 from gym import error, logger
+from env_wrappers.base import Base
 
 # This format is true today, but it's *not* an official spec.
 # [username/](envs-name)-v(version)    envs-name is group 1, version is group 2
@@ -118,7 +119,7 @@ class EnvRegistry(object):
     def __init__(self):
         self.env_specs = {}
 
-    def make(self, id):
+    def make(self, id, args):
         logger.info('Making new envs: %s', id)
         spec = self.spec(id)
         env = spec.make()
@@ -133,6 +134,13 @@ class EnvRegistry(object):
             env = TimeLimit(env,
                             max_episode_steps=env.spec.max_episode_steps,
                             max_episode_seconds=env.spec.max_episode_seconds)
+
+        if env.spec.wrapper_entry_point is not None:
+            wrapper_cls = load(env.spec.wrapper_entry_point)
+            env = wrapper_cls(env, args)
+        else:
+            env = Base(env, args)
+
         return env
 
 
@@ -168,8 +176,8 @@ registry = EnvRegistry()
 def register(id, **kwargs):
     return registry.register(id, **kwargs)
 
-def make(id):
-    return registry.make(id)
+def make(id, args):
+    return registry.make(id, args)
 
 def spec(id):
     return registry.spec(id)

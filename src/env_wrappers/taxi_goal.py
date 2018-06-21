@@ -10,7 +10,7 @@ class TaxiGoal(Wrapper):
         self.goal_space = [0,1]
         self.goal_idx = 1
         self.sampler = ListSampler(space=self.goal_space,
-                             theta=float(args['theta_eps']))
+                             theta=float(args['theta']))
 
         self.episode_exp = []
         self.buffer = None
@@ -42,18 +42,18 @@ class TaxiGoal(Wrapper):
 
     def eval_exp(self, state0, action, state1, reward, terminal):
         term = False
-        r = -1
+        r = 0
         gamma = 0.99
         row0, col0, passidx0, destidx0 = self.decode(state0[0])
         row1, col1, passidx1, destidx1 = self.decode(state1[0])
         if state1[self.goal_idx] == 0 and passidx0 < 4 and passidx1 == 4:
-            r = 0
+            r = 1
             term = True
         elif state1[self.goal_idx] == 1 and passidx0 != destidx0 and passidx1 == destidx1:
-            r = 0
+            r = 1
             term = True
-        if passidx0 < 4 and passidx1 == 4:
-            gamma = 0
+        # if passidx0 < 4 and passidx1 == 4:
+        #     gamma = 0
         return r, term, gamma
 
     def _reset(self):
@@ -62,8 +62,8 @@ class TaxiGoal(Wrapper):
             R = np.sum([exp['reward'] for exp in self.episode_exp])
             self.sampler.append((self.goal, int(self.episode_exp[-1]['terminal']), R))
 
-        # self.goal = self.sampler.sample()
-        self.goal = 1
+        self.goal = self.sampler.sample()
+        # self.goal = 1
 
         obs = self.env.reset()
         state = self.add_goal(obs)

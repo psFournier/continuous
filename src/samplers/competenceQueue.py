@@ -9,7 +9,6 @@ class CompetenceQueue():
         self.points = deque(maxlen=maxlen)
         self.CP = 0.001
         self.competence = 0.001
-        self.return_avg = 0
 
     def update_CP(self):
         if self.size > 2:
@@ -19,9 +18,6 @@ class CompetenceQueue():
             q2 = list(itertools.islice(q, self.size - 2 * window, self.size - window))
             self.CP = max(np.abs(np.sum(q1) - np.sum(q2)) / (2 * window), 0.001)
             self.competence = np.sum(q1) / window
-            self.return_avg = np.mean(list(itertools.islice(q,
-                                                            self.size - window,
-                                                            self.size)))
 
     def append(self, point):
         self.points.append(point)

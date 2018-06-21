@@ -31,6 +31,5 @@ class ListSampler():
             stats['CP_{}'.format(i)] = float("{0:.3f}".format(queue.CP))
             stats['comp_{}'.format(i)] = float("{0:.3f}".format(queue.competence))
             stats['freq_{}'.format(i)] = float("{0:.3f}".format(self.task_freqs[i]))
-            stats['return_{}'.format(i)] = float("{0:.3f}".format(queue.return_avg))
 
         return stats
