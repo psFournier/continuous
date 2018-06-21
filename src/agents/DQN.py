@@ -10,12 +10,17 @@ TARGET_CLIP = True
 INVERTED_GRADIENTS = True
 from networks import criticDqn
 from agents.agent import Agent
+from buffers.replayBuffer import ReplayBuffer
+from buffers.prioritizedReplayBuffer import PrioritizedReplayBuffer
 
 class DQN(Agent):
 
-    def __init__(self, args, sess, env, logger, xy_sampler, eps_sampler, buffer):
+    def __init__(self, args, sess, env, env_test, logger):
 
-        super(DQN, self).__init__(args, sess, env, logger, xy_sampler, eps_sampler, buffer)
+        super(DQN, self).__init__(args, sess, env, env_test, logger)
+
+        self.env.buffer = ReplayBuffer(limit=int(1e6),
+                                       names=['state0', 'action', 'state1', 'reward', 'terminal'])
 
         self.critic = criticDqn.CriticDQN(sess,
                                          s_dim=env.state_dim,
@@ -41,7 +46,7 @@ class DQN(Agent):
             action = np.argmax(q_values[0])
         return action
 
-    def train(self):
+    def train(self, _):
         critic_stats = []
         actor_stats = []
         for _ in range(self.ep_steps):
@@ -57,3 +62,7 @@ class DQN(Agent):
     def target_train(self):
         self.actor.target_train()
         self.critic.target_train()
+
+    def store_exp(self, exp):
+        self.episode_exp.append(exp)
+        self.buffer.append(exp)

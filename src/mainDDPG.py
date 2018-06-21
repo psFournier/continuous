@@ -85,7 +85,7 @@ if __name__ == '__main__':
     parser.add_argument('--split-min', help='minimum cp difference to allow split', default=0.0001)
     parser.add_argument('--n-window', help='length of running window used to compute cp', default=3)
     parser.add_argument('--eps', default=0.02)
-    parser.add_argument('--R', help='number of regions in goal space', default=128)
+    parser.add_argument('--R', help='number of samplers in goal space', default=128)
     parser.add_argument('--n-points', help='number of points stored in region', default=100)
     parser.add_argument('--beta', default=0)
     parser.add_argument('--max-steps', help='max num of episodes to do while training', default=500000)

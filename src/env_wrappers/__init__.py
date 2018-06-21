@@ -14,13 +14,19 @@ register(
 
 register(
     id='Reacher-v0',
-    entry_point='gym.envs.mujoco:ReacherEnv',
+    entry_point='envs.reacher:ReacherEnv',
     wrapper_entry_point=None
 )
 
 register(
     id='HalfCheetah-v2',
     entry_point='gym.envs.mujoco:HalfCheetahEnv',
+    wrapper_entry_point=None
+)
+
+register(
+    id='Ant-v2',
+    entry_point='gym.envs.mujoco:AntEnv',
     wrapper_entry_point=None
 )
 
@@ -40,4 +46,16 @@ register(
     id='Reacher_xy_sagg_plot-v0',
     entry_point='envs:ReacherEnv',
     wrapper_entry_point='env_wrappers.reacher_xy_sagg_plot:Reacher_xy'
+)
+
+register(
+    id='Taxi-v0',
+    entry_point='envs:TaxiEnv',
+    wrapper_entry_point='env_wrappers.taxi_gamma:Taxi_gamma'
+)
+
+register(
+    id='Taxi-v1',
+    entry_point='envs:TaxiEnv',
+    wrapper_entry_point='env_wrappers.taxi_goal:TaxiGoal'
 )

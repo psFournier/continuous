@@ -26,6 +26,10 @@ class ActorTD3(object):
         grads = zip(self.params_grad, self.weights)
         self.optimize = tf.train.AdamOptimizer(learning_rate).apply_gradients(grads)
 
+    def hard_target_train(self):
+
+        self.target_model.set_weights(self.model.get_weights())
+
     def target_train(self):
         weights = self.model.get_weights()
         target_weights = self.target_model.get_weights()

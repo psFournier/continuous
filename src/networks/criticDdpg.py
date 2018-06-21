@@ -42,6 +42,9 @@ class CriticDDPG(object):
             target_weights[i] = self.tau * weights[i] + (1 - self.tau)* target_weights[i]
         self.target_model.set_weights(target_weights)
 
+    def hard_target_train(self):
+        self.target_model.set_weights(self.model.get_weights())
+
     def gradients(self, states, actions):
         out, grads =  self.sess.run([self.out, self.action_grads], feed_dict={
             self.state: states,

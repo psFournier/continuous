@@ -1,6 +1,6 @@
 from gym.spaces import Box
 import numpy as np
-from regions.competenceQueue import CompetenceQueue
+from samplers.competenceQueue import CompetenceQueue
 
 class Region(Box):
 
@@ -92,3 +92,7 @@ class Region(Box):
     @property
     def size(self):
         return self.queue.size
+
+    @property
+    def area(self):
+        return (self.high[0] - self.low[0]) * (self.high[1] - self.low[1])

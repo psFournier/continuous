@@ -32,6 +32,9 @@ class ActorDDPG(object):
             target_weights[i] = self.tau * weights[i] + (1 - self.tau)* target_weights[i]
         self.target_model.set_weights(target_weights)
 
+    def hard_target_train(self):
+        self.target_model.set_weights(self.model.get_weights())
+
     def create_actor_network(self, state_size, action_dim):
         S = Input(shape=state_size)
         h0 = Dense(400, activation="relu", kernel_initializer="he_uniform")(S)

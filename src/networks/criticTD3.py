@@ -21,6 +21,7 @@ class CriticTD3(object):
         self.target_model2 = None
 
         self.gamma = gamma
+        self.optimizer = Adam(lr=self.learning_rate)
 
         # Now create the model
         self.model1, self.action1, self.state1 = self.create_critic_network(self.s_dim, self.a_dim)
@@ -35,11 +36,16 @@ class CriticTD3(object):
         self.imp_weights = K.placeholder(dtype=tf.float32, shape=(None, 1), name="weights")
         self.td_errors1 = self.out1 - self.targets
         self.weighted_error = K.mean(K.square(self.td_errors1), axis=-1)
-        self.optimizer = Adam()
-        self.updates = Adam().get_updates(self.model1.trainable_weights, [], self.weighted_error)
+
+        self.updates =  self.optimizer.get_updates(self.model1.trainable_weights, [], self.weighted_error)
         self.train = K.function([self.state1, self.action1, self.targets, self.imp_weights],
-                                [self.td_errors1, self.action_grads1],
+                                [self.td_errors1],
                                 updates=self.updates)
+
+    def hard_target_train(self):
+
+        self.target_model1.set_weights(self.model1.get_weights())
+        self.target_model2.set_weights(self.model2.get_weights())
 
     def target_train(self):
 
@@ -65,7 +71,12 @@ class CriticTD3(object):
         V = Dense(1, activation='linear',
                   kernel_initializer=RandomUniform(minval=-3e-3, maxval=3e-3, seed=None))(l3)
         model = Model(inputs=[S, A], outputs=V)
-        adam = Adam(lr=self.learning_rate)
-        model.compile(loss='mse', optimizer=adam)
+        model.compile(loss='mse', optimizer=self.optimizer)
         return model, A, S
 
+    def gradients(self, states, actions):
+        out, grads =  self.sess.run([self.out1, self.action_grads1], feed_dict={
+            self.state1: states,
+            self.action1: actions
+        })
+        return out, grads[0]

@@ -5,37 +5,36 @@ from buffers.prioritizedReplayBuffer import PrioritizedReplayBuffer
 # Wrappers override step, reset functions, as well as the defintion of action, observation and goal spaces.
 
 class Base(Wrapper):
-    def __init__(self, env, buffer_size=int(1e6)):
+    def __init__(self, env, args):
         super(Base, self).__init__(env)
         self.rec = None
-        self.buffer = PrioritizedReplayBuffer(limit = buffer_size,
-                                              names=['state0', 'action', 'state1', 'reward', 'terminal'],
-                                              alpha=1,
-                                              beta=1)
-        self.episode = 0
+        self.buffer = ReplayBuffer(limit = int(1e6),
+                                   names=['state0', 'action', 'state1', 'reward', 'terminal'])
+        self.episode_exp = []
+        self.sampler = None
+        self.exploration_steps = 10000
 
-    def _step(self,action):
+    def step(self,action):
 
-        state, self.reward, self.reached, info = self.env.step(action)
+        state, reward, terminal, info = self.env.step(action)
 
         if self.rec is not None: self.rec.capture_frame()
 
-        exp = {'state0': self.prev_state.copy(),
+        experience = {'state0': self.prev_state,
                    'action': action,
-                   'state1': state.copy(),
-                   'reward': self.reward,
-                   'terminal': self.reached}
-        self.buffer.append(exp)
+                   'state1': state,
+                   'reward': reward,
+                   'terminal': terminal}
 
         self.prev_state = state
-        return state, self.reward, self.reached, info
 
-    def _reset(self):
+        return experience
+
+    def reset(self):
 
         state = self.env.reset()
         self.prev_state = state
         if self.rec is not None: self.rec.capture_frame()
-        self.episode += 1
 
         return state
 
@@ -50,7 +49,3 @@ class Base(Wrapper):
     @property
     def action_dim(self):
         return (self.env.action_space.shape[0],)
-
-    @property
-    def goal_parameterized(self):
-        return False

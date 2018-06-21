@@ -1,17 +1,18 @@
-from regions.region import Region
+from samplers.region import Region
 
 import numpy as np
 
-class RegionTree():
-    def __init__(self, space, R=128, auto=True, theta=1, window=100, queue_len=200):
+class TreeSampler2():
+    def __init__(self, space, R=128, auto=True, theta=1, theta_h=1):
         self.n_split = 10
         self.split_min = 0
         self.nRegions = R
         self.auto = auto
         self.dims = range(space.low.shape[0])
         self.lines = []
-        self.window = window
-        self.queue_len = queue_len
+        self.theta = theta
+        self.theta_h = theta_h
+        self.h_region = Region(low=np.array([-0.1, 0]), high=np.array([0, 0.1]), dtype='float32')
 
         capacity = 1
         while capacity < self.nRegions:
@@ -26,7 +27,7 @@ class RegionTree():
         self.update_CP_tree()
 
     def initialize(self, space):
-        self.region_array[1] = Region(space.low, space.high, window=self.window, maxlen=int(1e5))
+        self.region_array[1] = Region(space.low, space.high, maxlen=int(1e5))
         self.n_leaves += 1
         assert self.nRegions & (self.nRegions - 1) == 0  # n must be a power of 2
         if not self.auto:
@@ -43,17 +44,17 @@ class RegionTree():
             region.dim_split = dim
             region.val_split = val_split
             self.n_leaves += 1
+            region.compute_line()
+            self.lines.append(region.line)
             next_dim_idx = (dim_idx+1)%(len(self.dims))
             self._divide(2 * idx, n/2, next_dim_idx)
             self._divide(2 * idx + 1, n/2, next_dim_idx)
 
     def append(self, point):
-        target = point[0]
-        success = point[1]
-        regions_idx = self.find_regions(target)
+        regions_idx = self.find_regions(point[0])
         for idx in regions_idx:
             region = self.region_array[idx]
-            region.add((target, success))
+            region.add(point)
             self.n_points += 1
             to_split = self.auto and region.queue.full and idx < self.capacity and region.is_leaf
             if to_split:
@@ -106,15 +107,30 @@ class RegionTree():
             leaf = np.random.choice(self.list_leaves)
             region = self.region_array[leaf]
         region.freq += 1
-        return region
+        sample = region.sample().flatten()
+        return sample
 
     def update_CP_tree(self):
         self._update_CP_tree(1)
 
+    def intersection(self, r1, r2):
+        l1 = r1.low
+        h1 = r1.high
+        l2 = r2.low
+        h2 = r2.high
+        intersection_0 = min(h1[0], h2[0]) - max(l1[0], l2[0])
+        intersection_1 = min(h1[1], h2[1]) - max(l1[1], l2[1])
+        if intersection_0 <= 0 or intersection_1 <= 0:
+            return 0
+        else:
+            return intersection_0 * intersection_1
+
     def _update_CP_tree(self, idx):
         region = self.region_array[idx]
         if region.is_leaf:
-            region.sum_CP = region.queue.CP
+            region.sum_CP = region.queue.CP + \
+                            0.5 * self.theta_h * self.intersection(region, self.h_region) / self.h_region.area
+            region.sum_CP = region.sum_CP ** self.theta
         else:
             self._update_CP_tree(2 * idx)
             self._update_CP_tree(2 * idx + 1)
@@ -134,11 +150,15 @@ class RegionTree():
 
     @property
     def list_leaves(self):
-        return [i for i in range(1, 2 * self.n_leaves) if self.region_array[i].is_leaf]
+        return [i for i,r in enumerate(self.region_array) if r.is_leaf]
 
     @property
     def list_CP(self):
         return [float("{0:.3f}".format(region.queue.CP)) for region in self.region_array]
+
+    @property
+    def max_CP_leaf(self):
+        return self.list_leaves[np.argmax([self.list_CP[i] for i in self.list_leaves]).squeeze()]
 
     @property
     def list_comp(self):
@@ -158,5 +178,5 @@ class RegionTree():
 
     @property
     def points(self):
-        return self.root.queue.points
+        return list(self.root.queue.points)
 

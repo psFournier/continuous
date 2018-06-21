@@ -10,12 +10,12 @@ class Reacher_e(Wrapper):
         super(Reacher_e, self).__init__(env)
 
         self.goal = []
-        self.goal_space = Box(np.array([-0.2, -0.2]), np.array([0.2, 0.2]))
+        self.goal_space = Box(np.array([-0.6, -0.6]), np.array([0.6, 0.6]), dtype='float32')
         self.XY = [6,7]
         self.target_XY = [8,9]
 
         self.epsilon = 0.02
-        self.epsilons = [0.02, 0.03, 0.04, 0.05]
+        self.epsilon_space = [0.02, 0.03, 0.04, 0.05]
         self.epsilon_idx = [10]
 
         self.rec = None
@@ -84,11 +84,11 @@ class Reacher_e(Wrapper):
 
             new_eps = []
             if her_eps == 'easier':
-                new_eps += [eps for eps in self.epsilons if eps > self.epsilon]
+                new_eps += [eps for eps in self.epsilon_space if eps > self.epsilon]
             elif her_eps == 'harder':
-                new_eps += [eps for eps in self.epsilons if eps < self.epsilon]
+                new_eps += [eps for eps in self.epsilon_space if eps < self.epsilon]
             elif her_eps == 'all':
-                new_eps += [eps for eps in self.epsilons if eps != self.epsilon]
+                new_eps += [eps for eps in self.epsilon_space if eps != self.epsilon]
 
             for t in new_targets + [self.goal]:
                 for e in new_eps + [self.epsilon]:

@@ -10,7 +10,7 @@ class FetchReach_e(Wrapper):
         super(FetchReach_e, self).__init__(env)
 
         self.goal = []
-        self.goal_space = Box(np.array([-np.inf, -np.inf, -np.inf]), np.array([np.inf, np.inf, np.inf]))
+        self.goal_space = Box(np.array([-np.inf, -np.inf, -np.inf]), np.array([np.inf, np.inf, np.inf]), dtype='float32')
         self.XY = [0,1,2]
         self.target_XY = [10, 11, 12]
 
