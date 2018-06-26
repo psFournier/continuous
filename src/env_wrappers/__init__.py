@@ -59,3 +59,9 @@ register(
     entry_point='envs:TaxiEnv',
     wrapper_entry_point='env_wrappers.taxi_goal:TaxiGoal'
 )
+
+register(
+    id='CartPole-v0',
+    entry_point='gym.envs.classic_control:CartPoleEnv',
+    wrapper_entry_point=None
+)

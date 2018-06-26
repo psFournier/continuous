@@ -12,7 +12,7 @@ class Base(Wrapper):
                                    names=['state0', 'action', 'state1', 'reward', 'terminal'])
         self.episode_exp = []
         self.sampler = None
-        self.exploration_steps = 10000
+        self.exploration_steps = 0
 
     def step(self,action):
 

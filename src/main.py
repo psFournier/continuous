@@ -44,11 +44,11 @@ if __name__ == '__main__':
     parser.add_argument('--theta', default=1)
 
     # parser.add_argument('--R', help='must be power of 2', default=128)
-    parser.add_argument('--max_steps', help='max num of episodes to do while training', default=1000000)
+    parser.add_argument('--max_steps', help='max num of episodes to do while training', default=50000)
     parser.add_argument('--log_dir', help='directory for storing run info',
                         default='/home/pierre/PycharmProjects/continuous/log/local/')
     parser.add_argument('--episode_steps', help='number of steps in the environment during evaluation', default=200)
-    parser.add_argument('--eval_freq', help='freq for critic and actor stats computation', default=5000)
+    parser.add_argument('--eval_freq', help='freq for critic and actor stats computation', default=1000)
 
     args = vars(parser.parse_args())
     
