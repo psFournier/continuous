@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQN, DDPG, TD3
+from agents import DQN, DDPG, TD3, DQNfD
 from agents import Qlearning, Qlearning_offpolicy
 from utils.logger import Logger
 import datetime
@@ -37,8 +37,8 @@ if __name__ == '__main__':
     # parser.add_argument('--n_split', default=10)
     # parser.add_argument('--split_min', default=0.0001)
     # parser.add_argument('--window', default=100)
-    # parser.add_argument('--alpha', default=0)
-    # parser.add_argument('--beta', default=0.4)
+    parser.add_argument('--alpha', default=0.6)
+    parser.add_argument('--beta0', default=0.4)
     # parser.add_argument('--eps', default=0.02)
     # parser.add_argument('--queue_len', default=200)
     parser.add_argument('--theta', default=1)
@@ -72,6 +72,8 @@ if __name__ == '__main__':
             agent = TD3.TD3(args, sess, env, env_test, logger)
         elif args['agent'] == 'dqn':
             agent = DQN.DQN(args, sess, env, env_test, logger)
+        elif args['agent'] == 'dqnfd':
+            agent = DQNfD.DQNfD(args, sess, env, env_test, logger)
         elif args['agent'] == 'qlearning':
             agent = Qlearning.Qlearning(args, sess, env, env_test, logger)
         elif args['agent'] == 'qlearning_off':

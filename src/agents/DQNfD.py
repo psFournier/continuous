@@ -8,28 +8,35 @@ import os
 RENDER_TRAIN = False
 TARGET_CLIP = True
 INVERTED_GRADIENTS = True
-from networks import criticDqn
+from networks import criticDqnfd
 from agents.agent import Agent
 from buffers.replayBuffer import ReplayBuffer
 from buffers.prioritizedReplayBuffer import PrioritizedReplayBuffer
+from utils.linearSchedule import LinearSchedule
 
 
 
-class DQN(Agent):
+class DQNfD(Agent):
 
     def __init__(self, args, sess, env, env_test, logger):
 
-        super(DQN, self).__init__(args, sess, env, env_test, logger)
+        super(DQNfD, self).__init__(args, sess, env, env_test, logger)
 
-        self.env.buffer = ReplayBuffer(limit=int(1e6),
-                                       names=['state0', 'action', 'state1', 'reward', 'terminal'])
+        self.env.buffer = PrioritizedReplayBuffer(limit=int(1e6),
+                                       names=['state0', 'action', 'state1', 'reward', 'terminal'], args=args)
 
-        self.critic = criticDqn.CriticDQN(sess,
-                                         s_dim=env.state_dim,
-                                         num_a=env.action_space.n,
-                                         gamma=0.99,
-                                         tau=0.001,
-                                         learning_rate=0.001)
+        self.critic = criticDqnfd.CriticDQNfD(sess,
+                                              s_dim=env.state_dim,
+                                              num_a=env.action_space.n,
+                                              gamma=0.99,
+                                              tau=0.001,
+                                              learning_rate=0.001,
+                                              lambda1=0.5,
+                                              lambda2=0.5)
+
+        self.exploration = LinearSchedule(schedule_timesteps=int(10000),
+                                 initial_p=1.0,
+                                 final_p=.1)
 
         self.start_epsilon = 1
         self.end_epsilon = 0.1
@@ -40,24 +47,28 @@ class DQN(Agent):
         self.env.buffer.append(exp)
 
         if self.env_step > 3 * self.batch_size:
-            experiences = self.env.buffer.sample(self.batch_size)
+            experiences = self.env.buffer.sample(self.batch_size, self.env_step)
             loss, td_errors = self.train_critic(experiences)
+            self.env.buffer.update_priorities(experiences['indices'], td_errors)
             self.target_train()
 
     def train_critic(self, experiences):
         states0 = experiences['state0']
         states1 = experiences['state1']
         actions0 = experiences['action']
+        weights = experiences['weights'].squeeze()
 
         actions1 = self.critic.model2.predict_on_batch([states1])
-        q = self.critic.target_model1.predict_on_batch([states1, actions1])
+        qvals, margins = self.critic.target_model1.predict_on_batch([states1, actions1])
 
         targets = []
         for k in range(self.batch_size):
-            target = experiences['reward'][k] + (1 - experiences['terminal'][k]) * self.critic.gamma * q[k]
+            target = experiences['reward'][k] + (1 - experiences['terminal'][k]) * self.critic.gamma * qvals[k]
             targets.append(target)
         targets = np.array(targets)
-        loss, td_errors = self.critic.model1.train_on_batch([states0, actions0], targets)
+        loss, td_errors = self.critic.model1.train_on_batch(x=[states0, actions0],
+                                                            y=[targets, targets],
+                                                            sample_weight=[weights, weights])
         return loss, td_errors
 
     def init_targets(self):
@@ -70,15 +81,11 @@ class DQN(Agent):
         return np.random.randint(0, self.env.action_space.n)
 
     def act(self, state, noise=False):
-        if noise and np.random.rand(1) < self.epsilon:
+        if noise and np.random.rand(1) < self.exploration.value(self.env_step):
             action = np.random.randint(0, self.env.action_space.n)
         else:
             action = self.critic.model2.predict(np.reshape(state, (1, self.critic.s_dim[0])))
             action = action.squeeze()
-
-        if noise:
-            if self.epsilon > self.end_epsilon:
-                self.epsilon -= (self.start_epsilon - self.end_epsilon)/100000
         return action
 
     def log(self):

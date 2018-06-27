@@ -4,11 +4,14 @@ from keras.layers import Dense, Input, Lambda, Reshape
 from keras.optimizers import Adam
 import tensorflow as tf
 import keras.backend as K
-from keras.layers.merge import concatenate, multiply
+from keras.layers.merge import concatenate, multiply, add, subtract
 from keras.losses import mse
 
-class CriticDQN(object):
-    def __init__(self, sess, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001):
+def margin_fn(indices, num_classes):
+    return 0.8 * (1 - K.one_hot(indices, num_classes))
+
+class CriticDQNfD(object):
+    def __init__(self, sess, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001, lambda1=0.5, lambda2=0.5):
         self.sess = sess
         self.tau = tau
         self.s_dim = s_dim
@@ -21,6 +24,8 @@ class CriticDQN(object):
         self.td_errors = None
         self.gamma = gamma
         self.num_actions = num_a
+        self.lambda1 = lambda1
+        self.lambda2 = lambda2
 
         K.set_session(sess)
 
@@ -41,6 +46,7 @@ class CriticDQN(object):
         self.target_model1.set_weights(target_weights)
 
     def create_critic_network(self):
+
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
         h = Dense(50, activation="relu")(S)
@@ -50,18 +56,29 @@ class CriticDQN(object):
                   kernel_initializer='random_uniform',
                   name='dense_0')(h)
         V = Reshape((1, self.num_actions))(V)
+
+        out2 = Lambda(K.argmax,
+                      arguments={'axis': 2})(V)
+
         mask = Lambda(K.one_hot,
                       arguments={'num_classes': self.num_actions},
                       output_shape=(self.num_actions,))(A)
-        filteredV = multiply([V, mask], )
-        out1 = Lambda(K.sum,
+        filteredV = multiply([V, mask])
+        out_qLearning = Lambda(K.sum,
                       arguments={'axis': 2})(filteredV)
-        out2 = Lambda(K.argmax,
-                      arguments={'axis': 2})(V)
-        model1 = Model(inputs=[S,A], outputs=out1)
+
+        margin = Lambda(margin_fn,
+                        arguments={'num_classes': self.num_actions},
+                        output_shape=(self.num_actions,))(A)
+        Vsum = add([V, margin])
+        Vmax = Lambda(K.max,
+                     arguments={'axis': 2})(Vsum)
+        out_largeMargin = subtract([Vmax, out_qLearning])
+
+        model1 = Model(inputs=[S,A], outputs=[out_qLearning, out_largeMargin])
         model2 = Model(inputs=[S], outputs=out2)
         optimizer = Adam(lr=self.learning_rate)
-        model1.compile(loss='mse', optimizer=optimizer)
+        model1.compile(loss=['mse', lambda x,y: x], optimizer=optimizer, loss_weights=[self.lambda1, self.lambda2])
         model1.metrics_tensors = [model1.targets[0] - model1.outputs[0]]
         return model1, model2, S
 

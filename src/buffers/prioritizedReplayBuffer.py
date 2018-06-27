@@ -1,6 +1,7 @@
 import numpy as np
 from buffers.segment_tree import SumSegmentTree, MinSegmentTree
 from buffers.replayBuffer import ReplayBuffer
+from utils.linearSchedule import LinearSchedule
 
 def array_min2d(x):
     x = np.array(x)
@@ -9,7 +10,7 @@ def array_min2d(x):
     return x.reshape(-1, 1)
 
 class PrioritizedReplayBuffer(ReplayBuffer):
-    def __init__(self, limit, names, alpha, beta):
+    def __init__(self, limit, names, args):
         """Create Prioritized Replay buffer.
 
         Parameters
@@ -26,9 +27,12 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         ReplayBuffer.__init__
         """
         super(PrioritizedReplayBuffer, self).__init__(limit=limit, names=names)
-        assert alpha > 0
-        self.alpha = alpha
-        self.beta = beta
+        self.alpha = float(args['alpha'])
+        assert self.alpha > 0
+
+        self.beta_schedule = LinearSchedule(int(args['max_steps']),
+                                       initial_p=float(args['beta0']),
+                                       final_p=1.0)
         self.epsilon = 1e-6
 
         it_capacity = 1
@@ -54,7 +58,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             res.append(idx)
         return res
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, step=0):
         """Sample a batch of experiences.
 
         Parameters
@@ -65,7 +69,8 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             To what degree to use importance weights
             (0 - no corrections, 1 - full correction)
         """
-        assert self.beta > 0
+        beta = self.beta_schedule.value(step)
+        assert beta > 0
 
         idxes = self._sample_proportional(batch_size)
 
@@ -75,11 +80,11 @@ class PrioritizedReplayBuffer(ReplayBuffer):
 
         weights = []
         p_min = self._it_min.min() / self._it_sum.sum()
-        max_weight = (p_min * self.nb_entries) ** (-self.beta)
+        max_weight = (p_min * self.nb_entries) ** (-beta)
 
         for idx in idxes:
             p_sample = self._it_sum[idx] / self._it_sum.sum()
-            weight = (p_sample * self.nb_entries) ** (-self.beta)
+            weight = (p_sample * self.nb_entries) ** (-beta)
             weights.append(weight / max_weight)
 
         weights = np.array(weights)
@@ -107,8 +112,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         priorities = list(priorities.squeeze())
         assert len(idxes) == len(priorities)
         for idx, priority in zip(idxes, priorities):
-            assert priority >= 0
-            priority = priority + self.epsilon
+            priority = np.abs(priority) + self.epsilon
             assert 0 <= idx < self.nb_entries
             self._it_sum[idx] = priority ** self.alpha
             self._it_min[idx] = priority ** self.alpha
