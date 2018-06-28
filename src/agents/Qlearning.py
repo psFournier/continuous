@@ -1,5 +1,6 @@
 import numpy as np
 from agents.agent import Agent
+import os, pickle
 
 class Qlearning(Agent):
 
@@ -7,37 +8,49 @@ class Qlearning(Agent):
 
         super(Qlearning, self).__init__(args, sess, env, env_test, logger)
 
-        self.Q = np.zeros(shape=(env.state_dim + env.action_dim))
+        self.Q = np.zeros(shape=env.state_dim + (self.env.action_space.n,))
         self.gamma = 0.99
         self.lr = 0.5
 
+    def make_exp(self, state0, action, state1):
+
+        reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal)
+
+        experience = {'state0': state0.copy(),
+                      'action': action,
+                      'state1': state1.copy(),
+                      'reward': reward,
+                      'terminal': terminal}
+
+        return experience
+
     def train(self, exp):
 
-        target = exp['reward']
-        if not exp['terminal']:
-            target += exp['gamma'] * np.max(self.Q[tuple(exp['state1'])])
-        self.Q[tuple(exp['state0'])][exp['action']] = self.lr * target + \
-                                               (1 - self.lr) * self.Q[tuple(exp['state0'])][exp['action']]
-        # new_s0 = exp['state0'].copy()
-        # new_s0[1] = 1 - new_s0[1]
-        # new_s1 = exp['state1'].copy()
-        # new_s1[1] = 1 - new_s1[1]
-        # r, t, g = self.env.eval_exp(new_s0, exp['action'], new_s1, exp['reward'], exp['terminal'])
-        # target = r + g * np.max(self.Q[tuple(new_s1)])
-        # self.Q[tuple(new_s0)][exp['action']] = self.lr * target + \
-        #                                               (1 - self.lr) * self.Q[tuple(new_s0)][exp['action']]
+        self.env.episode_exp.append(exp)
+
+        state0 = exp['state0']
+        action = exp['action']
+        state1 = exp['state1']
+        target = (exp['reward'] - 1) + (1 - exp['terminal']) * self.gamma * np.max(self.Q[tuple(state1)][self.env.goal])
+        self.Q[tuple(state0)][self.env.goal][action] = self.lr * target + \
+                                               (1 - self.lr) * self.Q[tuple(state0)][self.env.goal][action]
 
     def act(self, state, noise=True):
-        if noise and np.random.rand() < 0.2:
+        if noise and np.random.rand() < 0:
             action = np.random.randint(self.env.action_space.n)
         else:
-            action = np.argmax(self.Q[tuple(state)])
+            action = np.argmax(self.Q[tuple(state)][self.env.goal])
         return action
 
     def hindsight(self):
         virtual_exp = self.env.hindsight()
         for exp in virtual_exp:
             self.buffer.append(exp)
+
+    def save_policy(self):
+        dir = os.path.dirname(self.logger.get_dir())
+        with open(os.path.join(dir, 'policy.pkl'), 'wb') as output:
+            pickle.dump(self.Q, output)
 
     def log(self):
         if self.env_step % self.eval_freq == 0:
@@ -71,38 +84,3 @@ class Qlearning(Agent):
             for key in sorted(self.stats.keys()):
                 self.logger.logkv(key, self.stats[key])
             self.logger.dumpkvs()
-
-#
-# grid0 = np.fromfunction(lambda i, j: np.max(Q[env.encode(i, j, 1, 3), :], axis=2), (5, 5), dtype=int)
-# grid1 = np.fromfunction(lambda i, j: np.max(Q[env.encode(i, j, 4, 3), :], axis=2), (5, 5), dtype=int)
-#
-# def updatefig(i):
-#     global grid0, grid1
-#
-#     new_grid0 = np.fromfunction(lambda i, j: np.max(Q[env.encode(i, j, 1, 3), :], axis=2), (5, 5), dtype=int)
-#     min0 = new_grid0.min()
-#     max0 = new_grid0.max()
-#     if max0 - min0 != 0:
-#         new_grid0 = (new_grid0 - min0) * 255.0 / (max0 - min0)
-#     mat0.set_data(new_grid0)
-#     grid0 = new_grid0
-#
-#     new_grid1 = np.fromfunction(lambda i, j: np.max(Q[env.encode(i, j, 4, 3), :], axis=2), (5, 5), dtype=int)
-#     min1 = new_grid1.min()
-#     max1 = new_grid1.max()
-#     if max1 - min1 != 0:
-#         new_grid1 = (new_grid1 - min1) * 255.0 / (max1 - min1)
-#     mat1.set_data(new_grid1)
-#     title.set_text("episode {}".format(i))
-#     grid1 = new_grid1
-#
-#     return mat0, mat1, title,
-#
-# fig, axes = plt.subplots(2)
-# mat0 = axes[0].imshow(grid0, vmin=0., vmax=255.)
-# mat1 = axes[1].imshow(grid1, vmin=0., vmax=255.)
-# title = axes[1].text(0.5,0.85, "", bbox={'facecolor':'w', 'alpha':0.5, 'pad':5},
-#                 transform=axes[1].transAxes, ha="center")
-#
-# ani = animation.FuncAnimation(fig, updatefig, interval=1, blit=True)
-# plt.show()

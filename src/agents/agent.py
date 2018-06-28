@@ -54,8 +54,8 @@ class Agent():
                 else:
                     action = self.act(state0, noise=True)
 
-                experience = self.env.step(action)
-
+                state1 = self.env.step(action)
+                experience = self.make_exp(state0, action, state1)
                 self.train(experience)
 
                 self.env_step += 1
@@ -63,7 +63,6 @@ class Agent():
                 state0 = experience['state1']
 
                 if (experience['terminal'] or self.episode_step >= self.ep_steps):
-
                     self.episode += 1
                     state0 = self.env.reset()
                     self.episode_step = 0
@@ -73,12 +72,17 @@ class Agent():
         except KeyboardInterrupt:
             print("Keybord interruption")
             self.save_regions()
+            self.save_policy()
 
         self.save_regions()
+        self.save_policy()
 
     def act_random(self, state):
         action = np.random.uniform(self.env.action_space.low, self.env.action_space.high)
         return action
+
+    def make_exp(self, state0, action, state1):
+        pass
 
     def act(self, state, noise=True):
         pass
@@ -87,6 +91,9 @@ class Agent():
         pass
 
     def save_regions(self):
+        pass
+
+    def save_policy(self):
         pass
 
     def train(self, exp):

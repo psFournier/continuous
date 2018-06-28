@@ -2,8 +2,8 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQN, DDPG, TD3, DQNfD
-from agents import Qlearning, Qlearning_offpolicy
+from agents import DQN, DDPG, TD3, DQNper, DQNfD, DQNfD2
+from agents import Qlearning, Qlearning_offpolicy, QlearningfD
 from utils.logger import Logger
 import datetime
 from utils.util import load
@@ -11,6 +11,7 @@ import json
 import os
 from env_wrappers.registration import make
 import gym.spaces
+import pickle
 
 def build_logger(args):
     params = ['agent', 'env', 'theta']
@@ -37,18 +38,18 @@ if __name__ == '__main__':
     # parser.add_argument('--n_split', default=10)
     # parser.add_argument('--split_min', default=0.0001)
     # parser.add_argument('--window', default=100)
-    parser.add_argument('--alpha', default=0.6)
-    parser.add_argument('--beta0', default=0.4)
+    parser.add_argument('--alpha', default=0.4)
+    parser.add_argument('--beta0', default=0.6)
     # parser.add_argument('--eps', default=0.02)
     # parser.add_argument('--queue_len', default=200)
     parser.add_argument('--theta', default=1)
 
     # parser.add_argument('--R', help='must be power of 2', default=128)
-    parser.add_argument('--max_steps', help='max num of episodes to do while training', default=50000)
+    parser.add_argument('--max_steps', help='max num of episodes to do while training', default=1000000)
     parser.add_argument('--log_dir', help='directory for storing run info',
                         default='/home/pierre/PycharmProjects/continuous/log/local/')
     parser.add_argument('--episode_steps', help='number of steps in the environment during evaluation', default=200)
-    parser.add_argument('--eval_freq', help='freq for critic and actor stats computation', default=1000)
+    parser.add_argument('--eval_freq', help='freq for critic and actor stats computation', default=200)
 
     args = vars(parser.parse_args())
     
@@ -72,13 +73,28 @@ if __name__ == '__main__':
             agent = TD3.TD3(args, sess, env, env_test, logger)
         elif args['agent'] == 'dqn':
             agent = DQN.DQN(args, sess, env, env_test, logger)
+        elif args['agent'] == 'dqnper':
+            agent = DQNper.DQNper(args, sess, env, env_test, logger)
         elif args['agent'] == 'dqnfd':
             agent = DQNfD.DQNfD(args, sess, env, env_test, logger)
+        elif args['agent'] == 'dqnfd2':
+            with open(os.path.join(args['log_dir'],
+                                   'qlearning_Taxi-v1_1',
+                                   '20180628141516_051865',
+                                   'policy.pkl'), 'rb') as input:
+                Q_tutor = pickle.load(input)
+            agent = DQNfD2.DQNfD2(args, sess, env, env_test, Q_tutor, logger)
         elif args['agent'] == 'qlearning':
             agent = Qlearning.Qlearning(args, sess, env, env_test, logger)
         elif args['agent'] == 'qlearning_off':
-            env_tutor = make(args['env'], args)
-            agent = Qlearning_offpolicy.Qlearning_offPolicy(args, sess, env, env_test, env_tutor, logger)
+            agent = Qlearning_offpolicy.Qlearning_offPolicy(args, sess, env, env_test, logger)
+        elif args['agent'] == 'qlearningfd':
+            with open(os.path.join(args['log_dir'],
+                                   'qlearning_Taxi-v1_1',
+                                   '20180628141516_051865',
+                                   'policy.pkl'), 'rb') as input:
+                Q_tutor = pickle.load(input)
+            agent = QlearningfD.QlearningfD(args, sess, env, env_test, Q_tutor, logger)
         else:
             raise RuntimeError
 

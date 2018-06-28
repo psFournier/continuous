@@ -2,26 +2,69 @@ import numpy as np
 from agents.agent import Agent
 from buffers.replayBuffer import ReplayBuffer
 
-class Qlearning_offPolicy(Agent):
+class QlearningfD(Agent):
 
-    def __init__(self, args, sess, env, env_test, logger):
+    def __init__(self, args, sess, env, env_test, Q_tutor, logger):
 
-        super(Qlearning_offPolicy, self).__init__(args, sess, env, env_test, logger)
+        super(QlearningfD, self).__init__(args, sess, env, env_test, logger)
 
         self.env.buffer = ReplayBuffer(limit=int(1e6),
-                                       names=['state0', 'action', 'state1', 'reward', 'terminal'])
+                                       names=['state0', 'action', 'state1', 'reward', 'terminal', 'origin'])
         self.batch_size = 32
         self.gamma = 0.99
         self.lr = 0.1
         self.Q = np.zeros(shape=(env.state_dim + env.action_dim))
 
+        self.Q_tutor = Q_tutor
+        self.init_buffer()
+        # self.pretrain()
+
+    def init_buffer(self):
+        goal = 1
+        for _ in range(10):
+            state = self.env.reset()
+            self.env.prev_state[self.env.goal_idx] = goal
+            state[self.env.goal_idx] = goal
+            self.env.goal = goal
+            terminal = False
+            step = 0
+            while (not terminal and step < self.ep_steps):
+                action = np.argmax(self.Q_tutor[tuple(state)])
+                experience = self.env.step(action)
+                experience['origin'] = 1
+                self.env.buffer.append(experience)
+                terminal = experience['terminal']
+                state = experience['state1']
+                step += 1
+
+    # def pretrain(self):
+    #     for iter in range(100):
+    #         experiences = self.env.buffer.sample(self.batch_size)
+    #         self.train_critic(experiences)
+
     def train(self, exp):
 
+        exp['origin'] = 0
         self.env.buffer.append(exp)
 
-        if self.env_step > 3 * self.batch_size:
+        if self.env.goal != 2:
+            target = exp['reward'] + (1 - exp['terminal']) * self.gamma * np.max(self.Q[tuple(exp['state1'])])
+            self.Q[tuple(exp['state0'])][exp['action']] = self.lr * target + \
+                                                          (1 - self.lr) * self.Q[tuple(exp['state0'])][exp['action']]
+        elif self.env.goal == 2:
             experiences = self.env.buffer.sample(self.batch_size)
-            self.train_critic(experiences)
+            qvals = [self.Q[tuple(exp['state0'])][a] + 0.8 for a in range(self.env.action_space.n)
+                     if a != exp['action']]
+            qvals.append(self.Q[tuple(exp['state0'])][exp['action']])
+            target = max(qvals)
+            self.Q[tuple(exp['state0'])][exp['action']] = self.lr * target + \
+                                                          (1 - self.lr) * self.Q[tuple(exp['state0'])][exp['action']]
+        else:
+            raise RuntimeError
+
+        # if self.env_step > 3 * self.batch_size:
+        #     experiences = self.env.buffer.sample(self.batch_size)
+        #     self.train_critic(experiences)
 
     def train_critic(self, exp):
 
@@ -32,13 +75,17 @@ class Qlearning_offPolicy(Agent):
             self.Q[tuple(exp['state0'][k])][exp['action'][k]] = self.lr * target + \
                                                    (1 - self.lr) * self.Q[tuple(exp['state0'][k])][exp['action'][k]]
 
-
     def act(self, state, noise=True):
         if noise and np.random.rand() < 0.2:
             action = np.random.randint(self.env.action_space.n)
         else:
             action = np.argmax(self.Q[tuple(state)])
         return action
+
+    def hindsight(self):
+        virtual_exp = self.env.hindsight()
+        for exp in virtual_exp:
+            self.buffer.append(exp)
 
     def log(self):
         if self.env_step % self.eval_freq == 0:

@@ -33,3 +33,7 @@ class ListSampler():
             stats['freq_{}'.format(i)] = float("{0:.3f}".format(self.task_freqs[i]))
 
         return stats
+
+    @property
+    def max_CP(self):
+        return max([q.CP for q in self.task_queues])

@@ -2,13 +2,14 @@ from gym import Wrapper
 import numpy as np
 from samplers.listSampler import ListSampler
 
-class TaxiGoal(Wrapper):
+class TaxiGoalTutor(Wrapper):
     def __init__(self, env, args):
-        super(TaxiGoal, self).__init__(env)
+        super(TaxiGoalTutor, self).__init__(env)
 
         self.goal = 0
-        self.goal_space = [0,1]
-        self.sampler = ListSampler(space=self.goal_space,
+        self.goal_space = [0,1,2]
+        self.goal_idx = 4
+        self.sampler = ListSampler(space=[0,1],
                              theta=float(args['theta']))
 
         self.episode_exp = []
@@ -31,13 +32,19 @@ class TaxiGoal(Wrapper):
             term = True
         return r, term
 
-    def reset(self):
+    def reset(self, goal=None):
 
-        if self.episode_exp:
-            R = np.sum([exp['reward'] - 1 for exp in self.episode_exp])
+        if self.episode_exp and self.goal != 2:
+            R = np.sum([exp['reward'] for exp in self.episode_exp])
             self.sampler.append((self.goal, int(self.episode_exp[-1]['terminal']), R))
 
-        self.goal = self.sampler.sample()
+        if goal is None:
+            if self.sampler.max_CP < 0.1 and np.random.rand() < 0.5:
+                self.goal = 2
+            else:
+                self.goal = self.sampler.sample()
+        else:
+            self.goal = goal
 
         obs = self.env.reset()
         state = np.array(self.decode(obs))
@@ -53,7 +60,7 @@ class TaxiGoal(Wrapper):
 
     @property
     def state_dim(self):
-        return (5,5,5,4,2)
+        return (5,)
 
     @property
     def action_dim(self):

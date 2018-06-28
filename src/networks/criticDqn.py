@@ -26,12 +26,6 @@ class CriticDQN(object):
 
         self.model1, self.model2, self.states = self.create_critic_network()
         self.target_model1, self.target_model2, self.target_state = self.create_critic_network()
-        # input_tensors = [self.model.inputs[0],  # input data
-        #                  self.model.sample_weights[0],  # how much to weight each sample by
-        #                  self.model.targets[0],  # labels
-        #                  K.learning_phase(),  # train or test mode
-        #                  ]
-        # self.get_gradients = K.function(inputs=input_tensors, outputs=self.grads)
 
     def target_train(self):
         weights = self.model1.get_weights()

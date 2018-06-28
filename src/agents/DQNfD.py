@@ -5,6 +5,7 @@ import json_tricks
 import pickle
 
 import os
+
 RENDER_TRAIN = False
 TARGET_CLIP = True
 INVERTED_GRADIENTS = True
@@ -15,32 +16,27 @@ from buffers.prioritizedReplayBuffer import PrioritizedReplayBuffer
 from utils.linearSchedule import LinearSchedule
 
 
-
 class DQNfD(Agent):
-
     def __init__(self, args, sess, env, env_test, logger):
 
         super(DQNfD, self).__init__(args, sess, env, env_test, logger)
 
         self.env.buffer = PrioritizedReplayBuffer(limit=int(1e6),
-                                       names=['state0', 'action', 'state1', 'reward', 'terminal'], args=args)
+                                                  names=['state0', 'action', 'state1', 'reward', 'terminal'], args=args)
 
         self.critic = criticDqnfd.CriticDQNfD(sess,
                                               s_dim=env.state_dim,
                                               num_a=env.action_space.n,
                                               gamma=0.99,
                                               tau=0.001,
-                                              learning_rate=0.001,
-                                              lambda1=0.5,
-                                              lambda2=0.5)
+                                              learning_rate=0.001)
 
         self.exploration = LinearSchedule(schedule_timesteps=int(10000),
-                                 initial_p=1.0,
-                                 final_p=.1)
+                                          initial_p=1.0,
+                                          final_p=.1)
 
-        self.start_epsilon = 1
-        self.end_epsilon = 0.1
-        self.epsilon = 1
+        self.epsilon_a = 0.001
+        self.epsilon_d = 1.
 
     def train(self, exp):
 
@@ -49,6 +45,8 @@ class DQNfD(Agent):
         if self.env_step > 3 * self.batch_size:
             experiences = self.env.buffer.sample(self.batch_size, self.env_step)
             loss, td_errors = self.train_critic(experiences)
+            td_errors = np.abs(td_errors)
+            # TODO: add e_a e_d
             self.env.buffer.update_priorities(experiences['indices'], td_errors)
             self.target_train()
 
@@ -109,4 +107,3 @@ class DQNfD(Agent):
             for key in sorted(self.stats.keys()):
                 self.logger.logkv(key, self.stats[key])
             self.logger.dumpkvs()
-

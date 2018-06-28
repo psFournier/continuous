@@ -34,6 +34,8 @@ class PrioritizedReplayBuffer(ReplayBuffer):
                                        initial_p=float(args['beta0']),
                                        final_p=1.0)
         self.epsilon = 1e-6
+        self.epsilon_a = 0.001
+        self.epsilon_d = 1.
 
         it_capacity = 1
         while it_capacity < limit:
@@ -41,19 +43,20 @@ class PrioritizedReplayBuffer(ReplayBuffer):
 
         self._it_sum = SumSegmentTree(it_capacity)
         self._it_min = MinSegmentTree(it_capacity)
-        self._max_priority = 1.0
 
     def append(self, buffer_item):
         """See ReplayBuffer.store_effect"""
         idx = self._next_idx
         super().append(buffer_item)
-        self._it_sum[idx] = self._max_priority ** self.alpha
-        self._it_min[idx] = self._max_priority ** self.alpha
+        priority = self.epsilon_d if buffer_item['origin']==1 else self.epsilon_a
+        self._it_sum[idx] = priority ** self.alpha
+        self._it_min[idx] = priority ** self.alpha
 
     def _sample_proportional(self, batch_size):
         res = []
         for _ in range(batch_size):
-            mass = np.random.random() * self._it_sum.sum(0, self.nb_entries - 1)
+            sum = self._it_sum.sum(0, self.nb_entries - 1)
+            mass = np.random.random() * sum
             idx = self._it_sum.find_prefixsum_idx(mass)
             res.append(idx)
         return res
@@ -112,8 +115,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         priorities = list(priorities.squeeze())
         assert len(idxes) == len(priorities)
         for idx, priority in zip(idxes, priorities):
-            priority = np.abs(priority) + self.epsilon
+            priority = priority + self.epsilon
             assert 0 <= idx < self.nb_entries
             self._it_sum[idx] = priority ** self.alpha
             self._it_min[idx] = priority ** self.alpha
-            self._max_priority = max(self._max_priority, priority)

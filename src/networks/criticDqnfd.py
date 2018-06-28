@@ -11,7 +11,7 @@ def margin_fn(indices, num_classes):
     return 0.8 * (1 - K.one_hot(indices, num_classes))
 
 class CriticDQNfD(object):
-    def __init__(self, sess, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001, lambda1=0.5, lambda2=0.5):
+    def __init__(self, sess, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001, lambda1=1, lambda2=1):
         self.sess = sess
         self.tau = tau
         self.s_dim = s_dim
@@ -31,12 +31,6 @@ class CriticDQNfD(object):
 
         self.model1, self.model2, self.states = self.create_critic_network()
         self.target_model1, self.target_model2, self.target_state = self.create_critic_network()
-        # input_tensors = [self.model.inputs[0],  # input data
-        #                  self.model.sample_weights[0],  # how much to weight each sample by
-        #                  self.model.targets[0],  # labels
-        #                  K.learning_phase(),  # train or test mode
-        #                  ]
-        # self.get_gradients = K.function(inputs=input_tensors, outputs=self.grads)
 
     def target_train(self):
         weights = self.model1.get_weights()
@@ -78,7 +72,7 @@ class CriticDQNfD(object):
         model1 = Model(inputs=[S,A], outputs=[out_qLearning, out_largeMargin])
         model2 = Model(inputs=[S], outputs=out2)
         optimizer = Adam(lr=self.learning_rate)
-        model1.compile(loss=['mse', lambda x,y: x], optimizer=optimizer, loss_weights=[self.lambda1, self.lambda2])
+        model1.compile(loss=['mse', lambda x,y: x], optimizer=optimizer)
         model1.metrics_tensors = [model1.targets[0] - model1.outputs[0]]
         return model1, model2, S
 
