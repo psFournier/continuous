@@ -6,9 +6,13 @@ import tensorflow as tf
 import keras.backend as K
 from keras.layers.merge import concatenate, multiply, add, subtract
 from keras.losses import mse
+from keras.utils import plot_model
 
 def margin_fn(indices, num_classes):
     return 0.8 * (1 - K.one_hot(indices, num_classes))
+
+def loss(y_pred, y_true):
+    return K.mean(K.abs(y_pred), axis=-1)
 
 class CriticDQNfD(object):
     def __init__(self, sess, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001, lambda1=1, lambda2=1):
@@ -29,15 +33,20 @@ class CriticDQNfD(object):
 
         K.set_session(sess)
 
-        self.model1, self.model2, self.states = self.create_critic_network()
-        self.target_model1, self.target_model2, self.target_state = self.create_critic_network()
+        self.optimizer_ql = Adam(lr=self.learning_rate)
+        self.optimizer_lm = Adam(lr=self.learning_rate)
+
+        self.model_ql, self.model_lm, self.model_act, self.states = self.create_critic_network()
+        plot_model(self.model_ql, to_file='model_ql.png')
+
+        self.target_model_ql, self.target_model_lm, self.target_model_act, self.target_state = self.create_critic_network()
 
     def target_train(self):
-        weights = self.model1.get_weights()
-        target_weights = self.target_model1.get_weights()
+        weights = self.model_ql.get_weights()
+        target_weights = self.target_model_ql.get_weights()
         for i in range(len(weights)):
             target_weights[i] = self.tau * weights[i] + (1 - self.tau)* target_weights[i]
-        self.target_model1.set_weights(target_weights)
+        self.target_model_ql.set_weights(target_weights)
 
     def create_critic_network(self):
 
@@ -51,7 +60,7 @@ class CriticDQNfD(object):
                   name='dense_0')(h)
         V = Reshape((1, self.num_actions))(V)
 
-        out2 = Lambda(K.argmax,
+        out_act = Lambda(K.argmax,
                       arguments={'axis': 2})(V)
 
         mask = Lambda(K.one_hot,
@@ -69,12 +78,16 @@ class CriticDQNfD(object):
                      arguments={'axis': 2})(Vsum)
         out_largeMargin = subtract([Vmax, out_qLearning])
 
-        model1 = Model(inputs=[S,A], outputs=[out_qLearning, out_largeMargin])
-        model2 = Model(inputs=[S], outputs=out2)
-        optimizer = Adam(lr=self.learning_rate)
-        model1.compile(loss=['mse', lambda x,y: x], optimizer=optimizer)
-        model1.metrics_tensors = [model1.targets[0] - model1.outputs[0]]
-        return model1, model2, S
+        model_ql = Model(inputs=[S,A], outputs=out_qLearning)
+        model_ql.compile(loss='mse', optimizer=self.optimizer_ql)
+        model_ql.metrics_tensors = [model_ql.targets[0] - model_ql.outputs[0]]
+
+        model_lm = Model(inputs=[S,A], outputs=out_largeMargin)
+        model_lm.compile(loss='mae', optimizer=self.optimizer_lm)
+
+        model_act = Model(inputs=[S], outputs=out_act)
+
+        return model_ql, model_lm, model_act, S
 
 
 

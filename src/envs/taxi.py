@@ -35,7 +35,7 @@ class TaxiEnv(discrete.DiscreteEnv):
 
         self.locs = locs = [(0,0), (0,4), (4,0), (4,3)]
 
-        nS = 500
+        nS = 125
         nR = 5
         nC = 5
         maxR = nR-1
@@ -46,9 +46,8 @@ class TaxiEnv(discrete.DiscreteEnv):
         for row in range(5):
             for col in range(5):
                 for passidx in range(5):
-                    for destidx in range(4):
-                        state = self.encode(row, col, passidx, destidx)
-                        if passidx < 4 and passidx != destidx:
+                        state = self.encode(row, col, passidx)
+                        if passidx == 0:
                             isd[state] += 1
                         for a in range(nA):
                             # defaults
@@ -69,29 +68,25 @@ class TaxiEnv(discrete.DiscreteEnv):
                                 if (passidx < 4 and taxiloc == locs[passidx]):
                                     newpassidx = 4
                             elif a==5: # dropoff
-                                if (taxiloc == locs[destidx]) and passidx==4:
+                                if (taxiloc in locs) and passidx==4:
                                     newpassidx = locs.index(taxiloc)
 
-                            newstate = self.encode(newrow, newcol, newpassidx, destidx)
+                            newstate = self.encode(newrow, newcol, newpassidx)
                             P[state][a].append((1.0, newstate, reward, done))
         isd /= isd.sum()
         discrete.DiscreteEnv.__init__(self, nS, nA, P, isd)
 
-    def encode(self, taxirow, taxicol, passloc, destidx):
-        # (5) 5, 5, 4
+    def encode(self, taxirow, taxicol, passloc):
+        # (5) 5, 5
         i = taxirow
         i *= 5
         i += taxicol
         i *= 5
         i += passloc
-        i *= 4
-        i += destidx
         return i
 
     def decode(self, i):
         out = []
-        out.append(i % 4)
-        i = i // 4
         out.append(i % 5)
         i = i // 5
         out.append(i % 5)
@@ -105,7 +100,7 @@ class TaxiEnv(discrete.DiscreteEnv):
 
         out = self.desc.copy().tolist()
         out = [[c.decode('utf-8') for c in line] for line in out]
-        taxirow, taxicol, passidx, destidx = self.decode(self.s)
+        taxirow, taxicol, passidx = self.decode(self.s)
         def ul(x): return "_" if x == " " else x
         if passidx < 4:
             out[1+taxirow][2*taxicol+1] = utils.colorize(out[1+taxirow][2*taxicol+1], 'yellow', highlight=True)
@@ -113,13 +108,6 @@ class TaxiEnv(discrete.DiscreteEnv):
             out[1+pi][2*pj+1] = utils.colorize(out[1+pi][2*pj+1], 'blue', bold=True)
         else: # passenger in taxi
             out[1+taxirow][2*taxicol+1] = utils.colorize(ul(out[1+taxirow][2*taxicol+1]), 'green', highlight=True)
-
-        di, dj = self.locs[destidx]
-        out[1+di][2*dj+1] = utils.colorize(out[1+di][2*dj+1], 'magenta')
-        outfile.write("\n".join(["".join(row) for row in out])+"\n")
-        if self.lastaction is not None:
-            outfile.write("  ({})\n".format(["South", "North", "East", "West", "Pickup", "Dropoff"][self.lastaction]))
-        else: outfile.write("\n")
 
         # No need to return anything for human
         if mode != 'human':

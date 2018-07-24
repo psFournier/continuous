@@ -2,8 +2,8 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQN, DDPG, TD3, DQNper, DQNfD, DQNfD2
-from agents import Qlearning, Qlearning_offpolicy, QlearningfD
+from agents.discrete import DQN, DQNper, DQNfD, DQNfD2, Qlearning, Qlearning_offpolicy, QlearningfD
+from agents.continuous import TD3, DDPG
 from utils.logger import Logger
 import datetime
 from utils.util import load
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_dir', help='directory for storing run info',
                         default='/home/pierre/PycharmProjects/continuous/log/local/')
     parser.add_argument('--episode_steps', help='number of steps in the environment during evaluation', default=200)
-    parser.add_argument('--eval_freq', help='freq for critic and actor stats computation', default=200)
+    parser.add_argument('--eval_freq', help='freq for critic and actor stats computation', default=2000)
 
     args = vars(parser.parse_args())
     

@@ -60,7 +60,7 @@ class TaxiGoalTutor(Wrapper):
 
     @property
     def state_dim(self):
-        return (5,)
+        return 5,
 
     @property
     def action_dim(self):

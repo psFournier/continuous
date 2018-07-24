@@ -61,6 +61,12 @@ register(
 )
 
 register(
+    id='TaxiGoal2-v0',
+    entry_point='envs:TaxiEnv',
+    wrapper_entry_point='env_wrappers.taxiGoal2:TaxiGoal2'
+)
+
+register(
     id='TaxiTutor-v0',
     entry_point='envs:TaxiEnv',
     wrapper_entry_point='env_wrappers.taxi_goal_tutor:TaxiGoalTutor'

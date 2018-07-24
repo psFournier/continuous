@@ -75,7 +75,7 @@ class DQNfD2(Agent):
 
         if self.env.buffer.nb_entries > 3 * self.batch_size:
             experiences = self.env.buffer.sample(self.batch_size, self.env_step)
-            loss, td_errors = self.train_critic(experiences)
+            loss_ql, loss_lm, td_errors = self.train_critic(experiences)
             self.env.buffer.update_priorities(experiences['indices'], td_errors)
             self.target_train()
 
@@ -91,8 +91,8 @@ class DQNfD2(Agent):
         states0 = np.append(states0, goals, axis=1)
         states1 = np.append(states1, goals, axis=1)
 
-        actions1 = self.critic.model2.predict_on_batch([states1])
-        qvals, margins = self.critic.target_model1.predict_on_batch([states1, actions1])
+        actions1 = self.critic.model_act.predict_on_batch([states1])
+        qvals = self.critic.target_model_ql.predict_on_batch([states1, actions1])
 
         targets = []
         for k in range(self.batch_size):
@@ -103,15 +103,26 @@ class DQNfD2(Agent):
 
         weights_qlearning = weights * (goals != 2)
         weights_largemargin = weights * origins
-        sample_weights = [weights_qlearning.squeeze(), weights_largemargin.squeeze()]
 
-        loss, td_errors = self.critic.model1.train_on_batch(x=[states0, actions],
-                                                            y=[targets, targets],
-                                                            sample_weight=sample_weights)
+        if (weights_qlearning != 0.).any():
+            loss_ql, _ = self.critic.model_ql.train_on_batch(x=[states0, actions],
+                                                y=targets,
+                                                sample_weight=weights_qlearning.squeeze())
+        else:
+            loss_ql = 0
+
+
+        if (weights_largemargin != 0.).any():
+            loss_lm = self.critic.model_lm.train_on_batch(x=[states0, actions],
+                                                          y=np.zeros((self.batch_size, 1)),
+                                                          sample_weight=weights_largemargin.squeeze())
+        else:
+            loss_lm = 0
+
+        td_errors = []
         for k in range(self.batch_size):
-            td_errors[k] = self.epsilon_a if origins[k] == 0 else self.epsilon_d
-
-        return loss, td_errors
+            td_errors.append(self.epsilon_a if origins[k] == 0 else self.epsilon_d)
+        return loss_ql, loss_lm, td_errors
 
     def init_targets(self):
         self.critic.target_train()
@@ -127,7 +138,7 @@ class DQNfD2(Agent):
             action = np.random.randint(0, self.env.action_space.n)
         else:
             state = np.append(state, [self.env.goal])
-            action = self.critic.model2.predict(np.reshape(state, (1, self.critic.s_dim[0])))
+            action = self.critic.model_act.predict(np.reshape(state, (1, self.critic.s_dim[0])))
             action = action[0,0]
         return action
 

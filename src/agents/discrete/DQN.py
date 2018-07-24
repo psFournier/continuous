@@ -22,10 +22,11 @@ class DQN(Agent):
         super(DQN, self).__init__(args, sess, env, env_test, logger)
 
         self.env.buffer = ReplayBuffer(limit=int(1e6),
-                                       names=['state0', 'action', 'state1', 'reward', 'terminal'])
+                                       names=['state0', 'action', 'state1', 'reward', 'terminal', 'goal'])
 
         self.critic = criticDqn.CriticDQN(sess,
                                           s_dim=env.state_dim,
+                                          g_dim=env.goal_dim,
                                           num_a=env.action_space.n,
                                           gamma=0.99,
                                           tau=0.001,
@@ -35,9 +36,22 @@ class DQN(Agent):
                                           initial_p=1.0,
                                           final_p=.1)
 
+    def make_exp(self, state0, action, state1):
+        reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal)
+
+        experience = {'state0': state0.copy(),
+                      'action': action,
+                      'state1': state1.copy(),
+                      'reward': reward,
+                      'terminal': terminal,
+                      'goal': self.env.goal}
+
+        return experience
+
     def train(self, exp):
 
         self.env.buffer.append(exp)
+        self.env.episode_exp.append(exp)
 
         if self.env_step > 3 * self.batch_size:
             experiences = self.env.buffer.sample(self.batch_size)
@@ -48,16 +62,17 @@ class DQN(Agent):
         states0 = experiences['state0']
         states1 = experiences['state1']
         actions0 = experiences['action']
+        goals = experiences['goal']
 
-        actions1 = self.critic.model2.predict_on_batch([states1])
-        q = self.critic.target_model1.predict_on_batch([states1, actions1])
+        actions1 = self.critic.bestAction.predict_on_batch([states1, goals])
+        q = self.critic.target_qValue.predict_on_batch([states1, actions1, goals])
 
         targets = []
         for k in range(self.batch_size):
             target = experiences['reward'][k] + (1 - experiences['terminal'][k]) * self.critic.gamma * q[k]
             targets.append(target)
         targets = np.array(targets)
-        loss, _ = self.critic.model1.train_on_batch([states0, actions0], targets)
+        loss, _ = self.critic.qValue.train_on_batch([states0, actions0, goals], targets)
         return loss
 
     def init_targets(self):
@@ -73,27 +88,17 @@ class DQN(Agent):
         if noise and np.random.rand(1) < self.exploration.value(self.env_step):
             action = np.random.randint(0, self.env.action_space.n)
         else:
-            action = self.critic.model2.predict(np.reshape(state, (1, self.critic.s_dim[0])))
-            action = action.squeeze()
+            inputs = [np.reshape(state, (1, self.critic.s_dim[0])),
+                      np.reshape(self.env.goal, (1, self.critic.g_dim[0]))]
+            action = self.critic.bestAction.predict(inputs)
+            action = action[0, 0]
         return action
 
     def log(self):
         if self.env_step % self.eval_freq == 0:
-            returns = []
-            for _ in range(5):
-                state = self.env_test.reset()
-                r = 0
-                terminal = False
-                step = 0
-                while (not terminal and step < self.ep_steps):
-                    action = self.act(state, noise=False)
-                    experience = self.env_test.step(action)
-                    r += experience['reward']
-                    terminal = experience['terminal']
-                    state = experience['state1']
-                    step += 1
-                returns.append(r)
-            self.stats['avg_return'] = np.mean(returns)
+            comp_stats = self.env.stats()
+            for key, val in comp_stats.items():
+                self.stats[key] = val
             self.stats['step'] = self.env_step
             for key in sorted(self.stats.keys()):
                 self.logger.logkv(key, self.stats[key])

@@ -112,7 +112,6 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             variable `idxes`.
         """
         idxes = list(idxes.squeeze())
-        priorities = list(priorities.squeeze())
         assert len(idxes) == len(priorities)
         for idx, priority in zip(idxes, priorities):
             priority = priority + self.epsilon

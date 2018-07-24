@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-runs = glob.glob('../../log/local/dqn_CartPole-v0_1/*/')
+runs = glob.glob('../../log/local/dqnfd2_TaxiTutor-v0_1/*/')
 frames = []
 
 for run in runs:
@@ -21,10 +21,10 @@ for run in runs:
 
 # Creating the complete dataframe with all dat
 df = pd.concat(frames, ignore_index=True)
-# df = df[['step', 'CP_0', 'CP_1', 'freq_0', 'freq_1', 'comp_0', 'comp_1']]
-df = df[['step', 'avg_return']]
+df = df[['step', 'CP_0', 'CP_1', 'freq_0', 'freq_1', 'comp_0', 'comp_1']]
+# df = df[['step', 'avg_return']]
 print(df.head())
-plt.plot(df['step'], df['avg_return'])
+# plt.plot(df['step'], df['avg_return'])
 # def _0(x) : return x[0]
 # def _1(x) : return x[1]
 # funcs = [_0, _1]
@@ -33,19 +33,19 @@ plt.plot(df['step'], df['avg_return'])
 # agg.columns = agg.columns.map(''.join)
 # df = pd.concat([df, agg], axis=1).drop(['list_returns'], axis=1)
 
-# fig, axes = plt.subplots(3, 1, figsize=(18,10))
-# # ax.plot(df['step'], df['list_returns_0'].rolling(10).mean())
-# axes[0].plot(df['step'], df['comp_0'].rolling(10).mean(), label='pick_up')
-# axes[0].plot(df['step'], df['comp_1'].rolling(10).mean(), label='drop-off')
-# axes[0].legend()
-#
-# axes[1].plot(df['step'], df['CP_0'].rolling(10).mean(), label='pick_up')
-# axes[1].plot(df['step'], df['CP_1'].rolling(10).mean(), label='drop-off')
-# axes[1].legend()
-#
-# axes[2].plot(df['step'], df['freq_0'].rolling(10).mean(), label='pick_up')
-# axes[2].plot(df['step'], df['freq_1'].rolling(10).mean(), label='drop-off')
-# axes[2].legend()
+fig, axes = plt.subplots(3, 1, figsize=(18,10))
+# ax.plot(df['step'], df['list_returns_0'].rolling(10).mean())
+axes[0].plot(df['step'], df['comp_0'].rolling(10).mean(), label='pick_up')
+axes[0].plot(df['step'], df['comp_1'].rolling(10).mean(), label='drop-off')
+axes[0].legend()
+
+axes[1].plot(df['step'], df['CP_0'].rolling(10).mean(), label='pick_up')
+axes[1].plot(df['step'], df['CP_1'].rolling(10).mean(), label='drop-off')
+axes[1].legend()
+
+axes[2].plot(df['step'], df['freq_0'].rolling(10).mean(), label='pick_up')
+axes[2].plot(df['step'], df['freq_1'].rolling(10).mean(), label='drop-off')
+axes[2].legend()
 
 
 plt.show()

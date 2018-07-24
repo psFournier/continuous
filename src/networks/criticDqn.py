@@ -8,10 +8,11 @@ from keras.layers.merge import concatenate, multiply
 from keras.losses import mse
 
 class CriticDQN(object):
-    def __init__(self, sess, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001):
+    def __init__(self, sess, s_dim, g_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001):
         self.sess = sess
         self.tau = tau
         self.s_dim = s_dim
+        self.g_dim = g_dim
         self.a_dim = (1,)
         self.learning_rate = learning_rate
         self.stat_ops = []
@@ -24,20 +25,24 @@ class CriticDQN(object):
 
         K.set_session(sess)
 
-        self.model1, self.model2, self.states = self.create_critic_network()
-        self.target_model1, self.target_model2, self.target_state = self.create_critic_network()
+        self.qValue, self.bestAction, self.states = self.create_critic_network()
+        self.target_qValue, self.target_bestAction, self.target_state = self.create_critic_network()
 
     def target_train(self):
-        weights = self.model1.get_weights()
-        target_weights = self.target_model1.get_weights()
+        weights = self.qValue.get_weights()
+        target_weights = self.target_qValue.get_weights()
         for i in range(len(weights)):
             target_weights[i] = self.tau * weights[i] + (1 - self.tau)* target_weights[i]
-        self.target_model1.set_weights(target_weights)
+        self.target_qValue.set_weights(target_weights)
 
     def create_critic_network(self):
+
         S = Input(shape=self.s_dim)
+        G = Input(shape=self.g_dim)
         A = Input(shape=(1,), dtype='uint8')
-        h = Dense(50, activation="relu")(S)
+
+        h = concatenate(inputs=[S,G])
+        h = Dense(50, activation="relu")(h)
         V = Dense(self.num_actions,
                   activation='linear',
                   use_bias=False,
@@ -47,17 +52,17 @@ class CriticDQN(object):
         mask = Lambda(K.one_hot,
                       arguments={'num_classes': self.num_actions},
                       output_shape=(self.num_actions,))(A)
-        filteredV = multiply([V, mask], )
+        filteredV = multiply([V, mask])
         out1 = Lambda(K.sum,
                       arguments={'axis': 2})(filteredV)
         out2 = Lambda(K.argmax,
                       arguments={'axis': 2})(V)
-        model1 = Model(inputs=[S,A], outputs=out1)
-        model2 = Model(inputs=[S], outputs=out2)
+        qValue = Model(inputs=[S, A, G], outputs=out1)
+        bestAction = Model(inputs=[S, G], outputs=out2)
         optimizer = Adam(lr=self.learning_rate)
-        model1.compile(loss='mse', optimizer=optimizer)
-        model1.metrics_tensors = [model1.targets[0] - model1.outputs[0]]
-        return model1, model2, S
+        qValue.compile(loss='mse', optimizer=optimizer)
+        qValue.metrics_tensors = [qValue.targets[0] - qValue.outputs[0]]
+        return qValue, bestAction, S
 
 
 
