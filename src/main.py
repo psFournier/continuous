@@ -33,6 +33,8 @@ if __name__ == '__main__':
     parser.add_argument('--random-seed', default=None)
     parser.add_argument('--env', default='HalfCheetah-v2')
     parser.add_argument('--agent', default='td3')
+    parser.add_argument('--per_alpha', default=0)
+    parser.add_argument('--her', default='no')
     # parser.add_argument('--her_xy', default='no')
     # parser.add_argument('--her_eps', default='no')
     # parser.add_argument('--n_split', default=10)

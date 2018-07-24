@@ -2,6 +2,7 @@ from gym import Wrapper
 import numpy as np
 import math
 from samplers.competenceQueue import CompetenceQueue
+import random as rnd
 
 class TaxiGoal2(Wrapper):
     def __init__(self, env, args):
@@ -14,6 +15,7 @@ class TaxiGoal2(Wrapper):
         self.episode_exp = []
         self.buffer = None
         self.exploration_steps = 0
+        self.her = args['her']
 
     def step(self, action):
         obs, _, _, _ = self.env.step(action)
@@ -65,6 +67,16 @@ class TaxiGoal2(Wrapper):
 
         obs = self.env.reset()
         state = np.array(self.decode(obs))
+
+        for idx, buffer_item in enumerate(self.episode_exp):
+            if self.her == 'future':
+                indices = range(idx, len(self.episode_exp))
+                future_indices = rnd.sample(indices, np.min([4, len(indices)]))
+                buffer_item['future_goals'] = [self.episode_exp[i]['state1'] for i in list(future_indices)]
+            elif self.her == 'final':
+                buffer_item['future_goals'] = [self.episode_exp[-1]['state1']]
+            self.buffer.append(buffer_item)
+
         self.episode_exp.clear()
 
         return state

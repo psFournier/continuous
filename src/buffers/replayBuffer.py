@@ -23,13 +23,13 @@ class ReplayBuffer(object):
             value.append(buffer_item[name], self._next_idx)
         self._next_idx = (self._next_idx + 1) % self.limit
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, _):
         batch_idxs = [np.random.randint(0, self.nb_entries) for _ in range(batch_size)]
         result = {}
         for name, value in self.contents.items():
-            result[name] = array_min2d(value.get_batch(batch_idxs))
-        result['indices'] = array_min2d(batch_idxs)
-        result['weights'] = array_min2d([1] * batch_size)
+            result[name] = value.get_batch(batch_idxs)
+        result['indices'] = batch_idxs
+        result['weights'] = [1] * batch_size
         return result
 
     @property

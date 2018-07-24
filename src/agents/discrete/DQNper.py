@@ -21,7 +21,7 @@ class DQNper(Agent):
 
         super(DQNper, self).__init__(args, sess, env, env_test, logger)
 
-        self.env.buffer = PrioritizedReplayBuffer(limit=int(1e6),
+        self.env.buffer = PrioritizedReplayBuffer(limit=int(1e4),
                                                   names=['state0', 'action', 'state1', 'reward', 'terminal', 'goal'], args=args)
 
         self.critic = criticDqn.CriticDQN(sess,

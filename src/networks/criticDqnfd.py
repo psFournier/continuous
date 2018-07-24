@@ -11,9 +11,6 @@ from keras.utils import plot_model
 def margin_fn(indices, num_classes):
     return 0.8 * (1 - K.one_hot(indices, num_classes))
 
-def loss(y_pred, y_true):
-    return K.mean(K.abs(y_pred), axis=-1)
-
 class CriticDQNfD(object):
     def __init__(self, sess, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001, lambda1=1, lambda2=1):
         self.sess = sess

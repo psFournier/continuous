@@ -4,7 +4,7 @@ from buffers.replayBuffer import ReplayBuffer
 from utils.linearSchedule import LinearSchedule
 
 def array_min2d(x):
-    x = np.array(x)
+    x = np.array(x, copy=False)
     if x.ndim >= 2:
         return x
     return x.reshape(-1, 1)
@@ -34,8 +34,10 @@ class PrioritizedReplayBuffer(ReplayBuffer):
                                        initial_p=float(args['beta0']),
                                        final_p=1.0)
         self.epsilon = 1e-6
-        self.epsilon_a = 0.001
-        self.epsilon_d = 1.
+        # self.epsilon_a = 0.001
+        # self.epsilon_d = 1.
+        self.epsilon_a = None
+        self.epsilon_d = None
 
         it_capacity = 1
         while it_capacity < limit:
@@ -43,14 +45,19 @@ class PrioritizedReplayBuffer(ReplayBuffer):
 
         self._it_sum = SumSegmentTree(it_capacity)
         self._it_min = MinSegmentTree(it_capacity)
+        self.max_priority = 1.
 
     def append(self, buffer_item):
         """See ReplayBuffer.store_effect"""
         idx = self._next_idx
         super().append(buffer_item)
-        priority = self.epsilon_d if buffer_item['origin']==1 else self.epsilon_a
-        self._it_sum[idx] = priority ** self.alpha
-        self._it_min[idx] = priority ** self.alpha
+        if self.epsilon_d and self.epsilon_a:
+            priority = self.epsilon_d if buffer_item['origin']==1 else self.epsilon_a
+            self._it_sum[idx] = priority ** self.alpha
+            self._it_min[idx] = priority ** self.alpha
+        else:
+            self._it_sum[idx] = self.max_priority ** self.alpha
+            self._it_min[idx] = self.max_priority ** self.alpha
 
     def _sample_proportional(self, batch_size):
         res = []
@@ -77,10 +84,6 @@ class PrioritizedReplayBuffer(ReplayBuffer):
 
         idxes = self._sample_proportional(batch_size)
 
-        result = {}
-        for name, value in self.contents.items():
-            result[name] = array_min2d(value.get_batch(idxes))
-
         weights = []
         p_min = self._it_min.min() / self._it_sum.sum()
         max_weight = (p_min * self.nb_entries) ** (-beta)
@@ -91,6 +94,10 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             weights.append(weight / max_weight)
 
         weights = np.array(weights)
+
+        result = {}
+        for name, value in self.contents.items():
+            result[name] = array_min2d(value.get_batch(idxes))
         result['indices'] = array_min2d(idxes)
         result['weights'] = array_min2d(weights)
         return result
@@ -118,3 +125,4 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             assert 0 <= idx < self.nb_entries
             self._it_sum[idx] = priority ** self.alpha
             self._it_min[idx] = priority ** self.alpha
+            self.max_priority = max(self.max_priority, priority)
