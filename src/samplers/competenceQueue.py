@@ -4,20 +4,25 @@ import itertools
 import numpy as np
 
 class CompetenceQueue():
-    def __init__(self, window = 10, maxlen=20):
+    def __init__(self, window = 20, maxlen=200):
         self.window = window
         self.points = deque(maxlen=maxlen)
         self.CP = 0.001
-        self.competence = 0.001
+        self.R_mean = 0.001
+        self.T_mean = 0
 
     def update_CP(self):
         if self.size > 2:
             window = min(self.size // 2, self.window)
-            q = [point[1] for point in self.points]
-            q1 = list(itertools.islice(q, self.size - window, self.size))
-            q2 = list(itertools.islice(q, self.size - 2 * window, self.size - window))
-            self.CP = max(np.abs(np.sum(q1) - np.sum(q2)) / (2 * window), 0.001)
-            self.competence = np.sum(q1) / window
+            Rs = [point[1] for point in self.points]
+            Ts = [point[2] for point in self.points]
+            R1 = list(itertools.islice(Rs, self.size - window, self.size))
+            comp1 = np.sum(R1) / window
+            R2 = list(itertools.islice(Rs, 0, self.size - window))
+            comp2 = np.sum(R2) / (self.size - window)
+            self.CP = comp1 - comp2
+            self.R_mean = np.sum(Rs) / self.size
+            self.T_mean = np.sum(Ts) / self.size
 
     def append(self, point):
         self.points.append(point)

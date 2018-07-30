@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents.discrete import DQN, DQNper, DQNfD, DQNfD2, Qlearning, Qlearning_offpolicy, QlearningfD
+from agents.discrete import DQNG, DQNper, DQNfD, DQNfD2, Qlearning, Qlearning_offpolicy, QlearningfD
 from agents.continuous import TD3, DDPG
 from utils.logger import Logger
 import datetime
@@ -33,18 +33,20 @@ if __name__ == '__main__':
     parser.add_argument('--random-seed', default=None)
     parser.add_argument('--env', default='HalfCheetah-v2')
     parser.add_argument('--agent', default='td3')
-    parser.add_argument('--per_alpha', default=0)
+    parser.add_argument('--per', default=0)
     parser.add_argument('--her', default='no')
+    parser.add_argument('--self_imit', default=0)
+    parser.add_argument('--tutor_imit', default=0)
+    parser.add_argument('--theta', default=1)
     # parser.add_argument('--her_xy', default='no')
     # parser.add_argument('--her_eps', default='no')
     # parser.add_argument('--n_split', default=10)
     # parser.add_argument('--split_min', default=0.0001)
     # parser.add_argument('--window', default=100)
-    parser.add_argument('--alpha', default=0.4)
-    parser.add_argument('--beta0', default=0.6)
+    # parser.add_argument('--alpha', default=0.4)
+    # parser.add_argument('--beta0', default=0.6)
     # parser.add_argument('--eps', default=0.02)
     # parser.add_argument('--queue_len', default=200)
-    parser.add_argument('--theta', default=1)
 
     # parser.add_argument('--R', help='must be power of 2', default=128)
     parser.add_argument('--max_steps', help='max num of episodes to do while training', default=1000000)
@@ -74,7 +76,7 @@ if __name__ == '__main__':
         elif args['agent'] == 'td3':
             agent = TD3.TD3(args, sess, env, env_test, logger)
         elif args['agent'] == 'dqn':
-            agent = DQN.DQN(args, sess, env, env_test, logger)
+            agent = DQNG.DQNG(args, sess, env, env_test, logger)
         elif args['agent'] == 'dqnper':
             agent = DQNper.DQNper(args, sess, env, env_test, logger)
         elif args['agent'] == 'dqnfd':

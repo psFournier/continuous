@@ -43,16 +43,14 @@ class Agent():
         self.start_time = time.time()
         self.init_targets()
 
-        state0 = self.env.reset()
+        state0 = self.reset()
         try:
             while self.env_step < self.max_steps:
 
                 if RENDER_TRAIN: self.env.render(mode='human')
 
-                if self.env_step < self.env.exploration_steps:
-                    action = self.act_random(state0)
-                else:
-                    action = self.act(state0, noise=True)
+
+                action = self.act(state0, noise=True)
 
                 state1 = self.env.step(action)
                 experience = self.make_exp(state0, action, state1)
@@ -64,7 +62,7 @@ class Agent():
 
                 if (experience['terminal'] or self.episode_step >= self.ep_steps):
                     self.episode += 1
-                    state0 = self.env.reset()
+                    state0 = self.reset()
                     self.episode_step = 0
 
                 self.log()
@@ -76,6 +74,9 @@ class Agent():
 
         self.save_regions()
         self.save_policy()
+
+    def reset(self):
+        return self.env.reset()
 
     def act_random(self, state):
         action = np.random.uniform(self.env.action_space.low, self.env.action_space.high)

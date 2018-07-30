@@ -48,29 +48,35 @@ register(
     wrapper_entry_point='env_wrappers.reacher_xy_sagg_plot:Reacher_xy'
 )
 
+# register(
+#     id='Taxi-v0',
+#     entry_point='envs:TaxiEnv',
+#     wrapper_entry_point='env_wrappers.taxi_gamma:Taxi_gamma'
+# )
+#
+# register(
+#     id='Taxi-v1',
+#     entry_point='envs:TaxiEnv',
+#     wrapper_entry_point='env_wrappers.taxi_goal:TaxiGoal'
+# )
+
 register(
     id='Taxi-v0',
     entry_point='envs:TaxiEnv',
-    wrapper_entry_point='env_wrappers.taxi_gamma:Taxi_gamma'
+    wrapper_entry_point='env_wrappers.taxi:Taxi'
 )
 
 register(
-    id='Taxi-v1',
+    id='TaxiGoal-v0',
     entry_point='envs:TaxiEnv',
-    wrapper_entry_point='env_wrappers.taxi_goal:TaxiGoal'
+    wrapper_entry_point='env_wrappers.taxiGoal:TaxiGoal'
 )
 
-register(
-    id='TaxiGoal2-v0',
-    entry_point='envs:TaxiEnv',
-    wrapper_entry_point='env_wrappers.taxiGoal2:TaxiGoal2'
-)
-
-register(
-    id='TaxiTutor-v0',
-    entry_point='envs:TaxiEnv',
-    wrapper_entry_point='env_wrappers.taxi_goal_tutor:TaxiGoalTutor'
-)
+# register(
+#     id='TaxiTutor-v0',
+#     entry_point='envs:TaxiEnv',
+#     wrapper_entry_point='env_wrappers.taxi_goal_tutor:TaxiGoalTutor'
+# )
 
 register(
     id='CartPole-v0',

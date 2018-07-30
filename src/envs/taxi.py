@@ -43,12 +43,12 @@ class TaxiEnv(discrete.DiscreteEnv):
         isd = np.zeros(nS)
         nA = 6
         P = {s : {a : [] for a in range(nA)} for s in range(nS)}
+        initial_state = self.encode(2, 2, 0)
+        isd[initial_state] = 1
         for row in range(5):
             for col in range(5):
                 for passidx in range(5):
                         state = self.encode(row, col, passidx)
-                        if passidx == 0:
-                            isd[state] += 1
                         for a in range(nA):
                             # defaults
                             newrow, newcol, newpassidx = row, col, passidx

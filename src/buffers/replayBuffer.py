@@ -23,7 +23,7 @@ class ReplayBuffer(object):
             value.append(buffer_item[name], self._next_idx)
         self._next_idx = (self._next_idx + 1) % self.limit
 
-    def sample(self, batch_size, _):
+    def sample(self, batch_size):
         batch_idxs = [np.random.randint(0, self.nb_entries) for _ in range(batch_size)]
         result = {}
         for name, value in self.contents.items():
