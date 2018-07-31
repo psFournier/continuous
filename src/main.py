@@ -14,7 +14,7 @@ import gym.spaces
 import pickle
 
 def build_logger(args):
-    params = ['agent', 'env', 'theta']
+    params = ['agent', 'env']
     param_strings = [str(args[name]) for name in params]
     now = datetime.datetime.now().strftime("%Y%m%d%H%M%S_%f")
     log_dir = os.path.join(args['log_dir'], '_'.join(param_strings), now)
@@ -34,10 +34,10 @@ if __name__ == '__main__':
     parser.add_argument('--env', default='HalfCheetah-v2')
     parser.add_argument('--agent', default='td3')
     parser.add_argument('--per', default=0)
-    parser.add_argument('--her', default='no')
+    parser.add_argument('--her', default=0)
     parser.add_argument('--self_imit', default=0)
     parser.add_argument('--tutor_imit', default=0)
-    parser.add_argument('--theta', default=1)
+    parser.add_argument('--theta', default=0)
     # parser.add_argument('--her_xy', default='no')
     # parser.add_argument('--her_eps', default='no')
     # parser.add_argument('--n_split', default=10)
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     # parser.add_argument('--queue_len', default=200)
 
     # parser.add_argument('--R', help='must be power of 2', default=128)
-    parser.add_argument('--max_steps', help='max num of episodes to do while training', default=1000000)
+    parser.add_argument('--max_steps', help='max num of episodes to do while training', default=200000)
     parser.add_argument('--log_dir', help='directory for storing run info',
                         default='/home/pierre/PycharmProjects/continuous/log/local/')
     parser.add_argument('--episode_steps', help='number of steps in the environment during evaluation', default=200)

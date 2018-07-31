@@ -23,10 +23,10 @@ class DQNG(Agent):
     def __init__(self, args, sess, env, env_test, logger):
 
         super(DQNG, self).__init__(args, sess, env, env_test, logger)
-        self.per = bool(args['per']) and False
-        self.self_imitation = bool(args['self_imit']) and False
-        self.tutor_imitation = bool(args['tutor_imit']) and False
-        self.her = bool(args['her']) and False
+        self.per = bool(args['per'])
+        self.self_imitation = bool(args['self_imit'])
+        self.tutor_imitation = bool(args['tutor_imit'])
+        self.her = bool(args['her'])
         self.theta = float(args['theta'])
         # if self.per_alpha != 0:
         #     self.env.buffer = PrioritizedReplayBuffer(limit=int(1e5),
@@ -78,11 +78,27 @@ class DQNG(Agent):
                               'goal': None}
                 state0 = state1
                 episode.append(experience)
-            self.process_episode(episode)
+            self.process_tutor_episode(episode)
 
 
     def process_tutor_episode(self, episode):
-        pass
+        reached_goals = []
+        for expe in reversed(episode):
+            s0, a, s1 = expe['state0'], expe['action'], expe['state1']
+            for goal in self.env.goals:
+                is_new = goal not in reached_goals
+                r, t = self.env.eval_exp(s0, a, s1, goal)
+                if is_new and t:
+                    reached_goals.append(goal)
+                if not is_new or t:
+                    new_expe = {'state0': s0,
+                                'action': a,
+                                'state1': s1,
+                                'reward': r,
+                                'terminal': t,
+                                'goal': goal,
+                                'R': None}
+                    self.buffers['tutor'].append(new_expe)
 
     def process_episode(self, episode):
 
@@ -163,61 +179,66 @@ class DQNG(Agent):
         return goal
 
     def train(self, exp):
+
         self.trajectory.append(exp)
+        self.train_autonomous()
+        if self.tutor_imitation:
+            self.train_imitation()
+        self.target_train()
+
+    def train_autonomous(self):
         buffer = self.buffers[self.env.goal]
         if buffer.nb_entries > self.batch_size:
             experiences = buffer.sample(self.batch_size)
-            td_errors = self.train_critic(experiences)
-            if self.per:
-                self.env.buffer.update_priorities(experiences['indices'], td_errors)
-            self.target_train()
+            self.train_critic(experiences)
+            # if self.per:
+            #     self.env.buffer.update_priorities(experiences['indices'], td_errors)
 
-    def train_critic(self, experiences):
+    def expe2array(self, experiences):
+        s0 = np.array(experiences['state0'])
+        a = np.array(experiences['action'])
+        s1 = np.array(experiences['state1'])
+        g = np.array(experiences['goal'])
+        r = np.array(experiences['reward'])
+        t = np.array(experiences['terminal'])
+        return s0, a, s1, g, r, t
 
-        states0 = np.array(experiences['state0'])
-        actions0 = np.array(experiences['action'])
-        states1 = np.array(experiences['state1'])
-        goals = np.array(experiences['goal'])
-        rewards = np.array(experiences['reward'])
-        terminal = np.array(experiences['terminal'])
-        returns = np.array(experiences['R'])
-
-        if self.self_imitation:
-            inputs = [np.array(states0),
-                      np.array(actions0),
-                      np.array(goals),
-                      np.array(returns),
-                      np.zeros((self.batch_size,1))]
-            targets = np.zeros((self.batch_size, 1))
-            self.loss_imitation = self.critic.margin_model.train_on_batch(x=inputs,
-                                                                  y=targets)
-        # if self.per_alpha != 0:
-        #     weights = experiences['weights'].squeeze()
-        # else:
-        #     weights = np.ones(shape=(self.batch_size,1)).squeeze()
-
-        actions1 = self.critic.bestAction_model.predict_on_batch([states1, goals])
-        q = self.critic.target_qValue_model.predict_on_batch([states1, actions1, goals])
+    def compute_targets(self, s1, g, r, t):
+        a = self.critic.bestAction_model.predict_on_batch([s1, g])
+        q = self.critic.target_qValue_model.predict_on_batch([s1, a, g])
 
         targets = []
-        for k in range(len(states0)):
-            target = rewards[k] + (1 - terminal[k]) * self.critic.gamma * q[k]
+        for k in range(len(s1)):
+            target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
             if TARGET_CLIP:
                 target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
                 targets.append(target_clip)
             else:
                 targets.append(target)
         targets = np.array(targets)
+        return targets
 
-        self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=[states0, actions0, goals],
-                                                            y=targets)
+    def train_imitation(self):
+        experiences = self.buffers['tutor'].sample(self.batch_size)
+        s0, a, s1, g, r, t = self.expe2array(experiences)
+
+        targets = np.zeros((self.batch_size, 1))
+        self.loss_imitation = self.critic.margin_model.train_on_batch(x=[s0, a, g], y=targets)
+
+        targets = self.compute_targets(s1, g, r, t)
+        self.critic.qValue_model.train_on_batch(x=[s0, a, g], y=targets)
+
+    def train_critic(self, experiences):
+
+        s0, a, s1, g, r, t = self.expe2array(experiences)
+        targets = self.compute_targets(s1, g, r, t)
+        self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=[s0, a, g], y=targets)
         td_errors = targets - q_values
 
-
         for goal in range(len(self.env.goals)):
-            if goal in goals:
-                self.td_errors[goal] = np.mean(td_errors[np.where(goals == goal)])
-                self.q_values[goal] = np.mean(q_values[np.where(goals == goal)])
+            if goal in g:
+                self.td_errors[goal] = np.mean(td_errors[np.where(g == goal)])
+                self.q_values[goal] = np.mean(q_values[np.where(g == goal)])
 
         return td_errors
 
