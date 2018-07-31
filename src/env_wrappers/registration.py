@@ -4,7 +4,7 @@ import re
 from gym import error, logger
 from env_wrappers.base import Base
 
-# This format is true today, but it's *not* an official spec.
+# This format is true tpip  oday, but it's *not* an official spec.
 # [username/](envs-name)-v(version)    envs-name is group 1, version is group 2
 #
 # 2016-10-31: We're experimentally expanding the environment ID format

@@ -42,8 +42,6 @@ class DQNG(Agent):
                                  tau=0.001,
                                  learning_rate=0.001)
 
-
-
         self.loss_qVal = 0
         self.loss_imitation = 0
         self.td_errors = {goal: 0 for goal in self.env.goals}
@@ -62,6 +60,7 @@ class DQNG(Agent):
 
         if self.tutor_imitation:
             self.get_tutor_exp(goal=3)
+            self.batch_size = int(self.batch_size / 2)
 
     def get_tutor_exp(self, goal):
         for i in range(10):
@@ -159,13 +158,7 @@ class DQNG(Agent):
 
     def sample_goal(self):
 
-        CPs = [abs(q.CP) for q in self.queues.values()]
-        maxcp = max(CPs)
-
-        if maxcp > 10:
-            self.interests = [math.pow(cp / maxcp, self.theta) + 0.0001 for cp in CPs]
-        else:
-            self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.0001 for q in self.queues.values()]
+        self.update_interests()
 
         sum = np.sum(self.interests)
         mass = np.random.random() * sum
@@ -177,6 +170,16 @@ class DQNG(Agent):
         goal = self.env.goals[idx]
 
         return goal
+
+    def update_interests(self):
+
+        CPs = [abs(q.CP) for q in self.queues.values()]
+        maxcp = max(CPs)
+
+        if maxcp > 10:
+            self.interests = [math.pow(cp / maxcp, self.theta) + 0.0001 for cp in CPs]
+        else:
+            self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.0001 for q in self.queues.values()]
 
     def train(self, exp):
 
@@ -191,8 +194,6 @@ class DQNG(Agent):
         if buffer.nb_entries > self.batch_size:
             experiences = buffer.sample(self.batch_size)
             self.train_critic(experiences)
-            # if self.per:
-            #     self.env.buffer.update_priorities(experiences['indices'], td_errors)
 
     def expe2array(self, experiences):
         s0 = np.array(experiences['state0'])
