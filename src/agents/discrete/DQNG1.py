@@ -24,7 +24,7 @@ class DQNG1(DQNG):
 
         super(DQNG1, self).__init__(args, sess, env, env_test, logger)
 
-        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal', 'R']
+        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal']
         self.buffers = {goal: ReplayBuffer(limit=int(1e5), names=self.names) for goal in self.env.goals}
         self.buffers['tutor'] = ReplayBuffer(limit=int(1e2), names=self.names)
 

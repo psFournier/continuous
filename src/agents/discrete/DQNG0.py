@@ -23,7 +23,7 @@ class DQNG0(DQNG):
 
         super(DQNG0, self).__init__(args, sess, env, env_test, logger)
 
-        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal', 'R']
+        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
         self.exploration = LinearSchedule(schedule_timesteps=int(10000),
