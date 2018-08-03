@@ -3,19 +3,18 @@ import numpy as np
 from samplers.competenceQueue import CompetenceQueue
 import math
 
-class TaxiGoal(Wrapper):
+class TaxiGoal2(Wrapper):
     def __init__(self, env, args):
-        super(TaxiGoal, self).__init__(env)
-
+        super(TaxiGoal2, self).__init__(env)
         self.theta = float(args['theta'])
-        self.goals = range(4)
-        self.goal_states = [np.array(x) for x in [(0, 0, 4), (0, 4, 1), (4, 0, 2), (4, 3, 3)]]
+
+        self.goals = range(2*self.env.nR*self.env.nC + 1)
+        self.queues = [CompetenceQueue(), CompetenceQueue(), CompetenceQueue()]
+        self.interests = [0, 0, 0]
+        self.freqs = [0, 0, 0]
+        self.freqs_train = [0, 0, 0]
+        self.freqs_reward = [0, 0, 0]
         self.goal = None
-        self.queues = [CompetenceQueue() for _ in self.goals]
-        self.interests = []
-        self.freqs = [0 for _ in self.goals]
-        self.freqs_train = [0 for _ in self.goals]
-        self.freqs_reward = [0 for _ in self.goals]
 
         self.trajectories = {}
         self.trajectories[0] = [[3,3,1,1,4]
@@ -34,12 +33,27 @@ class TaxiGoal(Wrapper):
         state = np.array(self.decode(obs))
         return state
 
+    def decode_goal(self, goal):
+        out = []
+        out.append(goal % self.env.nC)
+        goal = goal // self.env.nC
+        out.append(goal % self.env.nR)
+        goal = goal // self.env.nR
+        out.append(goal)
+        return list(reversed(out))
+
     def eval_exp(self, state0, action, state1, goal):
+        goal = self.decode_goal(goal)
         term = False
         r = -1
-        if ((state1 == self.goal_states[goal]).all() and (state0 != self.goal_states[goal]).any()):
-            r = 0
-            term = True
+        if goal[0] == 0 and (state1[[0, 1]] == np.array(goal[1:])).all() \
+                and (state0[[0, 1]] != np.array(goal[1:])).any():
+                r=0
+                term=True
+        elif goal[0] == 1 and (state1[[2, 3]] == np.array(goal[1:])).all() \
+                and state1[4] == 0 and state0[4] == 1:
+                r=0
+                term=True
         return r, term
 
     def sample_goal(self):
@@ -53,7 +67,7 @@ class TaxiGoal(Wrapper):
         while mass > s:
             idx += 1
             s += self.interests[idx]
-        goal = self.goals[idx]
+        goal = self.env.goals[idx]
 
         return goal
 
@@ -67,7 +81,6 @@ class TaxiGoal(Wrapper):
         else:
             self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.0001 for q in self.queues]
 
-
     def reset(self):
 
         self.goal = self.sample_goal()
@@ -77,19 +90,6 @@ class TaxiGoal(Wrapper):
         state = np.array(self.decode(obs))
 
         return state
-
-    def get_stats(self):
-        stats = {}
-        for goal in self.goals:
-            stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[goal].R_mean))
-            stats['T_{}'.format(goal)] = float("{0:.3f}".format(self.queues[goal].T_mean))
-            stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.queues[goal].CP))
-            stats['F_{}'.format(goal)] = float("{0:.3f}".format(self.freqs[goal]))
-            stats['FT_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_train[goal]))
-            stats['FR_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_reward[goal]))
-            stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[goal]))
-        return stats
-
 
     def decode(self, state):
         return list(self.env.decode(state))
@@ -102,7 +102,7 @@ class TaxiGoal(Wrapper):
 
     @property
     def state_dim(self):
-        return 3,
+        return 5,
 
     @property
     def goal_dim(self):

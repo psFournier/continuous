@@ -2,8 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents.discrete import DQNG, DQNper, DQNfD, DQNfD2, Qlearning, Qlearning_offpolicy, QlearningfD
-from agents.continuous import TD3, DDPG
+from agents import DQNG0, DQNG1, DQNG2, DQN, TD3, DDPG
 from utils.logger import Logger
 import datetime
 from utils.util import load
@@ -38,6 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('--self_imit', default=0)
     parser.add_argument('--tutor_imit', default=0)
     parser.add_argument('--theta', default=0)
+    parser.add_argument('--train_last_expe', default=0)
     # parser.add_argument('--her_xy', default='no')
     # parser.add_argument('--her_eps', default='no')
     # parser.add_argument('--n_split', default=10)
@@ -72,33 +72,28 @@ if __name__ == '__main__':
     with tf.Session() as sess:
 
         if args['agent'] == 'ddpg':
-            agent = DDPG.DDPG(args, sess, env, env_test, logger)
+            agent = DDPG(args, sess, env, env_test, logger)
         elif args['agent'] == 'td3':
-            agent = TD3.TD3(args, sess, env, env_test, logger)
+            agent = TD3(args, sess, env, env_test, logger)
         elif args['agent'] == 'dqn':
-            agent = DQNG.DQNG(args, sess, env, env_test, logger)
-        elif args['agent'] == 'dqnper':
-            agent = DQNper.DQNper(args, sess, env, env_test, logger)
-        elif args['agent'] == 'dqnfd':
-            agent = DQNfD.DQNfD(args, sess, env, env_test, logger)
-        elif args['agent'] == 'dqnfd2':
-            with open(os.path.join(args['log_dir'],
-                                   'qlearning_Taxi-v1_1',
-                                   '20180628141516_051865',
-                                   'policy.pkl'), 'rb') as input:
-                Q_tutor = pickle.load(input)
-            agent = DQNfD2.DQNfD2(args, sess, env, env_test, Q_tutor, logger)
-        elif args['agent'] == 'qlearning':
-            agent = Qlearning.Qlearning(args, sess, env, env_test, logger)
-        elif args['agent'] == 'qlearning_off':
-            agent = Qlearning_offpolicy.Qlearning_offPolicy(args, sess, env, env_test, logger)
-        elif args['agent'] == 'qlearningfd':
-            with open(os.path.join(args['log_dir'],
-                                   'qlearning_Taxi-v1_1',
-                                   '20180628141516_051865',
-                                   'policy.pkl'), 'rb') as input:
-                Q_tutor = pickle.load(input)
-            agent = QlearningfD.QlearningfD(args, sess, env, env_test, Q_tutor, logger)
+            agent = DQN(args, sess, env, env_test, logger)
+        elif args['agent'] == 'dqng0':
+            agent = DQNG0(args, sess, env, env_test, logger)
+        elif args['agent'] == 'dqng1':
+            agent = DQNG1(args, sess, env, env_test, logger)
+        elif args['agent'] == 'dqng2':
+            agent = DQNG2(args, sess, env, env_test, logger)
+        # elif args['agent'] == 'qlearning':
+        #     agent = Qlearning.Qlearning(args, sess, env, env_test, logger)
+        # elif args['agent'] == 'qlearning_off':
+        #     agent = Qlearning_offpolicy.Qlearning_offPolicy(args, sess, env, env_test, logger)
+        # elif args['agent'] == 'qlearningfd':
+        #     with open(os.path.join(args['log_dir'],
+        #                            'qlearning_Taxi-v1_1',
+        #                            '20180628141516_051865',
+        #                            'policy.pkl'), 'rb') as input:
+        #         Q_tutor = pickle.load(input)
+        #     agent = QlearningfD.QlearningfD(args, sess, env, env_test, Q_tutor, logger)
         else:
             raise RuntimeError
 

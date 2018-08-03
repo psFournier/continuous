@@ -1,2 +1,2 @@
-from .criticDqn import CriticDQN
-from .criticDqng import CriticDQNG
+from .criticDQN import CriticDQN
+from .criticDQNG import CriticDQNG

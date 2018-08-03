@@ -44,10 +44,11 @@ class CriticDQN(object):
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
 
-        h = Dense(50, activation="relu")(S)
+        l1 = Dense(400, activation="relu")(S)
+        l2 = Dense(300, activation="relu")(l1)
         V = Dense(self.num_actions,
                   activation=None,
-                  kernel_initializer='random_uniform')(h)
+                  kernel_initializer='random_uniform')(l2)
         V = Reshape((1, self.num_actions))(V)
 
         mask = Lambda(K.one_hot,

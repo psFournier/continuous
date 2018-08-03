@@ -17,10 +17,10 @@ class Agent():
         self.buffer = buffer
         self.logger = logger
         self.log_dir = args['log_dir']
-        self.ep_steps = args['episode_steps']
-        self.eval_freq = args['eval_freq']
+        self.ep_steps = int(args['episode_steps'])
+        self.eval_freq = int(args['eval_freq'])
         self.batch_size = 64
-        self.max_steps = args['max_steps']
+        self.max_steps = int(args['max_steps'])
 
         self.env_step = 0
         self.episode = 0

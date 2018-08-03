@@ -2,8 +2,9 @@ import glob
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
-runs = glob.glob('../../log/local/dqnfd2_TaxiTutor-v0_1/*/')
+runs = glob.glob('../../log/cluster/dqn_TaxiGoal-v0/*/')
 frames = []
 
 for run in runs:
@@ -16,12 +17,16 @@ for run in runs:
         data = pd.concat([df, config], axis=1)
         data['num_run'] = run.split('/')[5]
         frames.append(data)
+        # print(run, 'ok')
     except:
         print(run, 'not ok')
 
 # Creating the complete dataframe with all dat
 df = pd.concat(frames, ignore_index=True)
-df = df[['step', 'CP_0', 'CP_1', 'freq_0', 'freq_1', 'comp_0', 'comp_1']]
+y = ['R_0', 'R_1', 'R_2', 'R_3']
+df = df[['step', 'tutor_imit', 'theta'] + y]
+op_dict = {a:[np.mean, np.std] for a in y}
+df = df.groupby(['step', 'tutor_imit', 'theta']).agg(op_dict).reset_index()
 # df = df[['step', 'avg_return']]
 print(df.head())
 # plt.plot(df['step'], df['avg_return'])
@@ -33,19 +38,14 @@ print(df.head())
 # agg.columns = agg.columns.map(''.join)
 # df = pd.concat([df, agg], axis=1).drop(['list_returns'], axis=1)
 
-fig, axes = plt.subplots(3, 1, figsize=(18,10))
-# ax.plot(df['step'], df['list_returns_0'].rolling(10).mean())
-axes[0].plot(df['step'], df['comp_0'].rolling(10).mean(), label='pick_up')
-axes[0].plot(df['step'], df['comp_1'].rolling(10).mean(), label='drop-off')
-axes[0].legend()
-
-axes[1].plot(df['step'], df['CP_0'].rolling(10).mean(), label='pick_up')
-axes[1].plot(df['step'], df['CP_1'].rolling(10).mean(), label='drop-off')
-axes[1].legend()
-
-axes[2].plot(df['step'], df['freq_0'].rolling(10).mean(), label='pick_up')
-axes[2].plot(df['step'], df['freq_1'].rolling(10).mean(), label='drop-off')
-axes[2].legend()
-
+fig, ax = plt.subplots(4, 2, figsize=(18,10))
+for i, (name, g) in enumerate(df.groupby(['tutor_imit', 'theta'])):
+    for val in y:
+        ax[i % 4, i // 4].plot(g['step'], g[val]['mean'], label=val)
+        ax[i % 4, i // 4].fill_between(g['step'],
+                        g[val]['mean'] - 0.5 * g[val]['std'],
+                        g[val]['mean'] + 0.5 * g[val]['std'], alpha=0.25, linewidth=0)
+        ax[i % 4, i // 4].set_title(label=name)
+        ax[i % 4, i // 4].legend()
 
 plt.show()

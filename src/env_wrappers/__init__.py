@@ -85,3 +85,15 @@ register(
     entry_point='envs:TaxiEnv',
     wrapper_entry_point='env_wrappers.taxiGoal:TaxiGoal'
 )
+
+register(
+    id='TaxiGoal2-v0',
+    entry_point='envs:Taxi2Env',
+    wrapper_entry_point='env_wrappers.taxiGoal2:TaxiGoal2'
+)
+
+register(
+    id='Playroom-v0',
+    entry_point='envs:PlayroomEnv',
+    wrapper_entry_point='env_wrappers.playroom:Playroom'
+)
