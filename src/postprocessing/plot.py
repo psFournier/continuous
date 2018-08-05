@@ -24,9 +24,11 @@ for run in runs:
 # Creating the complete dataframe with all dat
 df = pd.concat(frames, ignore_index=True)
 y = ['R_0', 'R_1', 'R_2', 'R_3']
-df = df[['step', 'tutor_imit', 'theta'] + y]
+x = ['step']
+params = ['tutor_imit', 'theta']
+df = df[x + params + y]
 op_dict = {a:[np.mean, np.std] for a in y}
-df = df.groupby(['step', 'tutor_imit', 'theta']).agg(op_dict).reset_index()
+df = df.groupby(x + params).agg(op_dict).reset_index()
 # df = df[['step', 'avg_return']]
 print(df.head())
 # plt.plot(df['step'], df['avg_return'])
@@ -38,14 +40,15 @@ print(df.head())
 # agg.columns = agg.columns.map(''.join)
 # df = pd.concat([df, agg], axis=1).drop(['list_returns'], axis=1)
 
-fig, ax = plt.subplots(4, 2, figsize=(18,10))
-for i, (name, g) in enumerate(df.groupby(['tutor_imit', 'theta'])):
+a, b = 4, 2
+fig, ax = plt.subplots(a, b, figsize=(18,10))
+for i, (name, g) in enumerate(df.groupby(params)):
     for val in y:
-        ax[i % 4, i // 4].plot(g['step'], g[val]['mean'], label=val)
-        ax[i % 4, i // 4].fill_between(g['step'],
+        ax[i % a, i // a].plot(g[x], g[val]['mean'], label=val)
+        ax[i % a, i // a].fill_between(g['step'],
                         g[val]['mean'] - 0.5 * g[val]['std'],
                         g[val]['mean'] + 0.5 * g[val]['std'], alpha=0.25, linewidth=0)
-        ax[i % 4, i // 4].set_title(label=name)
-        ax[i % 4, i // 4].legend()
+        ax[i % a, i // a].set_title(label=name)
+        ax[i % a, i // a].legend()
 
 plt.show()
