@@ -25,7 +25,6 @@ class DQNG(Agent):
         self.per = bool(args['per'])
         self.self_imitation = bool(int(args['self_imit']))
         self.tutor_imitation = bool(int(args['tutor_imit']))
-        self.train_last_expe = bool(int(args['train_last_expe']))
         self.her = bool(int(args['her']))
 
         self.critic = CriticDQNG(sess,
@@ -104,7 +103,6 @@ class DQNG(Agent):
         self.train_autonomous(exp)
         if self.tutor_imitation:
             self.train_imitation(exp)
-        self.target_train()
 
     def train_autonomous(self, exp):
         pass

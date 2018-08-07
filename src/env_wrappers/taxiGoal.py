@@ -62,7 +62,7 @@ class TaxiGoal(Wrapper):
         CPs = [abs(q.CP) for q in self.queues]
         maxcp = max(CPs)
 
-        if maxcp > 10:
+        if maxcp > 1:
             self.interests = [math.pow(cp / maxcp, self.theta) + 0.0001 for cp in CPs]
         else:
             self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.0001 for q in self.queues]

@@ -45,10 +45,8 @@ class DQNG0(DQNG):
     def train_autonomous(self, exp):
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
-            if self.train_last_expe:
-                for key in self.names:
-                    experiences[key].append(exp[key])
             self.train_critic(experiences)
+            self.target_train()
 
     def expe2array(self, experiences):
         s0 = np.array(experiences['state0'])

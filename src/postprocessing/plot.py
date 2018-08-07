@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-runs = glob.glob('../../log/cluster/dqn_TaxiGoal-v0/*/')
+runs = glob.glob('../../log/cluster/dqng2_TaxiGoal-v0/*/')
 frames = []
 
 for run in runs:
@@ -25,8 +25,9 @@ for run in runs:
 df = pd.concat(frames, ignore_index=True)
 y = ['R_0', 'R_1', 'R_2', 'R_3']
 x = ['step']
-params = ['tutor_imit', 'theta']
+params = ['train_last_expe', 'theta', 'agent']
 df = df[x + params + y]
+df = df[(df['train_last_expe'] == 0)]
 op_dict = {a:[np.mean, np.std] for a in y}
 df = df.groupby(x + params).agg(op_dict).reset_index()
 # df = df[['step', 'avg_return']]
@@ -40,11 +41,19 @@ print(df.head())
 # agg.columns = agg.columns.map(''.join)
 # df = pd.concat([df, agg], axis=1).drop(['list_returns'], axis=1)
 
-a, b = 4, 2
+# a, b = 2, 2
+# fig, ax = plt.subplots(a, b, figsize=(18,10))
+# for i, val in enumerate(y):
+#     for name, g in df.groupby('num_run'):
+#         ax[i % a, i // a].plot(g['step'], g[val], label=name)
+#     ax[i % a, i // a].set_title(label=val)
+#     ax[i % a, i // a].legend()
+
+a, b = 2, 2
 fig, ax = plt.subplots(a, b, figsize=(18,10))
 for i, (name, g) in enumerate(df.groupby(params)):
     for val in y:
-        ax[i % a, i // a].plot(g[x], g[val]['mean'], label=val)
+        ax[i % a, i // a].plot(g['step'], g[val]['mean'], label=val)
         ax[i % a, i // a].fill_between(g['step'],
                         g[val]['mean'] - 0.5 * g[val]['std'],
                         g[val]['mean'] + 0.5 * g[val]['std'], alpha=0.25, linewidth=0)

@@ -43,10 +43,8 @@ class DQNG2(DQNG):
     def train_autonomous(self, exp):
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
-            if self.train_last_expe:
-                for key in self.names:
-                    experiences[key].append(exp[key])
             self.train_critic(experiences)
+            self.target_train()
 
     def expe2array(self, experiences):
         s0 = np.array(experiences['state0'])
@@ -57,7 +55,7 @@ class DQNG2(DQNG):
     def preprocess(self, experiences):
         s0, a, s1 = self.expe2array(experiences)
         eval = []
-        for k in range(self.batch_size + int(self.train_last_expe)):
+        for k in range(self.batch_size):
             eval.append(self.env.eval_exp(s0[k], a[k], s1[k], self.env.goal))
         r, t = zip(*eval)
         r = np.array(r)
