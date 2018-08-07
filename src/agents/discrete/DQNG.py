@@ -40,6 +40,9 @@ class DQNG(Agent):
         self.loss_qVal = 0
         self.loss_imitation = 0
         self.trajectory = []
+        self.exploration = LinearSchedule(schedule_timesteps=int(10000),
+                                          initial_p=1.0,
+                                          final_p=.1)
 
     def get_tutor_exp(self, goal):
         for i in range(10):
@@ -184,3 +187,7 @@ class DQNG(Agent):
                 self.logger.logkv(key, self.stats[key])
 
             self.logger.dumpkvs()
+
+    @property
+    def explore_prop(self):
+        return self.exploration.value(self.env_step)

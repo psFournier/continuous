@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-runs = glob.glob('../../log/cluster/dqng2_TaxiGoal-v0/*/')
+runs = glob.glob('../../log/cluster/dqng1_TaxiGoal-v0/*/')
 frames = []
 
 for run in runs:
@@ -23,11 +23,12 @@ for run in runs:
 
 # Creating the complete dataframe with all dat
 df = pd.concat(frames, ignore_index=True)
-y = ['R_0', 'R_1', 'R_2', 'R_3']
+y = ['F_0', 'F_1', 'F_2', 'F_3']
 x = ['step']
 params = ['train_last_expe', 'theta', 'agent']
 df = df[x + params + y]
 df = df[(df['train_last_expe'] == 0)]
+# df = df[(df['theta'] == 0)]
 op_dict = {a:[np.mean, np.std] for a in y}
 df = df.groupby(x + params).agg(op_dict).reset_index()
 # df = df[['step', 'avg_return']]

@@ -26,10 +26,6 @@ class DQNG0(DQNG):
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
-        self.exploration = LinearSchedule(schedule_timesteps=int(10000),
-                                           initial_p=1.0,
-                                           final_p=.1)
-
     def make_exp(self, state0, action, state1):
         reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal)
 
@@ -63,6 +59,4 @@ class DQNG0(DQNG):
         targets = self.compute_targets(s1, g, r, t)
         return inputs, targets
 
-    @property
-    def explore_prop(self):
-        return self.exploration.value(self.env_step)
+

@@ -28,9 +28,9 @@ class DQNG1(DQNG):
         self.buffers = {goal: ReplayBuffer(limit=int(1e5), names=self.names) for goal in self.env.goals}
         self.buffers['tutor'] = ReplayBuffer(limit=int(1e2), names=self.names)
 
-        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
-                                           initial_p=1.0,
-                                           final_p=.1) for _ in self.env.goals]
+        self.exploration = LinearSchedule(schedule_timesteps=int(10000),
+                                          initial_p=1.0,
+                                          final_p=.1)
 
         if self.tutor_imitation:
             self.get_tutor_exp(goal=3)
@@ -107,7 +107,3 @@ class DQNG1(DQNG):
         #         self.q_values[goal] = np.mean(q_values[np.where(g == goal)])
 
         return td_errors
-
-    @property
-    def explore_prop(self):
-        return self.explorations[self.env.goal].value(self.env_step)
