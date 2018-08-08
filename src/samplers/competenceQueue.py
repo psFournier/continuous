@@ -10,19 +10,22 @@ class CompetenceQueue():
         self.CP = 0.001
         self.R_mean = 0.001
         self.T_mean = 0
+        self.L_mean = 0
 
     def update_CP(self):
+        Rs = [point[0] for point in self.points]
+        Ts = [point[1] for point in self.points]
+        Ls = [point[2] for point in self.points]
+        self.R_mean = np.sum(Rs) / self.size
+        self.T_mean = np.sum(Ts) / self.size
+        self.L_mean = np.sum(Ls) / self.size
         if self.size > 2:
             window = min(self.size // 2, self.window)
-            Rs = [point[1] for point in self.points]
-            Ts = [point[2] for point in self.points]
             R1 = list(itertools.islice(Rs, self.size - window, self.size))
             comp1 = np.sum(R1) / window
             R2 = list(itertools.islice(Rs, 0, self.size - window))
             comp2 = np.sum(R2) / (self.size - window)
             self.CP = comp1 - comp2
-            self.R_mean = np.sum(Rs) / self.size
-            self.T_mean = np.sum(Ts) / self.size
 
     def append(self, point):
         self.points.append(point)

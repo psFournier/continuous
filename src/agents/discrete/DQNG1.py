@@ -28,10 +28,6 @@ class DQNG1(DQNG):
         self.buffers = {goal: ReplayBuffer(limit=int(1e5), names=self.names) for goal in self.env.goals}
         self.buffers['tutor'] = ReplayBuffer(limit=int(1e2), names=self.names)
 
-        self.exploration = LinearSchedule(schedule_timesteps=int(10000),
-                                          initial_p=1.0,
-                                          final_p=.1)
-
         if self.tutor_imitation:
             self.get_tutor_exp(goal=3)
             self.batch_size = int(self.batch_size / 2)
@@ -60,9 +56,11 @@ class DQNG1(DQNG):
                       'terminal': terminal,
                       'goal': self.env.goal}
 
+        self.trajectory.append(experience)
+
         return experience
 
-    def train_autonomous(self, exp):
+    def train_autonomous(self):
         buffer = self.buffers[self.env.goal]
         if buffer.nb_entries > self.batch_size:
             experiences = buffer.sample(self.batch_size)
@@ -84,7 +82,7 @@ class DQNG1(DQNG):
         targets = self.compute_targets(s1, g, r, t)
         return inputs, targets
 
-    def train_imitation(self, exp):
+    def train_imitation(self):
         experiences = self.buffers['tutor'].sample(self.batch_size)
         s0, a, s1, g, r, t = self.expe2array(experiences)
 

@@ -25,6 +25,9 @@ class DQNG0(DQNG):
 
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
+        self.beta_schedule = LinearSchedule(schedule_timesteps=int(200000),
+                                          initial_p=float(args['beta0']),
+                                          final_p=1.)
 
     def make_exp(self, state0, action, state1):
         reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal)
@@ -36,9 +39,11 @@ class DQNG0(DQNG):
                       'terminal': terminal,
                       'goal': self.env.goal}
 
+        self.trajectory.append(experience)
+
         return experience
 
-    def train_autonomous(self, exp):
+    def train_autonomous(self):
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
             self.train_critic(experiences)
@@ -57,6 +62,11 @@ class DQNG0(DQNG):
         s0, a, s1, g ,r, t = self.expe2array(experiences)
         inputs = [s0, a, g]
         targets = self.compute_targets(s1, g, r, t)
-        return inputs, targets
+        weights = np.array([(self.env.min_avg_length_ep / self.env.queues[gi].L_mean) ** self.beta for gi in g])
+        return inputs, targets, weights
+
+    @property
+    def beta(self):
+        return self.beta_schedule.value(self.env_step)
 
 

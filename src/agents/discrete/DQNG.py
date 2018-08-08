@@ -90,27 +90,27 @@ class DQNG(Agent):
 
         R = 0
         T = False
+        L = 0
         for expe in reversed(self.trajectory):
             R = R * self.critic.gamma + int(expe['terminal']) - 1
+            L += 1
             expe['R'] = R
             self.buffer.append(expe)
             T = T or expe['terminal']
-        return R, T
+        return R, T, L
 
     def preprocess(self, experiences):
-        return None, None
+        return None, None, None
 
-    def train(self, exp):
-
-        self.trajectory.append(exp)
-        self.train_autonomous(exp)
+    def train(self):
+        self.train_autonomous()
         if self.tutor_imitation:
-            self.train_imitation(exp)
+            self.train_imitation()
 
-    def train_autonomous(self, exp):
+    def train_autonomous(self):
         pass
 
-    def train_imitation(self, exp):
+    def train_imitation(self):
         pass
 
     def compute_targets(self, s1, g, r, t):
@@ -132,8 +132,10 @@ class DQNG(Agent):
 
     def train_critic(self, experiences):
 
-        inputs, targets = self.preprocess(experiences)
-        self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=inputs, y=targets)
+        inputs, targets, sample_weights = self.preprocess(experiences)
+        self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=inputs,
+                                                                           y=targets,
+                                                                           sample_weight=sample_weights)
         td_errors = targets - q_values
 
         return td_errors
@@ -141,8 +143,8 @@ class DQNG(Agent):
     def reset(self):
 
         if self.trajectory:
-            R, T = self.process_episode()
-            self.env.queues[self.env.goal].append((self.env.goal, R, T))
+            R, T, L = self.process_episode()
+            self.env.queues[self.env.goal].append((R, T, L))
             self.trajectory.clear()
 
         state = self.env.reset()
@@ -167,10 +169,6 @@ class DQNG(Agent):
             action = self.critic.bestAction_model.predict(inputs)
             action = action[0, 0]
         return action
-
-    @property
-    def explore_prop(self):
-        return 1
 
     def log(self):
 

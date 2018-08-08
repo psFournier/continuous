@@ -54,7 +54,7 @@ class Agent():
 
                 state1 = self.env.step(action)
                 experience = self.make_exp(state0, action, state1)
-                self.train(experience)
+                self.train()
 
                 self.env_step += 1
                 self.episode_step += 1
@@ -97,7 +97,7 @@ class Agent():
     def save_policy(self):
         pass
 
-    def train(self, exp):
+    def train(self):
         pass
 
     def init_targets(self):

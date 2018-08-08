@@ -26,10 +26,6 @@ class DQNG2(DQNG):
         self.names = ['state0', 'action', 'state1']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
-        self.exploration = LinearSchedule(schedule_timesteps=int(10000),
-                                          initial_p=1.0,
-                                          final_p=.1)
-
     def make_exp(self, state0, action, state1):
         reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal)
 
@@ -38,9 +34,11 @@ class DQNG2(DQNG):
                       'state1': state1.copy(),
                       'terminal': terminal}
 
+        self.trajectory.append(experience)
+
         return experience
 
-    def train_autonomous(self, exp):
+    def train_autonomous(self):
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
             self.train_critic(experiences)

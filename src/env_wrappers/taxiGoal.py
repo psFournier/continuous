@@ -111,3 +111,7 @@ class TaxiGoal(Wrapper):
     @property
     def action_dim(self):
         return [self.env.action_space.n]
+
+    @property
+    def min_avg_length_ep(self):
+        return np.min([q.L_mean for q in self.queues if q.L_mean != 0])
