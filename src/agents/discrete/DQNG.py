@@ -84,6 +84,11 @@ class DQNG(Agent):
         pass
 
     def make_exp(self, state0, action, state1):
+
+        self.env_step += 1
+        self.episode_step += 1
+        self.env.steps[self.env.goal] += 1
+
         reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal)
 
         experience = {'state0': state0.copy(),

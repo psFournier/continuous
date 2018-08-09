@@ -24,7 +24,6 @@ class Agent():
 
         self.env_step = 0
         self.episode_step = 0
-        self.goal_reached = 0
         self.stats = {}
 
     def init_variables(self):
@@ -55,8 +54,6 @@ class Agent():
                 experience = self.make_exp(state0, action, state1)
                 self.train()
 
-                self.env_step += 1
-                self.episode_step += 1
                 state0 = experience['state1']
 
                 if (experience['terminal'] or self.episode_step >= self.ep_steps):

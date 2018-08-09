@@ -13,6 +13,7 @@ class TaxiGoal(Wrapper):
         self.goal = None
         self.queues = [CompetenceQueue() for _ in self.goals]
         self.interests = []
+        self.steps = [0 for _ in self.goals]
         self.freqs_act = [0 for _ in self.goals]
         self.freqs_train = [0 for _ in self.goals]
         self.freqs_act_reward = [0 for _ in self.goals]
@@ -45,8 +46,6 @@ class TaxiGoal(Wrapper):
 
     def sample_goal(self):
 
-        self.update_interests()
-
         sum = np.sum(self.interests)
         mass = np.random.random() * sum
         idx = 0
@@ -69,6 +68,7 @@ class TaxiGoal(Wrapper):
             self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.0001 for q in self.queues]
 
     def set_goal(self):
+        self.update_interests()
         self.goal = self.sample_goal()
         self.freqs_act[self.goal] += 1
 
@@ -93,6 +93,7 @@ class TaxiGoal(Wrapper):
             stats['FAR_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_act_reward[goal]))
             stats['FTR_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_train_reward[goal]))
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[goal]))
+            stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.steps[goal]))
         return stats
 
 

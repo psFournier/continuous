@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQNG0, DQNG1, DQNG2, DQN, TD3, DDPG
+from agents import DQNG0, DQNG01, DQNG02, DQNG1, DQNG2, DQN, TD3, DDPG
 from utils.logger import Logger
 import datetime
 from utils.util import load
@@ -83,6 +83,10 @@ if __name__ == '__main__':
             agent = DQNG1(args, sess, env, env_test, logger)
         elif args['agent'] == 'dqng2':
             agent = DQNG2(args, sess, env, env_test, logger)
+        elif args['agent'] == 'dqng01':
+            agent = DQNG01(args, sess, env, env_test, logger)
+        elif args['agent'] == 'dqng02':
+            agent = DQNG02(args, sess, env, env_test, logger)
         # elif args['agent'] == 'qlearning':
         #     agent = Qlearning.Qlearning(args, sess, env, env_test, logger)
         # elif args['agent'] == 'qlearning_off':
