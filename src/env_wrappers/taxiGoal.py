@@ -13,10 +13,10 @@ class TaxiGoal(Wrapper):
         self.goal = None
         self.queues = [CompetenceQueue() for _ in self.goals]
         self.interests = []
-        self.freqs = [0 for _ in self.goals]
+        self.freqs_act = [0 for _ in self.goals]
         self.freqs_train = [0 for _ in self.goals]
-        self.freqs_reward = [0 for _ in self.goals]
-        self.weights = [self.min_avg_length_ep / self.queues[g].L_mean for g in self.goals]
+        self.freqs_act_reward = [0 for _ in self.goals]
+        self.freqs_train_reward = [0 for _ in self.goals]
 
         self.trajectories = {}
         self.trajectories[0] = [[3,3,1,1,4]
@@ -68,11 +68,13 @@ class TaxiGoal(Wrapper):
         else:
             self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.0001 for q in self.queues]
 
+    def set_goal(self):
+        self.goal = self.sample_goal()
+        self.freqs_act[self.goal] += 1
 
     def reset(self):
 
-        self.goal = self.sample_goal()
-        self.freqs[self.goal] += 1
+        self.set_goal()
 
         obs = self.env.reset()
         state = np.array(self.decode(obs))
@@ -84,12 +86,13 @@ class TaxiGoal(Wrapper):
         for goal in self.goals:
             stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[goal].R_mean))
             stats['T_{}'.format(goal)] = float("{0:.3f}".format(self.queues[goal].T_mean))
+            stats['L_{}'.format(goal)] = float("{0:.3f}".format(self.queues[goal].L_mean))
             stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.queues[goal].CP))
-            stats['F_{}'.format(goal)] = float("{0:.3f}".format(self.freqs[goal]))
+            stats['FA_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_act[goal]))
             stats['FT_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_train[goal]))
-            stats['FR_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_reward[goal]))
+            stats['FAR_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_act_reward[goal]))
+            stats['FTR_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_train_reward[goal]))
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[goal]))
-            stats['W_{}'.format(goal)] = float("{0:.3f}".format(self.weights[goal]))
         return stats
 
 

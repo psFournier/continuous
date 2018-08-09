@@ -26,29 +26,11 @@ class DQNG2(DQNG):
         self.names = ['state0', 'action', 'state1']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
-    def make_exp(self, state0, action, state1):
-        reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal)
-
-        experience = {'state0': state0.copy(),
-                      'action': action,
-                      'state1': state1.copy(),
-                      'terminal': terminal}
-
-        self.trajectory.append(experience)
-
-        return experience
-
     def train_autonomous(self):
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
             self.train_critic(experiences)
             self.target_train()
-
-    def expe2array(self, experiences):
-        s0 = np.array(experiences['state0'])
-        a = np.array(experiences['action'])
-        s1 = np.array(experiences['state1'])
-        return s0, a, s1
 
     def preprocess(self, experiences):
         s0, a, s1 = self.expe2array(experiences)

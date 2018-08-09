@@ -10,7 +10,7 @@ class CompetenceQueue():
         self.CP = 0.001
         self.R_mean = 0.001
         self.T_mean = 0
-        self.L_mean = 0
+        self.L_mean = 200
 
     def update_CP(self):
         Rs = [point[0] for point in self.points]

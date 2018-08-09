@@ -84,7 +84,18 @@ class DQNG(Agent):
         pass
 
     def make_exp(self, state0, action, state1):
-        pass
+        reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal)
+
+        experience = {'state0': state0.copy(),
+                      'action': action,
+                      'state1': state1.copy(),
+                      'reward': reward,
+                      'terminal': terminal,
+                      'goal': self.env.goal}
+
+        self.trajectory.append(experience)
+
+        return experience
 
     def process_episode(self):
 
@@ -98,6 +109,10 @@ class DQNG(Agent):
             self.buffer.append(expe)
             T = T or expe['terminal']
         return R, T, L
+
+    def expe2array(self, experiences):
+        exp = [np.array(experiences[name]) for name in self.names]
+        return exp
 
     def preprocess(self, experiences):
         return None, None, None
@@ -120,7 +135,7 @@ class DQNG(Agent):
         targets = []
         for k in range(len(s1)):
             self.env.freqs_train[g[k]] += 1
-            self.env.freqs_reward[g[k]] += t[k]
+            self.env.freqs_train_reward[g[k]] += t[k]
             target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
             if TARGET_CLIP:
                 target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
@@ -145,9 +160,11 @@ class DQNG(Agent):
         if self.trajectory:
             R, T, L = self.process_episode()
             self.env.queues[self.env.goal].append((R, T, L))
+            self.env.freqs_act_reward[self.env.goal] += int(T)
             self.trajectory.clear()
 
         state = self.env.reset()
+        self.episode_step = 0
 
         return state
 

@@ -23,7 +23,6 @@ class Agent():
         self.max_steps = int(args['max_steps'])
 
         self.env_step = 0
-        self.episode = 0
         self.episode_step = 0
         self.goal_reached = 0
         self.stats = {}
@@ -61,9 +60,7 @@ class Agent():
                 state0 = experience['state1']
 
                 if (experience['terminal'] or self.episode_step >= self.ep_steps):
-                    self.episode += 1
                     state0 = self.reset()
-                    self.episode_step = 0
 
                 self.log()
 
