@@ -16,6 +16,7 @@ class TaxiGoal(Wrapper):
         self.freqs = [0 for _ in self.goals]
         self.freqs_train = [0 for _ in self.goals]
         self.freqs_reward = [0 for _ in self.goals]
+        self.weights = [self.min_avg_length_ep / self.queues[g].L_mean for g in self.goals]
 
         self.trajectories = {}
         self.trajectories[0] = [[3,3,1,1,4]
@@ -88,6 +89,7 @@ class TaxiGoal(Wrapper):
             stats['FT_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_train[goal]))
             stats['FR_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_reward[goal]))
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[goal]))
+            stats['W_{}'.format(goal)] = float("{0:.3f}".format(self.weights[goal]))
         return stats
 
 

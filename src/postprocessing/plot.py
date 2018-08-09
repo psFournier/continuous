@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-runs = glob.glob('../../log/cluster/0708/dqng?_TaxiGoal-v0/*/')
+runs = glob.glob('../../log/cluster/0908/dqng?_TaxiGoal-v0/*/')
 frames = []
 
 for run in runs:
@@ -25,10 +25,13 @@ for run in runs:
 df = pd.concat(frames, ignore_index=True)
 y = ['R_0', 'R_1', 'R_2', 'R_3']
 x = ['step']
-params = ['theta', 'agent']
+params = ['beta0']
+# params += ['num_run']
+
 df = df[x + params + y]
-# df = df[(df['theta'] == 0)]
+# df = df[(df['beta0'] == 1)]
 op_dict = {a:[np.mean, np.std] for a in y}
+
 df = df.groupby(x + params).agg(op_dict).reset_index()
 # df = df[['step', 'avg_return']]
 print(df.head())
@@ -49,7 +52,7 @@ print(df.head())
 #     ax[i % a, i // a].set_title(label=val)
 #     ax[i % a, i // a].legend()
 
-a, b = 2, 2
+a, b = 3, 2
 fig, ax = plt.subplots(a, b, figsize=(18,10))
 for i, (name, g) in enumerate(df.groupby(params)):
     for val in y:

@@ -25,9 +25,10 @@ class DQNG0(DQNG):
 
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
-        self.beta_schedule = LinearSchedule(schedule_timesteps=int(200000),
-                                          initial_p=float(args['beta0']),
-                                          final_p=1.)
+        # self.beta_schedule = LinearSchedule(schedule_timesteps=int(200000),
+        #                                   initial_p=float(args['beta0']),
+        #                                   final_p=1.)
+        self.beta = 0
 
     def make_exp(self, state0, action, state1):
         reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal)
@@ -62,11 +63,11 @@ class DQNG0(DQNG):
         s0, a, s1, g ,r, t = self.expe2array(experiences)
         inputs = [s0, a, g]
         targets = self.compute_targets(s1, g, r, t)
-        weights = np.array([(self.env.min_avg_length_ep / self.env.queues[gi].L_mean) ** self.beta for gi in g])
+        weights = np.array([self.env.weights[gi] ** self.beta for gi in g])
         return inputs, targets, weights
 
-    @property
-    def beta(self):
-        return self.beta_schedule.value(self.env_step)
+    # @property
+    # def beta(self):
+    #     return self.beta_schedule.value(self.env_step)
 
 
