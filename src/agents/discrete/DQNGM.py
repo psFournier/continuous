@@ -35,7 +35,7 @@ class DQNGM(Agent):
                                  tau=0.001,
                                  learning_rate=0.001)
 
-        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal', 'mask']
+        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal', 'object']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
         self.trajectory = []
@@ -48,7 +48,7 @@ class DQNGM(Agent):
         self.env_step += 1
         self.episode_step += 1
 
-        reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal, self.env.mask)
+        reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal, self.env.object_idx)
 
         experience = {'state0': state0.copy(),
                       'action': action,
@@ -56,7 +56,7 @@ class DQNGM(Agent):
                       'reward': reward,
                       'terminal': terminal,
                       'goal': self.env.goal,
-                      'mask': self.env.mask}
+                      'object': self.env.object_idx}
 
         self.trajectory.append(experience)
 
@@ -66,8 +66,8 @@ class DQNGM(Agent):
 
         if self.trajectory:
             R, T, L = self.process_episode()
-            self.env.queues[self.env.module].append((R,T,L))
-            self.env.freqs_act_reward[self.env.module] += int(T)
+            self.env.queues[self.env.object_idx].append((R,T,L))
+            self.env.freqs_act_reward[self.env.object_idx] += int(T)
             self.trajectory.clear()
 
         state = self.env.reset()
@@ -87,10 +87,6 @@ class DQNGM(Agent):
             self.buffer.append(expe)
             T = T or expe['terminal']
         return R, T, L
-
-    def expe2array(self, experiences):
-        exp = [np.array(experiences[name]) for name in self.names]
-        return exp
 
     def train(self):
         self.train_autonomous()
@@ -112,20 +108,25 @@ class DQNGM(Agent):
         return td_errors
 
     def preprocess(self, experiences):
-        s0, a, s1, r, t, g, m = self.expe2array(experiences)
+        s0, a, s1, r, t, g, o = self.expe2array(experiences)
+        m = np.array([self.env.obj2mask(o[k]) for k in range(self.batch_size)])
         inputs = [s0, a, g, m]
-        targets = self.compute_targets(s1, g, m, r, t)
+        targets = self.compute_targets(s1, g, m, r, t, o)
         weights = np.ones(shape=a.shape)
         return inputs, targets, weights
 
-    def compute_targets(self, s1, g, m, r, t):
+    def expe2array(self, experiences):
+        exp = [np.array(experiences[name]) for name in self.names]
+        return exp
+
+    def compute_targets(self, s1, g, m, r, t, o):
         a = self.critic.bestAction_model.predict_on_batch([s1, g, m])
         q = self.critic.target_qValue_model.predict_on_batch([s1, a, g, m])
 
         targets = []
         for k in range(len(s1)):
-            self.env.freqs_train[g[k]] += 1
-            self.env.freqs_train_reward[g[k]] += t[k]
+            self.env.freqs_train[o[k]] += 1
+            self.env.freqs_train_reward[o[k]] += t[k]
             target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
             if TARGET_CLIP:
                 target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
@@ -148,16 +149,30 @@ class DQNGM(Agent):
         if noise and np.random.rand(1) < self.explore_prop:
             action = np.random.randint(0, self.env.action_space.n)
         else:
-            inputs = [np.reshape(state, (1, self.critic.s_dim[0])),
-                      np.reshape(self.env.goal, (1, self.critic.g_dim[0])),
-                      np.reshape(self.env.mask, (1, self.critic.g_dim[0]))]
-            action = self.critic.bestAction_model.predict(inputs)
+            input = self.env.make_input(state)
+            action = self.critic.bestAction_model.predict(input, batch_size=1)
             action = action[0, 0]
         return action
 
     def log(self):
 
         if self.env_step % self.eval_freq == 0:
+
+            for i, goal in enumerate(self.env_test.test_goals):
+                obs = self.env_test.env.reset()
+                state0 = np.array(self.env_test.decode(obs))
+                mask = self.env_test.obj2mask(goal[1])
+                R = 0
+                for _ in range(200):
+                    input = [np.expand_dims(i, axis=0) for i in [state0, goal[0], mask]]
+                    action = self.critic.bestAction_model.predict(input, batch_size=1)[0, 0]
+                    state1 = self.env_test.step(action)
+                    reward, terminal = self.env_test.eval_exp(state0, action, state1, goal[0], goal[1])
+                    R += reward
+                    if terminal:
+                        break
+                    state0 = state1
+                self.stats['testR_{}'.format(i)] = R
 
             wrapper_stats = self.env.get_stats()
             self.stats['step'] = self.env_step

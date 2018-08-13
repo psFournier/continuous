@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQNG0, DQNG01, DQNG02, DQNG1, DQNG2, DQN, TD3, DDPG
+from agents import DQNG0, DQNG01, DQNG02, DQNG1, DQNG2, DQN, TD3, DDPG, DQNGM
 from utils.logger import Logger
 import datetime
 from utils.util import load
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_dir', help='directory for storing run info',
                         default='/home/pierre/PycharmProjects/continuous/log/local/')
     parser.add_argument('--episode_steps', help='number of steps in the environment during evaluation', default=200)
-    parser.add_argument('--eval_freq', help='freq for critic and actor stats computation', default=2000)
+    parser.add_argument('--eval_freq', help='freq for critic and actor stats computation', default=300)
 
     args = vars(parser.parse_args())
     
@@ -87,6 +87,8 @@ if __name__ == '__main__':
             agent = DQNG01(args, sess, env, env_test, logger)
         elif args['agent'] == 'dqng02':
             agent = DQNG02(args, sess, env, env_test, logger)
+        elif args['agent'] == 'dqngm':
+            agent = DQNGM(args, sess, env, env_test, logger)
         # elif args['agent'] == 'qlearning':
         #     agent = Qlearning.Qlearning(args, sess, env, env_test, logger)
         # elif args['agent'] == 'qlearning_off':

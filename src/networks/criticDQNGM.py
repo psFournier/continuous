@@ -46,14 +46,13 @@ class CriticDQNGM(object):
         self.optimizer = Adam(lr=self.learning_rate)
 
         S = Input(shape=self.s_dim)
-        A = Input(shape=(1,), dtype='uint8')
+        A = Input(shape=self.a_dim, dtype='uint8')
         G = Input(shape=self.g_dim)
         M = Input(shape=self.g_dim)
 
         c1 = concatenate(inputs=[S,G,M])
         l1 = Dense(400, activation="relu")(c1)
-        c2 = concatenate([l1])
-        l2 = Dense(300, activation="relu")(c2)
+        l2 = Dense(300, activation="relu")(l1)
 
         V = Dense(self.num_actions,
                   activation=None,
