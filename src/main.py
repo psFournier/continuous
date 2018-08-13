@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_dir', help='directory for storing run info',
                         default='/home/pierre/PycharmProjects/continuous/log/local/')
     parser.add_argument('--episode_steps', help='number of steps in the environment during evaluation', default=200)
-    parser.add_argument('--eval_freq', help='freq for critic and actor stats computation', default=300)
+    parser.add_argument('--eval_freq', help='freq for critic and actor stats computation', default=2000)
 
     args = vars(parser.parse_args())
     
