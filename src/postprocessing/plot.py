@@ -3,8 +3,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+from scipy.interpolate import interp1d
 
-runs = glob.glob('../../log/cluster/dqng0_TaxiGoal-v0/*/')
+runs = glob.glob('../../log/cluster/1008/*/')
 frames = []
 
 for run in runs:
@@ -23,11 +24,12 @@ for run in runs:
 # Creating the complete dataframe with all dat
 df = pd.concat(frames, ignore_index=True)
 print(df.columns)
-
-y = ['FT_0', 'FT_1', 'FT_2', 'FT_3']
+print(df['agent'].unique())
+y = ['R_0', 'R_1', 'R_2', 'R_3']
+# x = ['FAR_0', 'FAR_1', 'FAR_2', 'FAR_3']
 x = ['step']
-params = ['theta']
-df = df[(df['train_last_expe'] == 0)]
+params = ['agent', 'theta', 'beta']
+df = df[(df['agent'] == 'dqng0')]
 
 # params += ['num_run']
 df = df.fillna(-1)
@@ -46,26 +48,28 @@ print(df.head())
 # agg.columns = agg.columns.map(''.join)
 # df = pd.concat([df, agg], axis=1).drop(['list_returns'], axis=1)
 
-a, b = 2, 2
-fig, ax = plt.subplots(a, b, figsize=(18,10))
-for i, val in enumerate(y):
-    for name, g in df.groupby('theta'):
-        ax[i % a, i // a].plot(g['step'], g[val]['mean'], label=name)
-        ax[i % a, i // a].fill_between(g['step'],
-                       g[val]['mean'] - 0.5 * g[val]['std'],
-                       g[val]['mean'] + 0.5 * g[val]['std'], alpha=0.25, linewidth=0)
-    ax[i % a, i // a].set_title(label=val)
-    ax[i % a, i // a].legend()
-
-# a, b = 4, 2
+# a, b = 2, 2
 # fig, ax = plt.subplots(a, b, figsize=(18,10))
-# for i, (name, g) in enumerate(df.groupby(params)):
-#     for val in y:
-#         ax[i % a, i // a].plot(g['step'], g[val]['mean'], label=val)
+# for i, val in enumerate(y):
+#     for name, g in df.groupby('agent'):
+#         ax[i % a, i // a].plot(g['step'], g[val]['mean'], label=name)
 #         ax[i % a, i // a].fill_between(g['step'],
-#                         g[val]['mean'] - 0.5 * g[val]['std'],
-#                         g[val]['mean'] + 0.5 * g[val]['std'], alpha=0.25, linewidth=0)
-#         ax[i % a, i // a].set_title(label=name)
-#         ax[i % a, i // a].legend()
+#                        g[val]['mean'] - 0.5 * g[val]['std'],
+#                        g[val]['mean'] + 0.5 * g[val]['std'], alpha=0.25, linewidth=0)
+#     ax[i % a, i // a].set_title(label=val)
+#     ax[i % a, i // a].legend()
+
+a, b = 3, 4
+fig, ax = plt.subplots(a, b, figsize=(18,10))
+for i, (name, g) in enumerate(df.groupby(params)):
+    for j, val in enumerate(y):
+        # ax[i % a, i // a].scatter(g['FAR_{}'.format(j)], g[val], label=val, s=10)
+        ax[i % a, i // a].plot(g['step'], g[val]['mean'], label=val)
+        ax[i % a, i // a].fill_between(g['step'],
+                        g[val]['mean'] - 0.5 * g[val]['std'],
+                        g[val]['mean'] + 0.5 * g[val]['std'], alpha=0.25, linewidth=0)
+        ax[i % a, i // a].set_title(label=name)
+        # ax[i % a, i // a].set_xlim([0,1000])
+        ax[i % a, i // a].legend()
 
 plt.show()

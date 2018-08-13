@@ -7,3 +7,4 @@ from .discrete.DQNG1 import DQNG1
 from .discrete.DQNG2 import DQNG2
 from .discrete.DQNG01 import DQNG01
 from .discrete.DQNG02 import DQNG02
+from .discrete.DQNGM import DQNGM

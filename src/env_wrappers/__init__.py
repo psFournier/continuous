@@ -87,6 +87,12 @@ register(
 )
 
 register(
+    id='TaxiGoalMask-v0',
+    entry_point='envs:Taxi2Env',
+    wrapper_entry_point='env_wrappers.taxiGoalMask:TaxiGoalMask'
+)
+
+register(
     id='TaxiGoal2-v0',
     entry_point='envs:Taxi2Env',
     wrapper_entry_point='env_wrappers.taxiGoal2:TaxiGoal2'
