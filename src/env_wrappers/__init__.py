@@ -99,7 +99,7 @@ register(
 )
 
 register(
-    id='Playroom-v0',
-    entry_point='envs:PlayroomEnv',
+    id='PlayroomMask-v0',
+    entry_point='envs:PlayroomMaskEnv',
     wrapper_entry_point='env_wrappers.playroom:Playroom'
 )

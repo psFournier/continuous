@@ -5,7 +5,7 @@ import os
 import numpy as np
 from scipy.interpolate import interp1d
 
-runs = glob.glob('../../log/cluster/1008/*/')
+runs = glob.glob('../../log/cluster/1308/*/')
 frames = []
 
 for run in runs:
@@ -25,11 +25,12 @@ for run in runs:
 df = pd.concat(frames, ignore_index=True)
 print(df.columns)
 print(df['agent'].unique())
-y = ['R_0', 'R_1', 'R_2', 'R_3']
+# y = ['testR_0', 'testR_1', 'testR_2', 'testR_3']
+y = ['R_agent', 'R_passenger', 'R_taxi']
 # x = ['FAR_0', 'FAR_1', 'FAR_2', 'FAR_3']
 x = ['step']
 params = ['agent', 'theta', 'beta']
-df = df[(df['agent'] == 'dqng0')]
+# df = df[(df['agent'] == 'dqng0')]
 
 # params += ['num_run']
 df = df.fillna(-1)
@@ -59,7 +60,7 @@ print(df.head())
 #     ax[i % a, i // a].set_title(label=val)
 #     ax[i % a, i // a].legend()
 
-a, b = 3, 4
+a, b = 2,2
 fig, ax = plt.subplots(a, b, figsize=(18,10))
 for i, (name, g) in enumerate(df.groupby(params)):
     for j, val in enumerate(y):

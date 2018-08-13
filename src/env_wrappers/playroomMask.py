@@ -3,9 +3,9 @@ import numpy as np
 from samplers.competenceQueue import CompetenceQueue
 import math
 
-class TaxiGoalMask(Wrapper):
+class PlayroomMask(Wrapper):
     def __init__(self, env, args):
-        super(TaxiGoalMask, self).__init__(env)
+        super(PlayroomMask, self).__init__(env)
 
         self.theta = float(args['theta'])
         self.objects = ['agent', 'passenger', 'taxi']
@@ -67,13 +67,11 @@ class TaxiGoalMask(Wrapper):
 
     def feat2val(self, features):
         res = np.zeros(shape=self.state_dim)
-        while True:
-            ok = False
-            for idx in features:
+        for idx in features:
+            while True:
                 s = np.random.randint(self.state_low[idx], self.state_high[idx]+1)
-                res[idx] = s
-                ok = ok or s != self.init_state[idx]
-            if ok: break
+                if s != self.init_state[idx]: break
+            res[idx] = s
         return res
 
     def update_interests(self):
