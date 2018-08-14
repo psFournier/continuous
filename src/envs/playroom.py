@@ -43,10 +43,15 @@ class Light(Obj):
         self.inity = inity
         self.x = self.initx
         self.y = self.inity
+        self.name = 'light'
 
     def act(self, a):
         if a==Actions.TOUCH:
             self.s = 1 - self.s
+
+    @property
+    def smax(self):
+        return 1
 
 class Sound(Obj):
     def __init__(self, light, initx=0, inity=0):
@@ -56,6 +61,7 @@ class Sound(Obj):
         self.x = self.initx
         self.y = self.inity
         self.light = light
+        self.name = 'sound'
 
     def act(self, a):
         if a==Actions.TOUCH and self.light.s == 1:
@@ -70,6 +76,10 @@ class Sound(Obj):
             if self.s > 0:
                 self.s -= 1
 
+    @property
+    def smax(self):
+        return 3
+
 class Toy1(Obj):
     def __init__(self, light, initx=0, inity=0):
         super(Toy1, self).__init__()
@@ -78,6 +88,7 @@ class Toy1(Obj):
         self.x = self.initx
         self.y = self.inity
         self.light = light
+        self.name = 'toy1'
 
     def act(self, a):
         if a == Actions.TOUCH and self.light.s == 1:
@@ -87,10 +98,15 @@ class Toy1(Obj):
         elif a == Actions.PUT:
             self.in_hand = 0
 
+    @property
+    def smax(self):
+        return 1
+
 class Toy2(Toy1):
     def __init__(self, light, sound, initx=0, inity=0):
         super(Toy2, self).__init__(light, initx=initx, inity=inity)
         self.sound = sound
+        self.name = 'toy2'
 
     def act(self, a):
         if a == Actions.TAKE:
@@ -113,6 +129,10 @@ class Toy2(Toy1):
             if self.s > 0:
                 self.s = 0
 
+    @property
+    def smax(self):
+        return 4
+
 class PlayroomEnv(Env):
 
     metadata = {'render.modes': ['human', 'ansi']}
@@ -134,7 +154,7 @@ class PlayroomEnv(Env):
 
     def step(self, a):
 
-        print(self.get_state(), a)
+        # print(self.get_state(), a)
 
         if a==Actions.UP:
             self.y = min(self.y + 1, self.maxR)
@@ -160,17 +180,17 @@ class PlayroomEnv(Env):
             if h >= 0:
                 self.objects[h].x = self.x
 
-        elif a==Actions.TAKE:
-            h = self.get_held()
-            o = self.get_underagent()
-            if o >= 0 and h == -1:
-                self.objects[o].act(a)
-
-        elif a==Actions.PUT:
-            h = self.get_held()
-            o = self.get_underagent()
-            if o == -1 and h >= 0:
-                self.objects[h].act(a)
+        # elif a==Actions.TAKE:
+        #     h = self.get_held()
+        #     o = self.get_underagent()
+        #     if o >= 0 and h == -1:
+        #         self.objects[o].act(a)
+        #
+        # elif a==Actions.PUT:
+        #     h = self.get_held()
+        #     o = self.get_underagent()
+        #     if o == -1 and h >= 0:
+        #         self.objects[h].act(a)
 
         elif a==Actions.TOUCH:
             o = self.get_underagent()
@@ -229,6 +249,24 @@ class PlayroomEnv(Env):
             obj.in_hand = 0
         self.lastaction = None
         return self.get_state()
+
+    @property
+    def state_high(self):
+        smax = [self.maxR , self.maxC]
+        for o in self.objects:
+            smax += [self.maxR, self.maxC, o.smax, 1]
+        return smax
+
+    @property
+    def state_init(self):
+        sinit = [0, 0]
+        for o in self.objects:
+            sinit += [o.initx, o.inity, 0, 0]
+        return sinit
+
+    @property
+    def state_low(self):
+        return [0] * (2 + len(self.objects) * 4)
 
 if __name__ == '__main__':
     env = PlayroomEnv()

@@ -49,7 +49,7 @@ if __name__ == '__main__':
     # parser.add_argument('--queue_len', default=200)
 
     # parser.add_argument('--R', help='must be power of 2', default=128)
-    parser.add_argument('--max_steps', help='max num of episodes to do while training', default=200000)
+    parser.add_argument('--max_steps', help='max num of episodes to do while training', default=500000)
     parser.add_argument('--log_dir', help='directory for storing run info',
                         default='/home/pierre/PycharmProjects/continuous/log/local/')
     parser.add_argument('--episode_steps', help='number of steps in the environment during evaluation', default=200)

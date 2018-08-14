@@ -30,7 +30,7 @@ class DQNGM(Agent):
         self.critic = CriticDQNGM(sess,
                                  s_dim=env.state_dim,
                                  g_dim=env.goal_dim,
-                                 num_a=env.action_space.n,
+                                 num_a=env.action_dim,
                                  gamma=0.99,
                                  tau=0.001,
                                  learning_rate=0.001)
@@ -39,9 +39,9 @@ class DQNGM(Agent):
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
         self.trajectory = []
-        self.exploration = LinearSchedule(schedule_timesteps=int(10000),
+        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
                                           initial_p=1.0,
-                                          final_p=.1)
+                                          final_p=.1) for _ in self.env.objects]
 
     def make_exp(self, state0, action, state1):
 
@@ -147,7 +147,7 @@ class DQNGM(Agent):
 
     def act(self, state, noise=False):
         if noise and np.random.rand(1) < self.explore_prop:
-            action = np.random.randint(0, self.env.action_space.n)
+            action = np.random.randint(0, self.env.action_dim)
         else:
             input = self.env.make_input(state)
             action = self.critic.bestAction_model.predict(input, batch_size=1)
@@ -158,21 +158,21 @@ class DQNGM(Agent):
 
         if self.env_step % self.eval_freq == 0:
 
-            for i, goal in enumerate(self.env_test.test_goals):
-                obs = self.env_test.env.reset()
-                state0 = np.array(self.env_test.decode(obs))
-                mask = self.env_test.obj2mask(goal[1])
-                R = 0
-                for _ in range(200):
-                    input = [np.expand_dims(i, axis=0) for i in [state0, goal[0], mask]]
-                    action = self.critic.bestAction_model.predict(input, batch_size=1)[0, 0]
-                    state1 = self.env_test.step(action)
-                    reward, terminal = self.env_test.eval_exp(state0, action, state1, goal[0], goal[1])
-                    R += reward
-                    if terminal:
-                        break
-                    state0 = state1
-                self.stats['testR_{}'.format(i)] = R
+            # for i, goal in enumerate(self.env_test.test_goals):
+            #     obs = self.env_test.env.reset()
+            #     state0 = np.array(self.env_test.decode(obs))
+            #     mask = self.env_test.obj2mask(goal[1])
+            #     R = 0
+            #     for _ in range(200):
+            #         input = [np.expand_dims(i, axis=0) for i in [state0, goal[0], mask]]
+            #         action = self.critic.bestAction_model.predict(input, batch_size=1)[0, 0]
+            #         state1 = self.env_test.step(action)
+            #         reward, terminal = self.env_test.eval_exp(state0, action, state1, goal[0], goal[1])
+            #         R += reward
+            #         if terminal:
+            #             break
+            #         state0 = state1
+            #     self.stats['testR_{}'.format(i)] = R
 
             wrapper_stats = self.env.get_stats()
             self.stats['step'] = self.env_step
@@ -188,4 +188,4 @@ class DQNGM(Agent):
 
     @property
     def explore_prop(self):
-        return self.exploration.value(self.env_step)
+        return self.explorations[self.env.object_idx].value(self.env_step)

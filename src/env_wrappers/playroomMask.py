@@ -8,13 +8,14 @@ class PlayroomMask(Wrapper):
         super(PlayroomMask, self).__init__(env)
 
         self.theta = float(args['theta'])
-        self.objects = ['agent', 'passenger', 'taxi']
+        self.objects = ['agent'] + [obj.name for obj in self.env.objects]
         self.object_idx = None
         self.goal = None
-        self.obj_feat = [[0, 1], [2, 3], [4]]
-        self.state_low = [0, 0, 0, 0, 0]
-        self.state_high = [self.env.nR - 1, self.env.nC - 1, self.env.nR - 1, self.env.nC - 1, 1]
-        self.init_state = [2, 2, 0, 0, 0]
+        # self.obj_feat = [[0, 1]] + [[2+i+4*j for i in range(4)] for j in range(len(self.objects) - 1)]
+        self.obj_feat = [[0, 1]] + [[4 + 4 * j] for j in range(len(self.objects) - 1)]
+        self.state_low = self.env.state_low
+        self.state_high = self.env.state_high
+        self.init_state = self.env.state_init
 
         self.queues = [CompetenceQueue() for _ in self.objects]
         self.interests = []
@@ -23,14 +24,10 @@ class PlayroomMask(Wrapper):
         self.freqs_train = [0 for _ in self.objects]
         self.freqs_act_reward = [0 for _ in self.objects]
         self.freqs_train_reward = [0 for _ in self.objects]
-        self.test_goals = [(np.array([0, 0, 0, 0, 1]), 2),
-                           (np.array([0, 0, 0, 4, 0]), 1),
-                           (np.array([0, 0, 4, 0, 0]), 1),
-                           (np.array([0, 0, 4, 3, 0]), 1)]
 
     def step(self, action):
         obs, _, _, _ = self.env.step(action)
-        state = np.array(self.decode(obs))
+        state = np.array(obs)
         return state
 
     def reset(self):
@@ -45,7 +42,7 @@ class PlayroomMask(Wrapper):
         self.freqs_act[self.object_idx] += 1
 
         obs = self.env.reset()
-        state = np.array(self.decode(obs))
+        state = np.array(obs)
 
         return state
 
@@ -116,27 +113,20 @@ class PlayroomMask(Wrapper):
             stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
         return stats
 
-
-    def decode(self, state):
-        return list(self.env.decode(state))
-
-    def encode(self, state):
-        return self.env.encode(*state)
-
     def hindsight(self):
         return []
 
     @property
     def state_dim(self):
-        return 5,
+        return 18,
 
     @property
     def goal_dim(self):
-        return 5,
+        return 18,
 
     @property
     def action_dim(self):
-        return [self.env.action_space.n]
+        return 11
 
     @property
     def min_avg_length_ep(self):

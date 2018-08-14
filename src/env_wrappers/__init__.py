@@ -100,6 +100,6 @@ register(
 
 register(
     id='PlayroomMask-v0',
-    entry_point='envs:PlayroomMaskEnv',
-    wrapper_entry_point='env_wrappers.playroom:Playroom'
+    entry_point='envs:PlayroomEnv',
+    wrapper_entry_point='env_wrappers.playroomMask:PlayroomMask'
 )
