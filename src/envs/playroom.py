@@ -21,6 +21,10 @@ class Actions:
     TAKE = 4
     PUT = 5
     TOUCH = 6
+    TOUCHUP = 7
+    TOUCHDOWN = 8
+    TOUCHLEFT = 9
+    TOUCHRIGHT = 10
 
 class Obj():
     def __init__(self):
@@ -44,6 +48,28 @@ class Light(Obj):
         if a==Actions.TOUCH:
             self.s = 1 - self.s
 
+class Sound(Obj):
+    def __init__(self, light, initx=0, inity=0):
+        super(Sound, self).__init__()
+        self.initx = initx
+        self.inity = inity
+        self.x = self.initx
+        self.y = self.inity
+        self.light = light
+
+    def act(self, a):
+        if a==Actions.TOUCH and self.light.s == 1:
+            if self.s == 0:
+                self.s = 1
+            else:
+                self.s = 0
+        elif a==Actions.TOUCHUP and self.light.s == 1 and self.s != 0:
+            if self.s < 3:
+                self.s += 1
+        elif a==Actions.TOUCHDOWN and self.light.s == 1 and self.s != 0:
+            if self.s > 0:
+                self.s -= 1
+
 class Toy1(Obj):
     def __init__(self, light, initx=0, inity=0):
         super(Toy1, self).__init__()
@@ -61,6 +87,32 @@ class Toy1(Obj):
         elif a == Actions.PUT:
             self.in_hand = 0
 
+class Toy2(Toy1):
+    def __init__(self, light, sound, initx=0, inity=0):
+        super(Toy2, self).__init__(light, initx=initx, inity=inity)
+        self.sound = sound
+
+    def act(self, a):
+        if a == Actions.TAKE:
+            self.in_hand = 1
+        elif a == Actions.PUT:
+            self.in_hand = 0
+        elif a == Actions.TOUCHDOWN and self.light.s == 1:
+            if self.s == 0:
+                self.s = 1
+        elif a == Actions.TOUCHUP and self.light.s == 1:
+            if self.s == 1:
+                self.s = 2
+        elif a == Actions.TOUCHLEFT and self.light.s == 1:
+            if self.s == 2:
+                self.s = 3
+        elif a == Actions.TOUCHRIGHT and self.light.s == 1:
+            if self.s == 3:
+                self.s = 4
+        elif a == Actions.TOUCH and self.light.s == 1:
+            if self.s > 0:
+                self.s = 0
+
 class PlayroomEnv(Env):
 
     metadata = {'render.modes': ['human', 'ansi']}
@@ -71,69 +123,97 @@ class PlayroomEnv(Env):
         self.x = 0
         self.y = 0
         light = Light(initx=3, inity=4)
-        obj1 = Toy1(light, initx=2, inity=2)
+        sound = Sound(light=light, initx=5, inity=1)
+        obj1 = Toy1(light=light, initx=2, inity=2)
+        obj2 = Toy2(light=light, sound=sound, initx=0, inity=6)
 
-        self.objects = [light, obj1]
+        self.objects = [light, sound, obj1, obj2]
         self.lastaction = None
         self.maxR = 6
         self.maxC = 6
 
     def step(self, a):
 
+        print(self.get_state(), a)
+
         if a==Actions.UP:
             self.y = min(self.y + 1, self.maxR)
-            if self.held >= 0:
-                self.objects[self.held].y = self.y
+            h = self.get_held()
+            if h >= 0:
+                self.objects[h].y = self.y
 
         elif a==Actions.DOWN:
             self.y = max(self.y - 1, 0)
-            if self.held >= 0:
-                self.objects[self.held].y = self.y
+            h = self.get_held()
+            if h >= 0:
+                self.objects[h].y = self.y
 
         elif a==Actions.LEFT:
             self.x = max(self.x - 1, 0)
-            if self.held >= 0:
-                self.objects[self.held].x = self.x
+            h = self.get_held()
+            if h >= 0:
+                self.objects[h].x = self.x
 
         elif a==Actions.RIGHT:
             self.x = min(self.x + 1, self.maxC)
-            if self.held >= 0:
-                self.objects[self.held].x = self.x
+            h = self.get_held()
+            if h >= 0:
+                self.objects[h].x = self.x
 
-        elif a==Actions.TAKE and self.held == -1:
-            object_idx = self.underagent
-            if object_idx >= 0:
-                self.objects[object_idx].act(a)
+        elif a==Actions.TAKE:
+            h = self.get_held()
+            o = self.get_underagent()
+            if o >= 0 and h == -1:
+                self.objects[o].act(a)
 
-        elif a==Actions.PUT and self.held >= 0:
-            object_idx = self.underagent
-            if object_idx == -1:
-                self.objects[self.held].act(a)
+        elif a==Actions.PUT:
+            h = self.get_held()
+            o = self.get_underagent()
+            if o == -1 and h >= 0:
+                self.objects[h].act(a)
 
         elif a==Actions.TOUCH:
-            object_idx = self.underagent
-            if object_idx >= 0:
-                self.objects[object_idx].act(a)
+            o = self.get_underagent()
+            if o >= 0:
+                self.objects[o].act(a)
+                
+        elif a==Actions.TOUCHUP:
+            o = self.get_underagent(y = 1)
+            if o >= 0:
+                self.objects[o].act(a)
+                
+        elif a==Actions.TOUCHDOWN:
+            o = self.get_underagent(y = -1)
+            if o >= 0:
+                self.objects[o].act(a)
+                
+        elif a==Actions.TOUCHLEFT:
+            o = self.get_underagent(x = -1)
+            if o >= 0:
+                self.objects[o].act(a)
+                
+        elif a==Actions.TOUCHRIGHT:
+            o = self.get_underagent(x = 1)
+            if o >= 0:
+                self.objects[o].act(a)
                 
         self.lastaction = a
-        return (self.state, 0, False, {"prob" : 1})
 
-    @property
-    def underagent(self):
+        return (self.get_state(), 0, False, {"prob" : 1})
+
+    def get_underagent(self, x=0, y=0):
         for i, obj in enumerate(self.objects):
-            if obj.x == self.x and obj.y == self.y and obj.in_hand == 0:
+            if obj.x == self.x + x and obj.y == self.y + y and obj.in_hand == 0:
                 return i
         return -1
 
-    @property
-    def state(self):
+    def get_state(self):
         res = [self.x, self.y]
         for obj in self.objects:
             res += [obj.x, obj.y, obj.s, obj.in_hand]
         return res
 
-    @property
-    def held(self):
+    def get_held(self):
         for i, obj in enumerate(self.objects):
             if obj.in_hand:
                 return i
@@ -148,13 +228,13 @@ class PlayroomEnv(Env):
             obj.s = 0
             obj.in_hand = 0
         self.lastaction = None
-        return self.state
+        return self.get_state()
 
 if __name__ == '__main__':
     env = PlayroomEnv()
     env.reset()
     for _ in range(10000):
-        a = np.random.randint(7)
+        a = np.random.randint(11)
         env.step(a)
 
     # def render(self, mode='human'):
