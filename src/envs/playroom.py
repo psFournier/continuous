@@ -12,44 +12,54 @@ MAP = [
     "| : : : : : : |",
     "+-------------+",
 ]
+
 class Actions:
     UP=0
     DOWN=1
     RIGHT=2
     LEFT=3
-    LOOK_LIGHT = 4
-    LOOK_BELL = 5
-    LOOK_MUSIC = 6
-    LOOK_CUBE = 7
-    LOOK_BOX = 8
-    LOOK_TOY = 9
-    TOUCH = 10
-    TAKE = 11
-    PUT = 12
+    TAKE = 4
+    PUT = 5
+    TOUCH = 6
 
-class Features:
-    X_HAND=0
-    Y_HAND=1
-    X_EYE=2
-    Y_EYE=3
-    POS_LIGHT = 4
-    POS_BELL = 5
-    POS_MUSIC = 6
-    POS_CUBE = 7
-    POS_BOX = 8
-    POS_TOY = 9
-    SOUND = 10
-    LIGHT = 11
-    TOY = 12
-    UNDER_EYE=13
+class Obj():
+    def __init__(self):
+        self.initx = 0
+        self.inity = 0
+        self.s = 0
+        self.in_hand = 0
 
-class Objects:
-    LIGHT = 0
-    BELL = 1
-    MUSIC = 2
-    CUBE = 3
-    BOX = 4
-    TOY = 5
+    def act(self, a):
+        pass
+
+class Light(Obj):
+    def __init__(self, initx=0, inity=0):
+        super(Light, self).__init__()
+        self.initx = initx
+        self.inity = inity
+        self.x = self.initx
+        self.y = self.inity
+
+    def act(self, a):
+        if a==Actions.TOUCH:
+            self.s = 1 - self.s
+
+class Toy1(Obj):
+    def __init__(self, light, initx=0, inity=0):
+        super(Toy1, self).__init__()
+        self.initx = initx
+        self.inity = inity
+        self.x = self.initx
+        self.y = self.inity
+        self.light = light
+
+    def act(self, a):
+        if a == Actions.TOUCH and self.light.s == 1:
+            self.s = 1 - self.s
+        elif a == Actions.TAKE:
+            self.in_hand = 1
+        elif a == Actions.PUT:
+            self.in_hand = 0
 
 class PlayroomEnv(Env):
 
@@ -57,81 +67,95 @@ class PlayroomEnv(Env):
 
     def __init__(self):
         self.desc = np.asarray(MAP,dtype='c')
-        self.s = None
+
+        self.x = 0
+        self.y = 0
+        light = Light(initx=3, inity=4)
+        obj1 = Toy1(light, initx=2, inity=2)
+
+        self.objects = [light, obj1]
         self.lastaction = None
         self.maxR = 6
         self.maxC = 6
-        self.nObjects = 6
-        self.init_pos = {
-            'light': (3,3),
-            'bell':(0,4),
-            'music': (5,1),
-            'cube': (2,6),
-            'box': (5,5),
-            'toy': (2,3)
-        }
 
     def step(self, a):
 
         if a==Actions.UP:
-            self.s[Features.Y_HAND] = min(self.s[Features.Y_HAND] + 1, self.maxR)
+            self.y = min(self.y + 1, self.maxR)
+            if self.held >= 0:
+                self.objects[self.held].y = self.y
 
         elif a==Actions.DOWN:
-            self.s[Features.Y_HAND] = max(self.s[Features.Y_HAND] - 1, 0)
+            self.y = max(self.y - 1, 0)
+            if self.held >= 0:
+                self.objects[self.held].y = self.y
 
         elif a==Actions.LEFT:
-            self.s[Features.X_HAND] = max(self.s[Features.X_HAND] - 1, 0)
+            self.x = max(self.x - 1, 0)
+            if self.held >= 0:
+                self.objects[self.held].x = self.x
 
         elif a==Actions.RIGHT:
-            self.s[Features.X_HAND] = min(self.s[Features.X_HAND] + 1, self.maxC)
+            self.x = min(self.x + 1, self.maxC)
+            if self.held >= 0:
+                self.objects[self.held].x = self.x
 
-        elif a==Actions.LOOK_LIGHT and self.s[Features.POS_LIGHT]==0:
-            self.s[Features.X_EYE], self.s[Features.Y_EYE] = self.init_pos['light']
+        elif a==Actions.TAKE and self.held == -1:
+            object_idx = self.underagent
+            if object_idx >= 0:
+                self.objects[object_idx].act(a)
 
-        elif a==Actions.LOOK_BELL and self.s[Features.POS_BELL]==0:
-            self.s[Features.X_EYE], self.s[Features.Y_EYE] = self.init_pos['bell']
+        elif a==Actions.PUT and self.held >= 0:
+            object_idx = self.underagent
+            if object_idx == -1:
+                self.objects[self.held].act(a)
 
-        elif a==Actions.LOOK_MUSIC and self.s[Features.POS_MUSIC]==0:
-            self.s[Features.X_EYE], self.s[Features.Y_EYE] = self.init_pos['music']
-
-        elif a==Actions.LOOK_CUBE and self.s[Features.POS_CUBE]==0:
-            self.s[Features.X_EYE], self.s[Features.Y_EYE] = self.init_pos['cube']
-
-        elif a==Actions.LOOK_BOX and self.s[Features.POS_BOX]==0:
-            self.s[Features.X_EYE], self.s[Features.Y_EYE] = self.init_pos['box']
-
-        elif a==Actions.LOOK_TOY and self.s[Features.POS_TOY]==0:
-            self.s[Features.X_EYE], self.s[Features.Y_EYE] = self.init_pos['toy']
-
-        elif a==Actions.TAKE and self.hand_on_eye and self.s[Features.UNDER_EYE]!=Objects.BOX:
-            self.s[4 + self.s[Features.UNDER_EYE]] = 1
-
-        elif a==Actions.TOUCH and self.hand_on_eye and self.s[Features.UNDER_EYE]==Objects.MUSIC:
-            self.s[Features.SOUND] = 1
-
-        elif a==Actions.TOUCH and self.hand_on_eye and self.s[Features.UNDER_EYE]==Objects.LIGHT:
-            self.s[Features.LIGHT] = 1
-
-        elif a==Actions.TOUCH and self.hand_on_eye and self.s[Features.UNDER_EYE]==Objects.TOY:
-            self.s[Features.TOY] = 1
-
-        elif a==Actions.PUT and self.hand_on_eye and self.s[Features.UNDER_EYE]==Objects.BOX:
-            for o in range(self.nObjects):
-                if self.s[4 + o] == 1:
-                    self.s[4 + o] = 2
-
+        elif a==Actions.TOUCH:
+            object_idx = self.underagent
+            if object_idx >= 0:
+                self.objects[object_idx].act(a)
+                
         self.lastaction = a
-        return (self.s, 0, False, {"prob" : 1})
+        return (self.state, 0, False, {"prob" : 1})
 
     @property
-    def hand_on_eye(self):
-        return (self.s[Features.X_EYE], self.s[Features.Y_EYE]) == (self.s[Features.X_HAND], self.s[Features.Y_HAND])
+    def underagent(self):
+        for i, obj in enumerate(self.objects):
+            if obj.x == self.x and obj.y == self.y and obj.in_hand == 0:
+                return i
+        return -1
+
+    @property
+    def state(self):
+        res = [self.x, self.y]
+        for obj in self.objects:
+            res += [obj.x, obj.y, obj.s, obj.in_hand]
+        return res
+
+    @property
+    def held(self):
+        for i, obj in enumerate(self.objects):
+            if obj.in_hand:
+                return i
+        return -1
 
     def reset(self):
-        self.s = np.zeros(shape=(13,1))
-        self.s[Features.X_EYE], self.s[Features.Y_EYE] = self.init_pos['light']
-        self.lastaction=None
-        return self.s
+        self.x = 0
+        self.y = 0
+        for obj in self.objects:
+            obj.x = obj.initx
+            obj.y = obj.inity
+            obj.s = 0
+            obj.in_hand = 0
+        self.lastaction = None
+        return self.state
+
+if __name__ == '__main__':
+    env = PlayroomEnv()
+    env.reset()
+    for _ in range(10000):
+        a = np.random.randint(7)
+        env.step(a)
 
     # def render(self, mode='human'):
     #     outfile = StringIO() if mode == 'ansi' else sys.stdout

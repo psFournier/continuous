@@ -5,13 +5,17 @@ from gym.envs.toy_text import discrete
 import numpy as np
 
 MAP = [
-    "+---------+",
-    "| : | : : |",
-    "| : : : : |",
-    "| : : : : |",
-    "| | : | : |",
-    "| | : | : |",
-    "+---------+",
+    "+-----------------+",
+    "| : | : : : : : | |",
+    "| : : : : : : : | |",
+    "| : | : : : | : | |",
+    "| : | : : : | : | |",
+    "| : | : : : | : | |",
+    "| : : : : : | : | |",
+    "| : | : : : | : : |",
+    "| : | : : : | : : |",
+    "| : | : : : | : : |",
+    "+-----------------+",
 ]
 
 class Taxi2Env(discrete.DiscreteEnv):
@@ -33,20 +37,20 @@ class Taxi2Env(discrete.DiscreteEnv):
     def __init__(self):
         self.desc = np.asarray(MAP,dtype='c')
 
-        nS = 5*5*5*5*2
-        self.nR = 5
-        self.nC = 5
+        nS = (9**4)*2
+        self.nR = 9
+        self.nC = 9
         maxR = self.nR-1
         maxC = self.nC-1
         isd = np.zeros(nS)
         nA = 6
         P = {s : {a : [] for a in range(nA)} for s in range(nS)}
-        initial_state = self.encode(2, 2, 0, 0, 0)
+        initial_state = self.encode(5, 5, 0, 0, 0)
         isd[initial_state] = 1
-        for taxirow in range(5):
-            for taxicol in range(5):
-                for passrow in range(5):
-                    for passcol in range(5):
+        for taxirow in range(self.nR):
+            for taxicol in range(self.nC):
+                for passrow in range(self.nR):
+                    for passcol in range(self.nC):
                         for status in range(2):
                             state = self.encode(taxirow, taxicol, passrow, passcol, status)
                             for a in range(nA):
@@ -82,11 +86,11 @@ class Taxi2Env(discrete.DiscreteEnv):
 
     def encode(self, taxirow, taxicol, passrow, passcol, aboard):
         i = taxirow
-        i *= 5
+        i *= self.nR
         i += taxicol
-        i *= 5
+        i *= self.nC
         i += passrow
-        i *= 5
+        i *= self.nR
         i += passcol
         i *= 2
         i += aboard
@@ -96,14 +100,14 @@ class Taxi2Env(discrete.DiscreteEnv):
         out = []
         out.append(i % 2)
         i = i // 2
-        out.append(i % 5)
-        i = i // 5
-        out.append(i % 5)
-        i = i // 5
-        out.append(i % 5)
-        i = i // 5
+        out.append(i % 9)
+        i = i // 9
+        out.append(i % 9)
+        i = i // 9
+        out.append(i % 9)
+        i = i // 9
         out.append(i)
-        assert 0 <= i < 5
+        assert 0 <= i < 9
         return reversed(out)
 
     # def render(self, mode='human'):

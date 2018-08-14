@@ -5,7 +5,7 @@ import os
 import numpy as np
 from scipy.interpolate import interp1d
 
-runs = glob.glob('../../log/cluster/1308/*/')
+runs = glob.glob('../../log/cluster/1408/*/')
 frames = []
 
 for run in runs:
@@ -60,7 +60,7 @@ print(df.head())
 #     ax[i % a, i // a].set_title(label=val)
 #     ax[i % a, i // a].legend()
 
-a, b = 2,2
+a, b = 3,2
 fig, ax = plt.subplots(a, b, figsize=(18,10))
 for i, (name, g) in enumerate(df.groupby(params)):
     for j, val in enumerate(y):

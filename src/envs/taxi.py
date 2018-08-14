@@ -5,13 +5,17 @@ from gym.envs.toy_text import discrete
 import numpy as np
 
 MAP = [
-    "+---------+",
-    "|R: | : :G|",
-    "| : : : : |",
-    "| : : : : |",
-    "| | : | : |",
-    "|Y| : |B: |",
-    "+---------+",
+    "+-----------------+",
+    "| : | : : : : : | |",
+    "| : : : : : : : | |",
+    "| : | : : : | : | |",
+    "| : | : : : | : | |",
+    "| : | : : : | : | |",
+    "| : : : : : | : | |",
+    "| : | : : : | : : |",
+    "| : | : : : | : : |",
+    "| : | : : : | : : |"
+    "+-----------------+",
 ]
 
 class TaxiEnv(discrete.DiscreteEnv):
@@ -36,8 +40,8 @@ class TaxiEnv(discrete.DiscreteEnv):
         self.locs = locs = [(0,0), (0,4), (4,0), (4,3)]
 
         nS = 125
-        nR = 5
-        nC = 5
+        nR = 9
+        nC = 9
         maxR = nR-1
         maxC = nC-1
         isd = np.zeros(nS)
@@ -45,8 +49,8 @@ class TaxiEnv(discrete.DiscreteEnv):
         P = {s : {a : [] for a in range(nA)} for s in range(nS)}
         initial_state = self.encode(2, 2, 0)
         isd[initial_state] = 1
-        for row in range(5):
-            for col in range(5):
+        for row in range(nR):
+            for col in range(nC):
                 for passidx in range(5):
                         state = self.encode(row, col, passidx)
                         for a in range(nA):
