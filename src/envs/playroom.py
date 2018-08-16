@@ -145,7 +145,7 @@ class PlayroomEnv(Env):
         light = Light(initx=3, inity=4)
         sound = Sound(light=light, initx=5, inity=1)
         obj1 = Toy1(light=light, initx=2, inity=2)
-        obj2 = Toy2(light=light, sound=sound, initx=0, inity=6)
+        obj2 = Toy2(light=light, sound=sound, initx=1, inity=5)
 
         self.objects = [light, sound, obj1, obj2]
         self.lastaction = None
@@ -271,8 +271,10 @@ class PlayroomEnv(Env):
 if __name__ == '__main__':
     env = PlayroomEnv()
     env.reset()
-    for _ in range(10000):
-        a = np.random.randint(11)
+    for i in range(100000):
+        while True:
+            a = np.random.randint(11)
+            if a != 4 and a != 5: break
         env.step(a)
 
     # def render(self, mode='human'):

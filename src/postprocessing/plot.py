@@ -5,7 +5,7 @@ import os
 import numpy as np
 from scipy.interpolate import interp1d
 
-runs = glob.glob('../../log/cluster/1508/dqngm_*/*/')
+runs = glob.glob('../../log/cluster/1608/dqngm_*/*/')
 frames = []
 
 for run in runs:
@@ -26,11 +26,15 @@ df = pd.concat(frames, ignore_index=True)
 print(df.columns)
 print(df['agent'].unique())
 # y = ['testR_0', 'testR_1', 'testR_2', 'testR_3']
-y = ['CP_toy2', 'CP_agent', 'CP_toy1', 'CP_light', 'CP_sound']
+y = ['R_toy2', 'R_toy1', 'R_light', 'R_sound']
+y = ['I_toy2', 'I_toy1', 'I_light', 'I_sound']
+y = ['CP_toy2', 'CP_toy1', 'CP_light', 'CP_sound']
+y = ['FA_toy2', 'FA_toy1', 'FA_light', 'FA_sound']
+
 # x = ['FAR_0', 'FAR_1', 'FAR_2', 'FAR_3']
 x = ['step']
 params = ['agent', 'theta', 'episode_steps']
-# df = df[(df['agent'] == 'dqng0')]
+df = df[(df['theta'] == 0) | (df['theta'] == 2)]
 
 # params += ['num_run']
 df = df.fillna(-1)
