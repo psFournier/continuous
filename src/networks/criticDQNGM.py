@@ -52,7 +52,8 @@ class CriticDQNGM(object):
 
         c1 = concatenate(inputs=[S,G,M])
         l1 = Dense(400, activation="relu")(c1)
-        l2 = Dense(300, activation="relu")(l1)
+        c2 = concatenate(inputs=[l1, G, M])
+        l2 = Dense(300, activation="relu")(c2)
 
         V = Dense(self.num_actions,
                   activation=None,

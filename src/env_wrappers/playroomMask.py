@@ -8,11 +8,11 @@ class PlayroomMask(Wrapper):
         super(PlayroomMask, self).__init__(env)
 
         self.theta = float(args['theta'])
-        self.objects = ['agent'] + [obj.name for obj in self.env.objects]
+        self.objects = [obj.name for obj in self.env.objects]
         self.object_idx = None
         self.goal = None
         # self.obj_feat = [[0, 1]] + [[2+i+4*j for i in range(4)] for j in range(len(self.objects) - 1)]
-        self.obj_feat = [[0, 1]] + [[4 + 4 * j] for j in range(len(self.objects) - 1)]
+        self.obj_feat = [[4 + 4 * j] for j in range(len(self.objects))]
         self.state_low = self.env.state_low
         self.state_high = self.env.state_high
         self.init_state = self.env.state_init
