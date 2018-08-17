@@ -24,6 +24,8 @@ class PlayroomMask(Wrapper):
         self.freqs_train = [0 for _ in self.objects]
         self.freqs_act_reward = [0 for _ in self.objects]
         self.freqs_train_reward = [0 for _ in self.objects]
+        self.td_errors = [0 for _ in self.objects]
+        self.td_errors2 = [0 for _ in self.objects]
 
     def step(self, action):
         obs, _, _, _ = self.env.step(action)
@@ -76,7 +78,7 @@ class PlayroomMask(Wrapper):
 
     def update_interests(self):
 
-        CPs = [abs(q.CP) for q in self.queues]
+        CPs = [abs(q.TDCP) for q in self.queues]
         maxcp = max(CPs)
 
         if maxcp > 1:
@@ -108,12 +110,14 @@ class PlayroomMask(Wrapper):
             stats['T_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].T_mean))
             stats['L_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].L_mean))
             stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].CP))
+            stats['CPTD_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].TDCP))
             stats['FA_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_act[i]))
             stats['FT_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_train[i]))
             stats['FAR_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_act_reward[i]))
             stats['FTR_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_train_reward[i]))
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
             stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
+            stats['TD_{}'.format(goal)] = float("{0:.3f}".format(self.td_errors[i]))
         return stats
 
     def hindsight(self):

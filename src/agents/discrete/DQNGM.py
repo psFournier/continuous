@@ -66,9 +66,12 @@ class DQNGM(Agent):
 
         if self.trajectory:
             R, T, L = self.process_episode()
-            self.env.queues[self.env.object_idx].append((R,T,L))
+            self.env.queues[self.env.object_idx].append((R, T, L))
+            for o in range(len(self.env.objects)):
+                self.env.queues[o].appendTD(self.env.td_errors2[o])
             self.env.freqs_act_reward[self.env.object_idx] += int(T)
             self.trajectory.clear()
+            self.env.td_errors2 = [0 for _ in self.env.objects]
 
         state = self.env.reset()
         self.episode_step = 0
@@ -99,26 +102,21 @@ class DQNGM(Agent):
 
     def train_critic(self, experiences):
 
-        inputs, targets, sample_weights = self.preprocess(experiences)
-        self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=inputs,
-                                                                           y=targets,
-                                                                           sample_weight=sample_weights)
-        td_errors = targets - q_values
-
-        return td_errors
-
-    def preprocess(self, experiences):
-        s0, a, s1, r, t, g, o = self.expe2array(experiences)
+        s0, a, s1, r, t, g, o = [np.array(experiences[name]) for name in self.names]
         m = np.array([self.env.obj2mask(o[k]) for k in range(self.batch_size)])
         inputs = [s0, a, g, m]
         targets = self.compute_targets(s1, g, m, r, t, o)
         # weights = np.array([self.env.interests[o[k]] for k in range(self.batch_size)])
         weights = np.ones(shape=a.shape)
-        return inputs, targets, weights
-
-    def expe2array(self, experiences):
-        exp = [np.array(experiences[name]) for name in self.names]
-        return exp
+        self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=inputs,
+                                                                           y=targets,
+                                                                           sample_weight=weights)
+        td_errors = targets - q_values
+        for k in range(self.batch_size):
+            self.env.freqs_train[o[k]] += 1
+            self.env.freqs_train_reward[o[k]] += t[k]
+            self.env.td_errors[o[k]] += td_errors[k][0]
+            self.env.td_errors2[o[k]] += td_errors[k][0]
 
     def compute_targets(self, s1, g, m, r, t, o):
         a = self.critic.bestAction_model.predict_on_batch([s1, g, m])
@@ -126,8 +124,6 @@ class DQNGM(Agent):
 
         targets = []
         for k in range(len(s1)):
-            self.env.freqs_train[o[k]] += 1
-            self.env.freqs_train_reward[o[k]] += t[k]
             target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
             if TARGET_CLIP:
                 target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
