@@ -34,7 +34,7 @@ class PlayroomMask(Wrapper):
 
         self.update_interests()
 
-        self.sample_goal()
+        self.sample_goal(random=True)
         features = self.obj_feat[self.object_idx]
         # self.mask = self.feat2mask(features)
         self.goal = self.feat2val(features)
@@ -46,16 +46,19 @@ class PlayroomMask(Wrapper):
 
         return state
 
-    def sample_goal(self):
+    def sample_goal(self, random=False):
 
-        sum = np.sum(self.interests)
-        mass = np.random.random() * sum
-        idx = 0
-        s = self.interests[0]
-        while mass > s:
-            idx += 1
-            s += self.interests[idx]
-        self.object_idx = idx
+        if random:
+            self.object_idx = np.random.randint(len(self.objects))
+        else:
+            sum = np.sum(self.interests)
+            mass = np.random.random() * sum
+            idx = 0
+            s = self.interests[0]
+            while mass > s:
+                idx += 1
+                s += self.interests[idx]
+            self.object_idx = idx
 
     def obj2mask(self, obj):
         res = np.zeros(shape=self.state_dim)
