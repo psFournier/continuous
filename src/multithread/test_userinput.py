@@ -14,8 +14,9 @@ class Agent():
     def __init__(self, s_dim, num_actions, lr):
         self.step = 0
         self.epStep = 0
-        self.run_thread = Thread(target=self.run)
-        self.tutor_thread = Thread(target=self.input, daemon=True)
+        self.ep = 0
+        self.tutorListened = True
+        self.tutorInput = ''
         self.sDim = s_dim
         self.num_actions = num_actions
         self.learning_rate = lr
@@ -23,6 +24,7 @@ class Agent():
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
         self.batchSize = 64
         self.episode = deque(maxlen=400)
+        self.model = self.create_model()
 
     def create_model(self):
         state = Input(shape=self.sDim)
@@ -46,32 +48,47 @@ class Agent():
             loss = self.model.train_on_batch(x=[s,a], y=targets, sample_weight=weights)
         return loss
 
-    def start(self):
-        self.run_thread.start()
-        self.tutor_thread.start()
-        self.run_thread.join()
+    def tutorListener(self):
+        self.tutorInput = input("> ")
+        print("maybe updating...the kbdInput variable is: {}".format(self.tutorInput))
+        self.tutorListened = True
 
     def run(self):
-        self.model = self.create_model()
         state0 = np.random.randint(0, 4, size=(5,))
         while self.step < 100000:
-            action = np.random.randint(self.num_actions)
-            state1 = np.random.randint(0, 4, size=(5,))
-            self.step += 1
-            self.epStep += 1
-            experience = {'state0': state0, 'action': action, 'fWeight': 1, 'feedback': 1}
-            self.episode.append(experience)
-            self.loss = self.train()
 
-            state0 = state1
+            if self.tutorInput != '':
+                print("Received new keyboard Input. Setting playing ID to keyboard input value")
+                for i in range(1,10):
+                    self.episode[-i]['fWeight'] = 1
+                    self.episode[-i]['feedback'] = self.tutorInput
+                self.tutorInput = ''
+            else:
+                action = np.random.randint(self.num_actions)
+                state1 = np.random.randint(0, 4, size=(5,))
+                self.step += 1
+                self.epStep += 1
+                experience = {'state0': state0, 'action': action, 'fWeight': 0}
+                self.episode.append(experience)
+                self.loss = self.train()
+                state0 = state1
+                time.sleep(0.001)
+
+            if self.tutorListened:
+                self.tutorListened = False
+                self.listener = Thread(target=self.tutorListener)
+                self.listener.start()
+
             if self.epStep >= 200:
-                for s in range(self.epStep):
-                    exp = self.episode.popleft()
-                    if exp['fWeight'] != 0:
-                        self.buffer.append(exp)
+                if self.ep > 0:
+                    for s in range(self.epStep):
+                        exp = self.episode.popleft()
+                        if exp['fWeight'] != 0:
+                            self.buffer.append(exp)
                 self.epStep = 0
+                self.ep += 1
                 state0 = np.random.randint(0, 4, size=(5,))
-            if self.step % 200 == 0:
+            if self.step % 1000 == 0:
                 print(self.step, self.loss)
 
     def input(self):
@@ -93,4 +110,4 @@ if __name__ == '__main__':
     lr = 0.01
     with tf.Session() as sess:
         agent = Agent(s_dim, num_actions, lr)
-        agent.start()
+        agent.run()

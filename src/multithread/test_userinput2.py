@@ -1,24 +1,22 @@
 import threading
 import time
-import sys
 
-def background():
-        while True:
-            time.sleep(3)
-            print('disarm me by typing disarm')
+kbdInput = ''
+playingID = ''
+finished = True
 
 
-def other_function():
-    print('You disarmed me! Dying now.')
-
-# now threading1 runs regardless of user input
-threading1 = threading.Thread(target=background)
-threading1.daemon = True
-threading1.start()
 
 while True:
-    if input() == 'disarm':
-        other_function()
-        sys.exit()
+    print("kbdInput: {}".format(kbdInput))
+    print("playingID: {}".format(playingID))
+    if playingID != kbdInput:
+        print("Received new keyboard Input. Setting playing ID to keyboard input value")
+        playingID = kbdInput
     else:
-        print('not disarmed')
+        print("No input from keyboard detected. Sleeping 2 seconds")
+    if finished:
+        finished = False
+        listener = threading.Thread(target=kbdListener)
+        listener.start()
+    time.sleep(2)
