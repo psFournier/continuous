@@ -26,18 +26,7 @@ class Agent():
         self.episode_step = 0
         self.stats = {}
 
-    def init_variables(self):
-        variables = tf.global_variables()
-        uninitialized_variables = []
-        for v in variables:
-            if not hasattr(v,
-                           '_keras_initialized') or not v._keras_initialized:
-                uninitialized_variables.append(v)
-                v._keras_initialized = True
-        self.sess.run(tf.variables_initializer(uninitialized_variables))
-
     def run(self):
-        self.init_variables()
         self.start_time = time.time()
         self.init_targets()
 

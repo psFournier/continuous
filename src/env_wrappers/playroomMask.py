@@ -34,7 +34,7 @@ class PlayroomMask(Wrapper):
 
         self.update_interests()
 
-        self.sample_goal(random=True)
+        self.sample_goal()
         features = self.obj_feat[self.object_idx]
         # self.mask = self.feat2mask(features)
         self.goal = self.feat2val(features)

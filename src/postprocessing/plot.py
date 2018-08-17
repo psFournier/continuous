@@ -5,7 +5,7 @@ import os
 import numpy as np
 from scipy.interpolate import interp1d
 
-runs = glob.glob('../../log/cluster/1708/dqngm_*/*/')
+runs = glob.glob('../../log/cluster/1708bis/dqngm_*/*/')
 frames = []
 
 for run in runs:

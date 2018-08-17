@@ -112,8 +112,8 @@ class DQNGM(Agent):
         m = np.array([self.env.obj2mask(o[k]) for k in range(self.batch_size)])
         inputs = [s0, a, g, m]
         targets = self.compute_targets(s1, g, m, r, t, o)
-        weights = np.array([self.env.interests[o[k]] for k in range(self.batch_size)])
-        # weights = np.ones(shape=a.shape)
+        # weights = np.array([self.env.interests[o[k]] for k in range(self.batch_size)])
+        weights = np.ones(shape=a.shape)
         return inputs, targets, weights
 
     def expe2array(self, experiences):
