@@ -3,7 +3,6 @@ import numpy as np
 import tensorflow as tf
 import json_tricks
 import pickle
-
 import os
 
 RENDER_TRAIN = False
@@ -35,14 +34,75 @@ class DQNG(Agent):
                                  tau=0.001,
                                  learning_rate=0.001)
 
-        self.names = []
+        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal']
+        self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
-        self.loss_qVal = 0
-        self.loss_imitation = 0
         self.trajectory = []
         self.exploration = LinearSchedule(schedule_timesteps=int(10000),
                                           initial_p=1.0,
                                           final_p=.1)
+
+    def step(self):
+
+        self.env_step += 1
+        self.episode_step += 1
+        self.env.steps[self.env.goal] += 1
+        self.exp['goal'] = self.env.goal
+        self.exp['reward'], self.exp['terminal'] = self.env.eval_exp(self.exp)
+        self.trajectory.append(self.exp)
+
+        if self.buffer.nb_entries > self.batch_size:
+            experiences = self.buffer.sample(self.batch_size)
+            s0, a0, s1, r, t, g = [np.array(experiences[name]) for name in self.names]
+
+            a1 = self.critic.bestAction_model.predict_on_batch([s1, g])
+            q = self.critic.target_qValue_model.predict_on_batch([s1, a1, g])
+
+            targets = []
+            for k in range(len(s1)):
+                # self.env.freqs_train[g[k]] += 1
+                # self.env.freqs_train_reward[g[k]] += t[k]
+                target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
+                if TARGET_CLIP:
+                    target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
+                    targets.append(target_clip)
+                else:
+                    targets.append(target)
+            targets = np.array(targets)
+
+            # weights = np.array([(self.env.min_avg_length_ep / self.env.queues[gi].L_mean) ** self.beta for gi in g])
+            self.critic.qValue_model.train_on_batch(x=[s0, a0, g], y=targets)
+            self.critic.target_train()
+
+    def reset(self):
+
+        if self.trajectory:
+            R = 0
+            T = False
+            L = 0
+            for expe in reversed(self.trajectory):
+                R = R * self.critic.gamma + int(expe['terminal']) - 1
+                L += 1
+                expe['R'] = R
+                self.buffer.append(expe)
+                T = T or expe['terminal']
+            self.env.queues[self.env.goal].append((R, T, L))
+            self.trajectory.clear()
+
+        state = self.env.reset()
+        self.episode_step = 0
+
+        return state
+
+    def act(self, state, noise=False):
+        if noise and np.random.rand(1) < self.exploration.value(self.env_step):
+            action = np.random.randint(0, self.env.action_space.n)
+        else:
+            inputs = [np.reshape(state, (1, self.critic.s_dim[0])),
+                      np.reshape(self.env.goal, (1, self.critic.g_dim[0]))]
+            action = self.critic.bestAction_model.predict(inputs)
+            action = action[0, 0]
+        return action
 
     def get_tutor_exp(self, goal):
         for i in range(10):
@@ -82,132 +142,3 @@ class DQNG(Agent):
 
     def append_tutor_exp(self, new_expe):
         pass
-
-    def make_exp(self, state0, action, state1):
-
-        self.env_step += 1
-        self.episode_step += 1
-        self.env.steps[self.env.goal] += 1
-
-        reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal)
-
-        experience = {'state0': state0.copy(),
-                      'action': action,
-                      'state1': state1.copy(),
-                      'reward': reward,
-                      'terminal': terminal,
-                      'goal': self.env.goal}
-
-        self.trajectory.append(experience)
-
-        return experience
-
-    def process_episode(self):
-
-        R = 0
-        T = False
-        L = 0
-        for expe in reversed(self.trajectory):
-            R = R * self.critic.gamma + int(expe['terminal']) - 1
-            L += 1
-            expe['R'] = R
-            self.buffer.append(expe)
-            T = T or expe['terminal']
-        return R, T, L
-
-    def expe2array(self, experiences):
-        exp = [np.array(experiences[name]) for name in self.names]
-        return exp
-
-    def preprocess(self, experiences):
-        return None, None, None
-
-    def train(self):
-        self.train_autonomous()
-        if self.tutor_imitation:
-            self.train_imitation()
-
-    def train_autonomous(self):
-        pass
-
-    def train_imitation(self):
-        pass
-
-    def compute_targets(self, s1, g, r, t):
-        a = self.critic.bestAction_model.predict_on_batch([s1, g])
-        q = self.critic.target_qValue_model.predict_on_batch([s1, a, g])
-
-        targets = []
-        for k in range(len(s1)):
-            self.env.freqs_train[g[k]] += 1
-            self.env.freqs_train_reward[g[k]] += t[k]
-            target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
-            if TARGET_CLIP:
-                target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
-                targets.append(target_clip)
-            else:
-                targets.append(target)
-        targets = np.array(targets)
-        return targets
-
-    def train_critic(self, experiences):
-
-        inputs, targets, sample_weights = self.preprocess(experiences)
-        self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=inputs,
-                                                                           y=targets,
-                                                                           sample_weight=sample_weights)
-        td_errors = targets - q_values
-
-        return td_errors
-
-    def reset(self):
-
-        if self.trajectory:
-            R, T, L = self.process_episode()
-            self.env.queues[self.env.goal].append((R, T, L))
-            self.env.freqs_act_reward[self.env.goal] += int(T)
-            self.trajectory.clear()
-
-        state = self.env.reset()
-        self.episode_step = 0
-
-        return state
-
-    def init_targets(self):
-        self.critic.target_init()
-
-    def target_train(self):
-        self.critic.target_train()
-
-    def act_random(self, state):
-        return np.random.randint(0, self.env.action_space.n)
-
-    def act(self, state, noise=False):
-        if noise and np.random.rand(1) < self.explore_prop:
-            action = np.random.randint(0, self.env.action_space.n)
-        else:
-            inputs = [np.reshape(state, (1, self.critic.s_dim[0])),
-                      np.reshape(self.env.goal, (1, self.critic.g_dim[0]))]
-            action = self.critic.bestAction_model.predict(inputs)
-            action = action[0, 0]
-        return action
-
-    def log(self):
-
-        if self.env_step % self.eval_freq == 0:
-
-            wrapper_stats = self.env.get_stats()
-            self.stats['step'] = self.env_step
-            self.stats['loss_qVal'] = self.loss_qVal
-
-            for key, val in wrapper_stats.items():
-                self.stats[key] = val
-
-            for key in sorted(self.stats.keys()):
-                self.logger.logkv(key, self.stats[key])
-
-            self.logger.dumpkvs()
-
-    @property
-    def explore_prop(self):
-        return self.exploration.value(self.env_step)

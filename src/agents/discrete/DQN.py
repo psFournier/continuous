@@ -20,86 +20,76 @@ class DQN(Agent):
     def __init__(self, args, sess, env, env_test, logger):
 
         super(DQN, self).__init__(args, sess, env, env_test, logger)
-        self.per_alpha = float(args['per_alpha'])
-        self.her = args['her']
-        self.self_imitation = bool(args['self_imit'])
-        names = ['state0', 'action', 'state1', 'reward', 'terminal']
+        self.per = bool(args['per'])
+        self.self_imitation = bool(int(args['self_imit']))
+        self.tutor_imitation = bool(int(args['tutor_imit']))
+        self.her = bool(int(args['her']))
 
-        self.env.buffer = ReplayBuffer(limit=int(1e4),
-                                           names=names)
+        self.names = ['state0', 'action', 'state1', 'reward', 'terminal']
+
+        self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
         self.critic = CriticDQN(sess,
-                                          s_dim=env.state_dim,
-                                          num_a=env.action_space.n,
-                                          gamma=0.99,
-                                          tau=0.001,
-                                          learning_rate=0.001)
+                                s_dim=env.state_dim,
+                                num_a=env.action_space.n,
+                                gamma=0.99,
+                                tau=0.001,
+                                learning_rate=0.001)
 
-        self.exploration = LinearSchedule(schedule_timesteps=int(100),
+        self.exploration = LinearSchedule(schedule_timesteps=int(1000),
                                           initial_p=1.0,
                                           final_p=.1)
+        self.trajectory = []
 
         self.loss_qVal = []
-
-    def make_exp(self, state0, action, state1):
-        reward, terminal = self.env.eval_exp(state0, action, state1)
-
-        experience = {'state0': state0.copy(),
-                      'action': action,
-                      'state1': state1.copy(),
-                      'reward': reward,
-                      'terminal': terminal}
-
-        return experience
-
-    def train(self, exp):
-
-        self.env.episode_exp.append(exp)
-
-        if self.env_step > 10 * self.batch_size:
-            experiences = self.env.buffer.sample(self.batch_size, self.env_step)
-            loss, td_errors = self.train_critic(experiences)
-            if self.per_alpha != 0:
-                self.env.buffer.update_priorities(experiences['indices'], td_errors)
-            self.target_train()
-
-    def train_critic(self, experiences):
-
-        states0 = np.array(experiences['state0'])
-        actions0 = np.array(experiences['action'])
-        states1 = np.array(experiences['state1'])
-        rewards = np.array(experiences['reward'])
-        terminal = np.array(experiences['terminal'])
-
-        # if self.per_alpha != 0:
-        #     weights = experiences['weights'].squeeze()
-        # else:
-        #     weights = np.ones(shape=(self.batch_size,1)).squeeze()
-
-        actions1 = self.critic.bestAction_model.predict_on_batch([states1])
-        q = self.critic.target_qValue_model.predict_on_batch([states1, actions1])
-
-        targets = []
-        for k in range(len(states0)):
-            target = rewards[k] + (1 - terminal[k]) * self.critic.gamma * q[k]
-            targets.append(target)
-        targets = np.array(targets)
-
-        loss_qValue, td_errors = self.critic.qValue_model.train_on_batch(x=[states0, actions0],
-                                                                         y=targets)
-
-        self.loss_qVal.append(loss_qValue)
-
-        return loss_qValue, td_errors
-
-    def init_targets(self):
         self.critic.target_train()
 
-    def target_train(self):
-        self.critic.target_train()
+    def step(self):
 
-    def act_random(self, state):
-        return np.random.randint(0, self.env.action_space.n)
+        self.env_step += 1
+        self.episode_step += 1
+        self.exp['reward'], self.exp['terminal'] = self.env.eval_exp(self.exp)
+        self.trajectory.append(self.exp)
+
+        if self.buffer.nb_entries > self.batch_size:
+            experiences = self.buffer.sample(self.batch_size)
+            s0, a0, s1, r, t = [np.array(experiences[name]) for name in self.names]
+
+            a1 = self.critic.bestAction_model.predict_on_batch([s1])
+            q = self.critic.target_qValue_model.predict_on_batch([s1, a1])
+
+            targets = []
+            for k in range(len(s0)):
+                target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
+                if TARGET_CLIP:
+                    target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
+                    targets.append(target_clip)
+                else:
+                    targets.append(target)
+            targets = np.array(targets)
+
+            self.critic.qValue_model.train_on_batch(x=[s0, a0], y=targets)
+            self.critic.target_train()
+
+    def reset(self):
+
+        if self.trajectory:
+            R = 0
+            T = False
+            L = 0
+            for expe in reversed(self.trajectory):
+                R = R * self.critic.gamma + int(expe['terminal']) - 1
+                L += 1
+                expe['R'] = R
+                self.buffer.append(expe)
+                T = T or expe['terminal']
+            self.env.queues[0].append((R, T, L))
+            self.trajectory.clear()
+
+        state = self.env.reset()
+        self.episode_step = 0
+
+        return state
 
     def act(self, state, noise=False):
         if noise and np.random.rand(1) < self.exploration.value(self.env_step):
@@ -109,16 +99,3 @@ class DQN(Agent):
             action = self.critic.bestAction_model.predict(inputs)
             action = action[0, 0]
         return action
-
-    def log(self):
-        if self.env_step % self.eval_freq == 0:
-            comp_stats = self.env.stats()
-            for key, val in comp_stats.items():
-                self.stats[key] = val
-            self.stats['step'] = self.env_step
-            self.stats['loss_qVal'] = np.mean(self.loss_qVal)
-            self.loss_qVal.clear()
-            for key in sorted(self.stats.keys()):
-                self.logger.logkv(key, self.stats[key])
-            self.logger.dumpkvs()
-

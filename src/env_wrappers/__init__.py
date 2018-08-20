@@ -103,3 +103,15 @@ register(
     entry_point='envs:PlayroomEnv',
     wrapper_entry_point='env_wrappers.playroomMask:PlayroomMask'
 )
+
+register(
+    id='Labyrinth1-v0',
+    entry_point='envs:Labyrinth',
+    wrapper_entry_point='env_wrappers.labyrinth1:Labyrinth1'
+)
+
+register(
+    id='Labyrinth2-v0',
+    entry_point='envs:Labyrinth',
+    wrapper_entry_point='env_wrappers.labyrinth2:Labyrinth2'
+)

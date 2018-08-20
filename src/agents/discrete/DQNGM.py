@@ -43,146 +43,73 @@ class DQNGM(Agent):
                                           initial_p=1.0,
                                           final_p=.1) for _ in self.env.objects]
 
-    def make_exp(self, state0, action, state1):
+    def step(self):
 
         self.env_step += 1
         self.episode_step += 1
+        self.exp['goal'] = self.env.goal
+        self.exp['object'] = self.env.object_idx
+        self.exp['reward'], self.exp['terminal'] = self.env.eval_exp(self.exp)
+        self.trajectory.append(self.exp)
 
-        reward, terminal = self.env.eval_exp(state0, action, state1, self.env.goal, self.env.object_idx)
+        if self.buffer.nb_entries > self.batch_size:
+            experiences = self.buffer.sample(self.batch_size)
+            s0, a0, s1, r, t, g, o = [np.array(experiences[name]) for name in self.names]
+            m = np.array([self.env.obj2mask(o[k]) for k in range(self.batch_size)])
 
-        experience = {'state0': state0.copy(),
-                      'action': action,
-                      'state1': state1.copy(),
-                      'reward': reward,
-                      'terminal': terminal,
-                      'goal': self.env.goal,
-                      'object': self.env.object_idx}
+            a1 = self.critic.bestAction_model.predict_on_batch([s1, g, m])
+            q = self.critic.target_qValue_model.predict_on_batch([s1, a1, g, m])
 
-        self.trajectory.append(experience)
+            targets = []
+            for k in range(len(s1)):
+                target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
+                if TARGET_CLIP:
+                    target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
+                    targets.append(target_clip)
+                else:
+                    targets.append(target)
+            targets = np.array(targets)
 
-        return experience
+            self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=[s0, a0, g, m], y=targets)
+            self.critic.target_train()
+
+            # td_errors = targets - q_values
+            # for k in range(self.batch_size):
+            #     self.env.freqs_train[o[k]] += 1
+            #     self.env.freqs_train_reward[o[k]] += t[k]
+            #     self.env.td_errors[o[k]] += td_errors[k][0]
+            #     self.env.td_errors2[o[k]] += td_errors[k][0]
+
 
     def reset(self):
 
         if self.trajectory:
-            R, T, L = self.process_episode()
+            R = 0
+            T = False
+            L = 0
+            for expe in reversed(self.trajectory):
+                R = R * self.critic.gamma + int(expe['terminal']) - 1
+                L += 1
+                expe['R'] = R
+                self.buffer.append(expe)
+                T = T or expe['terminal']
             self.env.queues[self.env.object_idx].append((R, T, L))
-            for o in range(len(self.env.objects)):
-                self.env.queues[o].appendTD(self.env.td_errors2[o])
-            self.env.freqs_act_reward[self.env.object_idx] += int(T)
             self.trajectory.clear()
-            self.env.td_errors2 = [0 for _ in self.env.objects]
-
+            # for o in range(len(self.env.objects)):
+            #     self.env.queues[o].appendTD(self.env.td_errors2[o])
+            # self.env.freqs_act_reward[self.env.object_idx] += int(T)
+            # self.env.td_errors2 = [0 for _ in self.env.objects]
         state = self.env.reset()
         self.episode_step = 0
 
         return state
 
-    def process_episode(self):
-
-        R = 0
-        T = False
-        L = 0
-        for expe in reversed(self.trajectory):
-            R = R * self.critic.gamma + int(expe['terminal']) - 1
-            L += 1
-            expe['R'] = R
-            self.buffer.append(expe)
-            T = T or expe['terminal']
-        return R, T, L
-
-    def train(self):
-        self.train_autonomous()
-
-    def train_autonomous(self):
-        if self.buffer.nb_entries > self.batch_size:
-            experiences = self.buffer.sample(self.batch_size)
-            self.train_critic(experiences)
-            self.target_train()
-
-    def train_critic(self, experiences):
-
-        s0, a, s1, r, t, g, o = [np.array(experiences[name]) for name in self.names]
-        m = np.array([self.env.obj2mask(o[k]) for k in range(self.batch_size)])
-        inputs = [s0, a, g, m]
-        targets = self.compute_targets(s1, g, m, r, t, o)
-        # weights = np.array([self.env.interests[o[k]] for k in range(self.batch_size)])
-        weights = np.ones(shape=a.shape)
-        self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=inputs,
-                                                                           y=targets,
-                                                                           sample_weight=weights)
-        td_errors = targets - q_values
-        for k in range(self.batch_size):
-            self.env.freqs_train[o[k]] += 1
-            self.env.freqs_train_reward[o[k]] += t[k]
-            self.env.td_errors[o[k]] += td_errors[k][0]
-            self.env.td_errors2[o[k]] += td_errors[k][0]
-
-    def compute_targets(self, s1, g, m, r, t, o):
-        a = self.critic.bestAction_model.predict_on_batch([s1, g, m])
-        q = self.critic.target_qValue_model.predict_on_batch([s1, a, g, m])
-
-        targets = []
-        for k in range(len(s1)):
-            target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
-            if TARGET_CLIP:
-                target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
-                targets.append(target_clip)
-            else:
-                targets.append(target)
-        targets = np.array(targets)
-        return targets
-
-    def init_targets(self):
-        self.critic.target_init()
-
-    def target_train(self):
-        self.critic.target_train()
-
-    def act_random(self, state):
-        return np.random.randint(0, self.env.action_space.n)
-
     def act(self, state, noise=False):
-        if noise and np.random.rand(1) < self.explore_prop:
+        if noise and np.random.rand(1) < self.explorations[self.env.object_idx].value(self.env_step):
             action = np.random.randint(0, self.env.action_dim)
         else:
-            input = self.env.make_input(state)
+            mask = self.env.obj2mask(self.env.object_idx)
+            input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, mask]]
             action = self.critic.bestAction_model.predict(input, batch_size=1)
             action = action[0, 0]
         return action
-
-    def log(self):
-
-        if self.env_step % self.eval_freq == 0:
-
-            # for i, goal in enumerate(self.env_test.test_goals):
-            #     obs = self.env_test.env.reset()
-            #     state0 = np.array(self.env_test.decode(obs))
-            #     mask = self.env_test.obj2mask(goal[1])
-            #     R = 0
-            #     for _ in range(200):
-            #         input = [np.expand_dims(i, axis=0) for i in [state0, goal[0], mask]]
-            #         action = self.critic.bestAction_model.predict(input, batch_size=1)[0, 0]
-            #         state1 = self.env_test.step(action)
-            #         reward, terminal = self.env_test.eval_exp(state0, action, state1, goal[0], goal[1])
-            #         R += reward
-            #         if terminal:
-            #             break
-            #         state0 = state1
-            #     self.stats['testR_{}'.format(i)] = R
-
-            wrapper_stats = self.env.get_stats()
-            self.stats['step'] = self.env_step
-            self.stats['loss_qVal'] = self.loss_qVal
-
-            for key, val in wrapper_stats.items():
-                self.stats[key] = val
-
-            for key in sorted(self.stats.keys()):
-                self.logger.logkv(key, self.stats[key])
-
-            self.logger.dumpkvs()
-
-    @property
-    def explore_prop(self):
-        return self.explorations[self.env.object_idx].value(self.env_step)

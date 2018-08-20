@@ -98,11 +98,6 @@ class PlayroomMask(Wrapper):
             term = True
         return r, term
 
-    def make_input(self, state):
-        mask = self.obj2mask(self.object_idx)
-        input = [np.expand_dims(i, axis=0) for i in [state, self.goal, mask]]
-        return input
-
     def get_stats(self):
         stats = {}
         for i, goal in enumerate(self.objects):

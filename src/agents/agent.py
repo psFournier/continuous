@@ -21,32 +21,24 @@ class Agent():
         self.eval_freq = int(args['eval_freq'])
         self.batch_size = 64
         self.max_steps = int(args['max_steps'])
-
         self.env_step = 0
         self.episode_step = 0
         self.stats = {}
+        self.exp = {}
 
     def run(self):
-        self.start_time = time.time()
-        self.init_targets()
-
-        state0 = self.reset()
+        self.exp['state0'] = self.reset()
         try:
             while self.env_step < self.max_steps:
 
                 if RENDER_TRAIN: self.env.render(mode='human')
+                self.exp['action'] = self.act(self.exp['state0'], noise=True)
+                self.exp['state1'] = self.env.step(self.exp['action'])
+                self.step()
+                self.exp['state0'] = self.exp['state1']
 
-
-                action = self.act(state0, noise=True)
-
-                state1 = self.env.step(action)
-                experience = self.make_exp(state0, action, state1)
-                self.train()
-
-                state0 = experience['state1']
-
-                if (experience['terminal'] or self.episode_step >= self.ep_steps):
-                    state0 = self.reset()
+                if (self.exp['terminal'] or self.episode_step >= self.ep_steps):
+                    self.exp['state0'] = self.reset()
 
                 self.log()
 
@@ -61,42 +53,43 @@ class Agent():
     def reset(self):
         return self.env.reset()
 
-    def act_random(self, state):
-        action = np.random.uniform(self.env.action_space.low, self.env.action_space.high)
-        return action
-
-    def make_exp(self, state0, action, state1):
+    def step(self):
         pass
 
     def act(self, state, noise=True):
         pass
 
     def log(self):
-        pass
+
+        if self.env_step % self.eval_freq == 0:
+            # for i, goal in enumerate(self.env_test.test_goals):
+            #     obs = self.env_test.env.reset()
+            #     state0 = np.array(self.env_test.decode(obs))
+            #     mask = self.env_test.obj2mask(goal[1])
+            #     R = 0
+            #     for _ in range(200):
+            #         input = [np.expand_dims(i, axis=0) for i in [state0, goal[0], mask]]
+            #         action = self.critic.bestAction_model.predict(input, batch_size=1)[0, 0]
+            #         state1 = self.env_test.step(action)
+            #         reward, terminal = self.env_test.eval_exp(state0, action, state1, goal[0], goal[1])
+            #         R += reward
+            #         if terminal:
+            #             break
+            #         state0 = state1
+            #     self.stats['testR_{}'.format(i)] = R
+            wrapper_stats = self.env.get_stats()
+            self.stats['step'] = self.env_step
+
+            for key, val in wrapper_stats.items():
+                self.stats[key] = val
+
+            for key in sorted(self.stats.keys()):
+                self.logger.logkv(key, self.stats[key])
+
+            self.logger.dumpkvs()
 
     def save_regions(self):
         pass
 
     def save_policy(self):
-        pass
-
-    def train(self):
-        pass
-
-    def init_targets(self):
-        pass
-
-    def target_train(self):
-        pass
-
-    def sample_goal(self):
-        pass
-
-    def sample_epsilon(self):
-        pass
-
-    def train_goal(self):
-        pass
-
-    def hindsight(self):
         pass
