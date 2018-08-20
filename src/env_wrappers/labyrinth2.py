@@ -2,6 +2,7 @@ from gym import Wrapper
 import numpy as np
 from samplers.competenceQueue import CompetenceQueue
 import math
+from utils.linearSchedule import LinearSchedule
 
 class Labyrinth2(Wrapper):
     def __init__(self, env, args):
@@ -14,6 +15,10 @@ class Labyrinth2(Wrapper):
         self.queues = [CompetenceQueue() for _ in self.goals]
         self.interests = []
         self.steps = [0 for _ in self.goals]
+        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
+                                          initial_p=1.0,
+                                          final_p=.1) for _ in self.goals]
+
         # self.freqs_act = [0 for _ in self.goals]
         # self.freqs_train = [0 for _ in self.goals]
         # self.freqs_act_reward = [0 for _ in self.goals]

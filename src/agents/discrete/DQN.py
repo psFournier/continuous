@@ -36,9 +36,6 @@ class DQN(Agent):
                                 tau=0.001,
                                 learning_rate=0.001)
 
-        self.exploration = LinearSchedule(schedule_timesteps=int(1000),
-                                          initial_p=1.0,
-                                          final_p=.1)
         self.trajectory = []
 
         self.loss_qVal = []
@@ -92,7 +89,7 @@ class DQN(Agent):
         return state
 
     def act(self, state, noise=False):
-        if noise and np.random.rand(1) < self.exploration.value(self.env_step):
+        if noise and np.random.rand(1) < self.env.exploration[0].value(self.env_step):
             action = np.random.randint(0, self.env.action_space.n)
         else:
             inputs = [np.reshape(state, (1, self.critic.s_dim[0]))]

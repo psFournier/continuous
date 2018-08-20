@@ -11,7 +11,6 @@ INVERTED_GRADIENTS = True
 from networks import CriticDQNG
 from agents.agent import Agent
 from buffers import ReplayBuffer, PrioritizedReplayBuffer
-from utils.linearSchedule import LinearSchedule
 import random as rnd
 from samplers.competenceQueue import CompetenceQueue
 import math
@@ -38,9 +37,6 @@ class DQNG(Agent):
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
         self.trajectory = []
-        self.exploration = LinearSchedule(schedule_timesteps=int(10000),
-                                          initial_p=1.0,
-                                          final_p=.1)
 
     def step(self):
 
@@ -95,7 +91,7 @@ class DQNG(Agent):
         return state
 
     def act(self, state, noise=False):
-        if noise and np.random.rand(1) < self.exploration.value(self.env_step):
+        if noise and np.random.rand(1) < self.env.explorations[self.env.goal].value(self.env_step):
             action = np.random.randint(0, self.env.action_space.n)
         else:
             inputs = [np.reshape(state, (1, self.critic.s_dim[0])),
