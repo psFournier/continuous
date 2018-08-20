@@ -6,7 +6,7 @@ class Labyrinth1(Wrapper):
     def __init__(self, env, args):
         super(Labyrinth1, self).__init__(env)
         self.gamma = 0.99
-        self.destination = np.array([0, 8])
+        self.destination = np.array([0, 4])
         self.shaping = bool(args['shaping'])
         self.queues = [CompetenceQueue()]
         self.goals = [0]

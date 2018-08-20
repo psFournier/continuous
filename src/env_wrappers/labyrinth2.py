@@ -8,9 +8,9 @@ class Labyrinth2(Wrapper):
         super(Labyrinth2, self).__init__(env)
         self.gamma = 0.99
         self.theta = float(args['theta'])
-        self.goals = range(0, 9, 2)
+        self.goals = range(4)
         self.goal = None
-        self.destination = np.array([0, 8])
+        self.destination = np.array([0, 4])
         self.queues = [CompetenceQueue() for _ in self.goals]
         self.interests = []
         self.steps = [0 for _ in self.goals]
