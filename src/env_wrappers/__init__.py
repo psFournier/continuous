@@ -1,4 +1,5 @@
 from env_wrappers.registration import registry, register, make, spec
+from .base import CPBased
 
 # register(
 #     id='Reacher_xy-v0',

@@ -10,6 +10,7 @@ class Taxi1G(CPBased):
         super(Taxi1G, self).__init__(env, args)
 
         self.goals = range(4)
+        self.init()
         self.goal_states = [np.array(x) for x in [(0, 0, 4), (0, 4, 1), (4, 0, 2), (4, 3, 3)]]
         self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
                                             initial_p=1.0,

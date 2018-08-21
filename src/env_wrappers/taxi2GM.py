@@ -8,8 +8,9 @@ from .base import CPBased
 class Taxi2GM(CPBased):
     def __init__(self, env, args):
         super(Taxi2GM, self).__init__(env, args)
-
         self.goals = ['agent', 'passenger', 'taxi']
+        self.object = None
+        self.init()
         self.obj_feat = [[0, 1], [2, 3], [4]]
         self.state_low = [0, 0, 0, 0, 0]
         self.state_high = [self.env.nR - 1, self.env.nC - 1, self.env.nR - 1, self.env.nC - 1, 1]
@@ -42,7 +43,8 @@ class Taxi2GM(CPBased):
         return r, term
 
     def reset(self):
-        features = self.obj_feat[self.get_idx()]
+        self.object = self.get_idx()
+        features = self.obj_feat[self.object]
         self.goal = np.zeros(shape=self.state_dim)
         for idx in features:
             while True:

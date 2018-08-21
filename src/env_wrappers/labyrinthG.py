@@ -8,8 +8,9 @@ from .base import CPBased
 class LabyrinthG(CPBased):
     def __init__(self, env, args):
         super(LabyrinthG, self).__init__(env, args)
-        self.gamma = 0.99
         self.goals = range(4)
+        self.init()
+        self.gamma = 0.99
         self.destination = np.array([0, 4])
         self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
                                           initial_p=1.0,

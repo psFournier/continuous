@@ -20,6 +20,7 @@ class DQNG(DQN):
     def __init__(self, args, sess, env, env_test, logger):
 
         super(DQNG, self).__init__(args, sess, env, env_test, logger)
+        self.beta = float(args['beta'])
         self.critic = CriticDQNG(sess,
                                  s_dim=env.state_dim,
                                  g_dim=env.goal_dim,
@@ -27,12 +28,10 @@ class DQNG(DQN):
                                  gamma=0.99,
                                  tau=0.001,
                                  learning_rate=0.001)
-
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
         self.tutor_buffer = None
         self.trajectory = []
-
         if self.tutor_imitation:
             self.get_tutor_exp(goal=3)
 

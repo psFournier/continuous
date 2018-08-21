@@ -15,6 +15,11 @@ class CPBased(Wrapper):
         self.interests = []
         self.goal = None
 
+    def init(self):
+        self.queues = [CompetenceQueue() for _ in self.goals]
+        self.steps = [0 for _ in self.goals]
+        self.interests = [0 for _ in self.goals]
+
     def get_idx(self):
         CPs = [abs(q.CP) for q in self.queues]
         maxCP = max(CPs)
@@ -30,7 +35,7 @@ class CPBased(Wrapper):
             else:
                 self.interests = [1 - (r - minR) / (maxR - minR) for r in Rs]
         except:
-            self.interests = [1 for _ in self.goals]
+            self.interests = [1 for _ in self.queues]
 
         weighted_interests = [math.pow(I, self.theta) + 0.1 for I in self.interests]
         sum = np.sum(weighted_interests)

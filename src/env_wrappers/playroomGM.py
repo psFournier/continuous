@@ -10,6 +10,8 @@ class PlayroomGM(CPBased):
         super(PlayroomGM, self).__init__(env, args)
 
         self.goals = [obj.name for obj in self.env.objects]
+        self.object = None
+        self.init()
         self.obj_feat = [[4 + 4 * j] for j in range(len(self.goals))]
         self.state_low = self.env.state_low
         self.state_high = self.env.state_high
@@ -37,8 +39,8 @@ class PlayroomGM(CPBased):
         return r, term
 
     def reset(self):
-        goal_idx = self.get_idx()
-        features = self.obj_feat[goal_idx]
+        self.object = self.get_idx()
+        features = self.obj_feat[self.object]
         self.goal = np.zeros(shape=self.state_dim)
         for idx in features:
             while True:

@@ -22,6 +22,7 @@ class DQNGM(DQN):
     def __init__(self, args, sess, env, env_test, logger):
 
         super(DQNGM, self).__init__(args, sess, env, env_test, logger)
+        self.beta = float(args['beta'])
         self.critic = CriticDQNGM(sess,
                                  s_dim=env.state_dim,
                                  g_dim=env.goal_dim,
@@ -36,14 +37,14 @@ class DQNGM(DQN):
         self.trajectory = []
         self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
                                           initial_p=1.0,
-                                          final_p=.1) for _ in self.env.objects]
+                                          final_p=.1) for _ in self.env.goals]
 
     def step(self):
 
         self.env_step += 1
         self.episode_step += 1
         self.exp['goal'] = self.env.goal
-        self.exp['object'] = self.env.object_idx
+        self.exp['object'] = self.env.object
         self.exp['reward'], self.exp['terminal'] = self.env.eval_exp(self.exp)
         self.trajectory.append(self.exp)
 
@@ -56,17 +57,11 @@ class DQNGM(DQN):
             q = self.critic.target_qValue_model.predict_on_batch([s1, a1, g, m])
 
             targets = self.compute_targets(r, t, q)
-
-            self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=[s0, a0, g, m], y=targets)
+            weights = np.array([self.env.interests[obj] ** self.beta for obj in o])
+            self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=[s0, a0, g, m],
+                                                                               y=targets,
+                                                                               sample_weight=weights)
             self.critic.target_train()
-
-            # td_errors = targets - q_values
-            # for k in range(self.batch_size):
-            #     self.env.freqs_train[o[k]] += 1
-            #     self.env.freqs_train_reward[o[k]] += t[k]
-            #     self.env.td_errors[o[k]] += td_errors[k][0]
-            #     self.env.td_errors2[o[k]] += td_errors[k][0]
-
 
     def reset(self):
 
@@ -75,7 +70,7 @@ class DQNGM(DQN):
             for expe in reversed(self.trajectory):
                 R += int(expe['reward'])
                 self.buffer.append(expe)
-            self.env.queues[self.env.object_idx].append({'step': self.env_step, 'R': R})
+            self.env.queues[self.env.object].append({'step': self.env_step, 'R': R})
             self.trajectory.clear()
             # for o in range(len(self.env.objects)):
             #     self.env.queues[o].appendTD(self.env.td_errors2[o])
@@ -87,10 +82,10 @@ class DQNGM(DQN):
         return state
 
     def act(self, state, noise=False):
-        if noise and np.random.rand(1) < self.explorations[self.env.object_idx].value(self.env_step):
+        if noise and np.random.rand(1) < self.explorations[self.env.object].value(self.env_step):
             action = np.random.randint(0, self.env.action_dim)
         else:
-            mask = self.env.obj2mask(self.env.object_idx)
+            mask = self.env.obj2mask(self.env.object)
             input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, mask]]
             action = self.critic.bestAction_model.predict(input, batch_size=1)
             action = action[0, 0]
