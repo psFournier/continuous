@@ -9,34 +9,32 @@ RENDER_TRAIN = False
 TARGET_CLIP = True
 INVERTED_GRADIENTS = True
 from networks import CriticDQNG
-from agents.agent import Agent
+from agents import DQN
 from buffers import ReplayBuffer, PrioritizedReplayBuffer
 import random as rnd
 from samplers.competenceQueue import CompetenceQueue
 import math
 
 
-class DQNG(Agent):
+class DQNG(DQN):
     def __init__(self, args, sess, env, env_test, logger):
 
         super(DQNG, self).__init__(args, sess, env, env_test, logger)
-        self.per = bool(args['per'])
-        self.self_imitation = bool(int(args['self_imit']))
-        self.tutor_imitation = bool(int(args['tutor_imit']))
-        self.her = bool(int(args['her']))
-
         self.critic = CriticDQNG(sess,
                                  s_dim=env.state_dim,
                                  g_dim=env.goal_dim,
-                                 num_a=env.action_space.n,
+                                 num_a=env.action_dim,
                                  gamma=0.99,
                                  tau=0.001,
                                  learning_rate=0.001)
 
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
-
+        self.tutor_buffer = None
         self.trajectory = []
+
+        if self.tutor_imitation:
+            self.get_tutor_exp(goal=3)
 
     def step(self):
 
@@ -53,19 +51,7 @@ class DQNG(Agent):
 
             a1 = self.critic.bestAction_model.predict_on_batch([s1, g])
             q = self.critic.target_qValue_model.predict_on_batch([s1, a1, g])
-
-            targets = []
-            for k in range(len(s1)):
-                # self.env.freqs_train[g[k]] += 1
-                # self.env.freqs_train_reward[g[k]] += t[k]
-                target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
-                if TARGET_CLIP:
-                    target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
-                    targets.append(target_clip)
-                else:
-                    targets.append(target)
-            targets = np.array(targets)
-
+            targets = self.compute_targets(r, t, q)
             # weights = np.array([(self.env.min_avg_length_ep / self.env.queues[gi].L_mean) ** self.beta for gi in g])
             self.critic.qValue_model.train_on_batch(x=[s0, a0, g], y=targets)
             self.critic.target_train()
@@ -138,3 +124,15 @@ class DQNG(Agent):
 
     def append_tutor_exp(self, new_expe):
         pass
+
+    def train_imitation(self):
+        experiences = self.tutor_buffer.sample(self.batch_size)
+        s0, a0, s1, r, t, g = [np.array(experiences[name]) for name in self.names]
+
+        targets_imit = np.zeros((self.batch_size, 1))
+        self.critic.margin_model.train_on_batch(x=[s0, a0, g], y=targets_imit)
+
+        a1 = self.critic.bestAction_model.predict_on_batch([s1, g])
+        q = self.critic.target_qValue_model.predict_on_batch([s1, a1, g])
+        targets_dqn = self.compute_targets(r, t, q)
+        self.critic.qValue_model.train_on_batch(x=[s0, a0, g], y=targets_dqn)

@@ -35,35 +35,35 @@ y = ['T_0', 'T_1', 'T_2', 'T_3']
 
 # x = ['FAR_0', 'FAR_1', 'FAR_2', 'FAR_3']
 x = ['step']
-params = ['agent']
-df = df[(df['agent'] == 'dqng')]
+params = ['agent', 'theta']
+# df = df[(df['agent'] == 'dqng')]
 
-params += ['num_run']
-df = df.fillna(-1)
+# params += ['num_run']
+# df = df.fillna(-1)
 df = df[x + params + y]
 op_dict = {a:[np.mean, np.std] for a in y}
 
-# df = df.groupby(x + params).agg(op_dict).reset_index()
-
-a, b = 2,2
-fig1, ax1 = plt.subplots(a, b, figsize=(18,10))
-for i, val in enumerate(y):
-    for num_run, g2 in df.groupby('num_run'):
-        ax1[i % a, i // a].scatter(g2['step'], g2[val], label=num_run, s=10)
-    ax1[i % a, i // a].set_title(label=val)
-    ax1[i % a, i // a].legend()
+df = df.groupby(x + params).agg(op_dict).reset_index()
 
 # a, b = 2,2
-# fig2, ax2 = plt.subplots(a, b, figsize=(18,10))
-# for j, (name, g) in enumerate(df.groupby(params)):
-#     for i, val in enumerate(y):
-#         # ax[i % a, i // a].scatter(g['FAR_{}'.format(j)], g[val], label=val, s=10)
-#         ax2[i % a, i // a].plot(g['step'], g[val]['mean'], label=name)
-#         ax2[i % a, i // a].fill_between(g['step'],
-#                         g[val]['mean'] - 0.5 * g[val]['std'],
-#                         g[val]['mean'] + 0.5 * g[val]['std'], alpha=0.25, linewidth=0)
-#         ax2[i % a, i // a].set_title(label=val)
-#         # ax[i % a, i // a].set_xlim([0,1000])
-#         ax2[i % a, i // a].legend()
+# fig1, ax1 = plt.subplots(a, b, figsize=(18,10))
+# for i, (name, g) in enumerate(df.groupby(params)):
+#     for num_run, g2 in g.groupby('num_run'):
+#         ax1[i % a, i // a].scatter(g2['step'], g2['T_0'], label=num_run, s=10)
+#     ax1[i % a, i // a].set_title(label=name)
+#     ax1[i % a, i // a].legend()
+
+a, b = 2,2
+fig2, ax2 = plt.subplots(a, b, figsize=(18,10))
+for j, (name, g) in enumerate(df.groupby(params)):
+    for i, val in enumerate(y):
+        # ax[i % a, i // a].scatter(g['FAR_{}'.format(j)], g[val], label=val, s=10)
+        ax2[i % a, i // a].plot(g['step'], g[val]['mean'], label=name)
+        ax2[i % a, i // a].fill_between(g['step'],
+                        g[val]['mean'] - 0.5 * g[val]['std'],
+                        g[val]['mean'] + 0.5 * g[val]['std'], alpha=0.25, linewidth=0)
+        ax2[i % a, i // a].set_title(label=val)
+        # ax[i % a, i // a].set_xlim([0,1000])
+        ax2[i % a, i // a].legend()
 
 plt.show()

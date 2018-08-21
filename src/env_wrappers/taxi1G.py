@@ -2,10 +2,11 @@ from gym import Wrapper
 import numpy as np
 from samplers.competenceQueue import CompetenceQueue
 import math
+from utils.linearSchedule import LinearSchedule
 
-class TaxiGoal(Wrapper):
+class Taxi1G(Wrapper):
     def __init__(self, env, args):
-        super(TaxiGoal, self).__init__(env)
+        super(Taxi1G, self).__init__(env)
 
         self.theta = float(args['theta'])
         self.goals = range(4)
@@ -18,17 +19,19 @@ class TaxiGoal(Wrapper):
         self.freqs_train = [0 for _ in self.goals]
         self.freqs_act_reward = [0 for _ in self.goals]
         self.freqs_train_reward = [0 for _ in self.goals]
-
-        self.trajectories = {}
-        self.trajectories[0] = [[3,3,1,1,4]
-                                # [3,1,3,1,4],
-                                # [3,1,1,3,4],
-                                # [1,3,1,3,4],
-                                # [1,3,3,1,4]
-                                ]
-        self.trajectories[1] = [t + [0,0,0,0,5] for t in self.trajectories[0]]
-        self.trajectories[2] = [t + [0,2,2,1,2,2,5] for t in self.trajectories[0]]
-        self.trajectories[3] = [t + [0,2,0,2,2,0,0,5] for t in self.trajectories[0]]
+        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
+                                            initial_p=1.0,
+                                            final_p=.1) for _ in self.goals]
+        # self.trajectories = {}
+        # self.trajectories[0] = [[3,3,1,1,4]
+        #                         # [3,1,3,1,4],
+        #                         # [3,1,1,3,4],
+        #                         # [1,3,1,3,4],
+        #                         # [1,3,3,1,4]
+        #                         ]
+        # self.trajectories[1] = [t + [0,0,0,0,5] for t in self.trajectories[0]]
+        # self.trajectories[2] = [t + [0,2,2,1,2,2,5] for t in self.trajectories[0]]
+        # self.trajectories[3] = [t + [0,2,0,2,2,0,0,5] for t in self.trajectories[0]]
 
 
     def step(self, action):
@@ -36,15 +39,24 @@ class TaxiGoal(Wrapper):
         state = np.array(self.decode(obs))
         return state
 
-    def eval_exp(self, state0, action, state1, goal):
+    def eval_exp(self, exp):
         term = False
         r = -1
-        if ((state1 == self.goal_states[goal]).all() and (state0 != self.goal_states[goal]).any()):
+        goal_state = self.goal_states[exp['goal']]
+        if ((exp['state1'] == goal_state).all() and (exp['state0'] != goal_state).any()):
             r = 0
             term = True
         return r, term
 
-    def sample_goal(self):
+    def reset(self):
+
+        CPs = [abs(q.CP) for q in self.queues]
+        maxcp = max(CPs)
+
+        if maxcp > 1:
+            self.interests = [math.pow(cp / maxcp, self.theta) + 0.05 for cp in CPs]
+        else:
+            self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.05 for q in self.queues]
 
         sum = np.sum(self.interests)
         mass = np.random.random() * sum
@@ -53,28 +65,8 @@ class TaxiGoal(Wrapper):
         while mass > s:
             idx += 1
             s += self.interests[idx]
-        goal = self.goals[idx]
-
-        return goal
-
-    def update_interests(self):
-
-        CPs = [abs(q.CP) for q in self.queues]
-        maxcp = max(CPs)
-
-        if maxcp > 1:
-            self.interests = [math.pow(cp / maxcp, self.theta) + 0.0001 for cp in CPs]
-        else:
-            self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.0001 for q in self.queues]
-
-    def set_goal(self):
-        self.update_interests()
-        self.goal = self.sample_goal()
+        self.goal = self.goals[idx]
         self.freqs_act[self.goal] += 1
-
-    def reset(self):
-
-        self.set_goal()
 
         obs = self.env.reset()
         state = np.array(self.decode(obs))
@@ -116,7 +108,7 @@ class TaxiGoal(Wrapper):
 
     @property
     def action_dim(self):
-        return [self.env.action_space.n]
+        return 6
 
     @property
     def min_avg_length_ep(self):

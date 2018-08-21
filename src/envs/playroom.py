@@ -133,7 +133,7 @@ class Toy2(Toy1):
     def smax(self):
         return 4
 
-class PlayroomEnv(Env):
+class Playroom(Env):
 
     metadata = {'render.modes': ['human', 'ansi']}
 
@@ -269,7 +269,7 @@ class PlayroomEnv(Env):
         return [0] * (2 + len(self.objects) * 4)
 
 if __name__ == '__main__':
-    env = PlayroomEnv()
+    env = Playroom()
     env.reset()
     for i in range(100000):
         while True:

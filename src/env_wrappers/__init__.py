@@ -81,27 +81,21 @@ register(
 )
 
 register(
-    id='TaxiGoal-v0',
-    entry_point='envs:TaxiEnv',
-    wrapper_entry_point='env_wrappers.taxiGoal:TaxiGoal'
+    id='Taxi1G-v0',
+    entry_point='envs:Taxi1',
+    wrapper_entry_point='env_wrappers.taxi1G:Taxi1G'
 )
 
 register(
-    id='TaxiGoalMask-v0',
-    entry_point='envs:Taxi2Env',
-    wrapper_entry_point='env_wrappers.taxiGoalMask:TaxiGoalMask'
+    id='Taxi2GM-v0',
+    entry_point='envs:Taxi2',
+    wrapper_entry_point='env_wrappers.taxi2GM:Taxi2GM'
 )
 
 register(
-    id='TaxiGoal2-v0',
-    entry_point='envs:Taxi2Env',
-    wrapper_entry_point='env_wrappers.taxiGoal2:TaxiGoal2'
-)
-
-register(
-    id='PlayroomMask-v0',
-    entry_point='envs:PlayroomEnv',
-    wrapper_entry_point='env_wrappers.playroomMask:PlayroomMask'
+    id='PlayroomGM-v0',
+    entry_point='envs:Playroom',
+    wrapper_entry_point='env_wrappers.playroomGM:PlayroomGM'
 )
 
 register(

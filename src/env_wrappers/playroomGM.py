@@ -2,10 +2,11 @@ from gym import Wrapper
 import numpy as np
 from samplers.competenceQueue import CompetenceQueue
 import math
+from utils.linearSchedule import LinearSchedule
 
-class PlayroomMask(Wrapper):
+class PlayroomGM(Wrapper):
     def __init__(self, env, args):
-        super(PlayroomMask, self).__init__(env)
+        super(PlayroomGM, self).__init__(env)
 
         self.theta = float(args['theta'])
         self.objects = [obj.name for obj in self.env.objects]
@@ -27,56 +28,28 @@ class PlayroomMask(Wrapper):
         self.td_errors = [0 for _ in self.objects]
         self.td_errors2 = [0 for _ in self.objects]
 
+        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
+                                            initial_p=1.0,
+                                            final_p=.1) for _ in self.objects]
+
     def step(self, action):
         obs, _, _, _ = self.env.step(action)
         state = np.array(obs)
         return state
 
+    def eval_exp(self, exp):
+        term = False
+        r = -1
+        goal_feat = self.obj_feat[exp['object']]
+        goal_vals = exp['goal'][goal_feat]
+        s1_proj = exp['state1'][goal_feat]
+        s0_proj = exp['state0'][goal_feat]
+        if ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any()):
+            r = 0
+            term = True
+        return r, term
+
     def reset(self):
-
-        self.update_interests()
-
-        self.sample_goal()
-        features = self.obj_feat[self.object_idx]
-        # self.mask = self.feat2mask(features)
-        self.goal = self.feat2val(features)
-
-        self.freqs_act[self.object_idx] += 1
-
-        obs = self.env.reset()
-        state = np.array(obs)
-
-        return state
-
-    def sample_goal(self, random=False):
-
-        if random:
-            self.object_idx = np.random.randint(len(self.objects))
-        else:
-            sum = np.sum(self.interests)
-            mass = np.random.random() * sum
-            idx = 0
-            s = self.interests[0]
-            while mass > s:
-                idx += 1
-                s += self.interests[idx]
-            self.object_idx = idx
-
-    def obj2mask(self, obj):
-        res = np.zeros(shape=self.state_dim)
-        res[self.obj_feat[obj]] = 1
-        return res
-
-    def feat2val(self, features):
-        res = np.zeros(shape=self.state_dim)
-        for idx in features:
-            while True:
-                s = np.random.randint(self.state_low[idx], self.state_high[idx]+1)
-                if s != self.init_state[idx]: break
-            res[idx] = s
-        return res
-
-    def update_interests(self):
 
         CPs = [abs(q.TDCP) for q in self.queues]
         maxcp = max(CPs)
@@ -86,17 +59,33 @@ class PlayroomMask(Wrapper):
         else:
             self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.05 for q in self.queues]
 
-    def eval_exp(self, state0, action, state1, goal, object_idx):
-        term = False
-        r = -1
-        goal_feat = self.obj_feat[object_idx]
-        goal_vals = goal[goal_feat]
-        s1_proj = state1[goal_feat]
-        s0_proj = state0[goal_feat]
-        if ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any()):
-            r = 0
-            term = True
-        return r, term
+        sum = np.sum(self.interests)
+        mass = np.random.random() * sum
+        idx = 0
+        s = self.interests[0]
+        while mass > s:
+            idx += 1
+            s += self.interests[idx]
+        self.object_idx = idx
+        self.freqs_act[self.object_idx] += 1
+
+        features = self.obj_feat[self.object_idx]
+        self.goal = np.zeros(shape=self.state_dim)
+        for idx in features:
+            while True:
+                s = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
+                if s != self.init_state[idx]: break
+            self.goal[idx] = s
+
+        obs = self.env.reset()
+        state = np.array(obs)
+
+        return state
+
+    def obj2mask(self, obj):
+        res = np.zeros(shape=self.state_dim)
+        res[self.obj_feat[obj]] = 1
+        return res
 
     def get_stats(self):
         stats = {}

@@ -2,10 +2,11 @@ from gym import Wrapper
 import numpy as np
 from samplers.competenceQueue import CompetenceQueue
 import math
+from utils.linearSchedule import LinearSchedule
 
-class TaxiGoalMask(Wrapper):
+class Taxi2GM(Wrapper):
     def __init__(self, env, args):
-        super(TaxiGoalMask, self).__init__(env)
+        super(Taxi2GM, self).__init__(env)
 
         self.theta = float(args['theta'])
         self.objects = ['agent', 'passenger', 'taxi']
@@ -28,28 +29,36 @@ class TaxiGoalMask(Wrapper):
                            (np.array([0, 0, 4, 0, 0]), 1),
                            (np.array([0, 0, 4, 3, 0]), 1)]
 
+        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
+                                            initial_p=1.0,
+                                            final_p=.1) for _ in self.objects]
+
     def step(self, action):
         obs, _, _, _ = self.env.step(action)
         state = np.array(self.decode(obs))
         return state
 
+    def eval_exp(self, exp):
+        term = False
+        r = -1
+        goal_feat = self.obj_feat[exp['object']]
+        goal_vals = exp['goal'][goal_feat]
+        s1_proj = exp['state1'][goal_feat]
+        s0_proj = exp['state0'][goal_feat]
+        if ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any()):
+            r = 0
+            term = True
+        return r, term
+
     def reset(self):
 
-        self.update_interests()
+        CPs = [abs(q.CP) for q in self.queues]
+        maxcp = max(CPs)
 
-        self.sample_goal()
-        features = self.obj_feat[self.object_idx]
-        # self.mask = self.feat2mask(features)
-        self.goal = self.feat2val(features)
-
-        self.freqs_act[self.object_idx] += 1
-
-        obs = self.env.reset()
-        state = np.array(self.decode(obs))
-
-        return state
-
-    def sample_goal(self):
+        if maxcp > 1:
+            self.interests = [math.pow(cp / maxcp, self.theta) + 0.05 for cp in CPs]
+        else:
+            self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.05 for q in self.queues]
 
         sum = np.sum(self.interests)
         mass = np.random.random() * sum
@@ -59,49 +68,25 @@ class TaxiGoalMask(Wrapper):
             idx += 1
             s += self.interests[idx]
         self.object_idx = idx
+        self.freqs_act[self.object_idx] += 1
+
+        features = self.obj_feat[self.object_idx]
+        self.goal = np.zeros(shape=self.state_dim)
+        for idx in features:
+            while True:
+                s = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
+                if s != self.init_state[idx]: break
+            self.goal[idx] = s
+
+        obs = self.env.reset()
+        state = np.array(self.decode(obs))
+
+        return state
 
     def obj2mask(self, obj):
         res = np.zeros(shape=self.state_dim)
         res[self.obj_feat[obj]] = 1
         return res
-
-    def feat2val(self, features):
-        res = np.zeros(shape=self.state_dim)
-        while True:
-            ok = False
-            for idx in features:
-                s = np.random.randint(self.state_low[idx], self.state_high[idx]+1)
-                res[idx] = s
-                ok = ok or s != self.init_state[idx]
-            if ok: break
-        return res
-
-    def update_interests(self):
-
-        CPs = [abs(q.CP) for q in self.queues]
-        maxcp = max(CPs)
-
-        if maxcp > 1:
-            self.interests = [math.pow(cp / maxcp, self.theta) + 0.0001 for cp in CPs]
-        else:
-            self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.0001 for q in self.queues]
-
-    def eval_exp(self, state0, action, state1, goal, object_idx):
-        term = False
-        r = -1
-        goal_feat = self.obj_feat[object_idx]
-        goal_vals = goal[goal_feat]
-        s1_proj = state1[goal_feat]
-        s0_proj = state0[goal_feat]
-        if ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any()):
-            r = 0
-            term = True
-        return r, term
-
-    def make_input(self, state):
-        mask = self.obj2mask(self.object_idx)
-        input = [np.expand_dims(i, axis=0) for i in [state, self.goal, mask]]
-        return input
 
     def get_stats(self):
         stats = {}
@@ -138,7 +123,7 @@ class TaxiGoalMask(Wrapper):
 
     @property
     def action_dim(self):
-        return [self.env.action_space.n]
+        return 6
 
     @property
     def min_avg_length_ep(self):

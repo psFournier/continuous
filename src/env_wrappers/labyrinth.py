@@ -3,9 +3,9 @@ import numpy as np
 from samplers.competenceQueue import CompetenceQueue
 from utils.linearSchedule import LinearSchedule
 
-class Labyrinth1(Wrapper):
+class Labyrinth(Wrapper):
     def __init__(self, env, args):
-        super(Labyrinth1, self).__init__(env)
+        super(Labyrinth, self).__init__(env)
         self.gamma = 0.99
         self.destination = np.array([0, 4])
         self.shaping = bool(args['shaping'])
@@ -68,3 +68,7 @@ class Labyrinth1(Wrapper):
     @property
     def state_dim(self):
         return 2,
+
+    @property
+    def action_dim(self):
+        return 4

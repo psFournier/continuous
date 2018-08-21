@@ -10,7 +10,7 @@ RENDER_TRAIN = False
 TARGET_CLIP = True
 INVERTED_GRADIENTS = True
 from networks import CriticDQNGM
-from agents.agent import Agent
+from agents import DQN
 from buffers import ReplayBuffer, PrioritizedReplayBuffer
 from utils.linearSchedule import LinearSchedule
 import random as rnd
@@ -18,15 +18,10 @@ from samplers.competenceQueue import CompetenceQueue
 import math
 
 
-class DQNGM(Agent):
+class DQNGM(DQN):
     def __init__(self, args, sess, env, env_test, logger):
 
         super(DQNGM, self).__init__(args, sess, env, env_test, logger)
-        self.per = bool(args['per'])
-        self.self_imitation = bool(int(args['self_imit']))
-        self.tutor_imitation = bool(int(args['tutor_imit']))
-        self.her = bool(int(args['her']))
-
         self.critic = CriticDQNGM(sess,
                                  s_dim=env.state_dim,
                                  g_dim=env.goal_dim,
@@ -60,15 +55,7 @@ class DQNGM(Agent):
             a1 = self.critic.bestAction_model.predict_on_batch([s1, g, m])
             q = self.critic.target_qValue_model.predict_on_batch([s1, a1, g, m])
 
-            targets = []
-            for k in range(len(s1)):
-                target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
-                if TARGET_CLIP:
-                    target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
-                    targets.append(target_clip)
-                else:
-                    targets.append(target)
-            targets = np.array(targets)
+            targets = self.compute_targets(r, t, q)
 
             self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=[s0, a0, g, m], y=targets)
             self.critic.target_train()

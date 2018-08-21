@@ -6,7 +6,6 @@ import pickle
 
 import os
 RENDER_TRAIN = False
-TARGET_CLIP = True
 INVERTED_GRADIENTS = True
 from networks import CriticDQN
 from agents.agent import Agent
@@ -31,7 +30,7 @@ class DQN(Agent):
 
         self.critic = CriticDQN(sess,
                                 s_dim=env.state_dim,
-                                num_a=env.action_space.n,
+                                num_a=env.action_dim,
                                 gamma=0.99,
                                 tau=0.001,
                                 learning_rate=0.001)
@@ -54,19 +53,22 @@ class DQN(Agent):
 
             a1 = self.critic.bestAction_model.predict_on_batch([s1])
             q = self.critic.target_qValue_model.predict_on_batch([s1, a1])
-
-            targets = []
-            for k in range(len(s0)):
-                target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
-                if TARGET_CLIP:
-                    target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
-                    targets.append(target_clip)
-                else:
-                    targets.append(target)
-            targets = np.array(targets)
+            targets = self.compute_targets(r, t, q)
 
             self.critic.qValue_model.train_on_batch(x=[s0, a0], y=targets)
             self.critic.target_train()
+
+    def compute_targets(self, r, t, q, clip=True):
+        targets = []
+        for k in range(self.batch_size):
+            target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
+            if clip:
+                target_clip = np.clip(target, -0.99 / (1 - self.critic.gamma), 0.01)
+                targets.append(target_clip)
+            else:
+                targets.append(target)
+        targets = np.array(targets)
+        return targets
 
     def reset(self):
 

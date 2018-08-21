@@ -4,9 +4,9 @@ from samplers.competenceQueue import CompetenceQueue
 import math
 from utils.linearSchedule import LinearSchedule
 
-class Labyrinth2(Wrapper):
+class LabyrinthG(Wrapper):
     def __init__(self, env, args):
-        super(Labyrinth2, self).__init__(env)
+        super(LabyrinthG, self).__init__(env)
         self.gamma = 0.99
         self.theta = float(args['theta'])
         self.goals = range(4)
@@ -98,6 +98,11 @@ class Labyrinth2(Wrapper):
     @property
     def goal_dim(self):
         return 1,
+
+    @property
+    def action_dim(self):
+        return 4
+
 
     # @property
     # def min_avg_length_ep(self):
