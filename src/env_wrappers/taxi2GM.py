@@ -66,7 +66,7 @@ class Taxi2GM(Wrapper):
             else:
                 self.interests = [math.pow(1 - (r - minR) / (maxR - minR), self.theta) + 0.1 for r in Rs]
         except:
-            self.interests = [1.1 for _ in self.goals]
+            self.interests = [1.1 for _ in self.objects]
 
         sum = np.sum(self.interests)
         mass = np.random.random() * sum
