@@ -60,15 +60,10 @@ class DQNG(DQN):
 
         if self.trajectory:
             R = 0
-            T = False
-            L = 0
             for expe in reversed(self.trajectory):
-                R = R * self.critic.gamma + int(expe['terminal']) - 1
-                L += 1
-                expe['R'] = R
+                R += int(expe['reward'])
                 self.buffer.append(expe)
-                T = T or expe['terminal']
-            self.env.queues[self.env.goal].append((R, T, L))
+            self.env.queues[self.env.goal].append({'step': self.env_step, 'R': R})
             self.trajectory.clear()
 
         state = self.env.reset()

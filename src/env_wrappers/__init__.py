@@ -99,13 +99,13 @@ register(
 )
 
 register(
-    id='Labyrinth1-v0',
+    id='Labyrinth-v0',
     entry_point='envs:Labyrinth',
-    wrapper_entry_point='env_wrappers.labyrinth1:Labyrinth1'
+    wrapper_entry_point='env_wrappers.labyrinth:Labyrinth'
 )
 
 register(
-    id='Labyrinth2-v0',
+    id='LabyrinthG-v0',
     entry_point='envs:Labyrinth',
-    wrapper_entry_point='env_wrappers.labyrinth2:Labyrinth2'
+    wrapper_entry_point='env_wrappers.labyrinthG:LabyrinthG'
 )

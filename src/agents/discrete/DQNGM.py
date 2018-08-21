@@ -72,15 +72,10 @@ class DQNGM(DQN):
 
         if self.trajectory:
             R = 0
-            T = False
-            L = 0
             for expe in reversed(self.trajectory):
-                R = R * self.critic.gamma + int(expe['terminal']) - 1
-                L += 1
-                expe['R'] = R
+                R += int(expe['reward'])
                 self.buffer.append(expe)
-                T = T or expe['terminal']
-            self.env.queues[self.env.object_idx].append((R, T, L))
+            self.env.queues[self.env.object_idx].append({'step': self.env_step, 'R': R})
             self.trajectory.clear()
             # for o in range(len(self.env.objects)):
             #     self.env.queues[o].appendTD(self.env.td_errors2[o])

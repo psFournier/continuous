@@ -51,13 +51,21 @@ class PlayroomGM(Wrapper):
 
     def reset(self):
 
-        CPs = [abs(q.TDCP) for q in self.queues]
-        maxcp = max(CPs)
+        CPs = [abs(q.CP) for q in self.queues]
+        maxCP = max(CPs)
+        minCP = min(CPs)
 
-        if maxcp > 1:
-            self.interests = [math.pow(cp / maxcp, self.theta) + 0.05 for cp in CPs]
-        else:
-            self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.05 for q in self.queues]
+        Rs = [q.R for q in self.queues]
+        maxR = max(Rs)
+        minR = min(Rs)
+
+        try:
+            if maxCP > 1:
+                self.interests = [math.pow((cp - minCP) / (maxCP - minCP), self.theta) + 0.1 for cp in CPs]
+            else:
+                self.interests = [math.pow(1 - (r - minR) / (maxR - minR), self.theta) + 0.1 for r in Rs]
+        except:
+            self.interests = [1.1 for _ in self.objects]
 
         sum = np.sum(self.interests)
         mass = np.random.random() * sum

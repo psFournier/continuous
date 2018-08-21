@@ -30,25 +30,40 @@ class LabyrinthG(Wrapper):
         return state
 
     def eval_exp(self, exp):
-        r = 0
+        r = -1
         term = False
         dist1 = np.linalg.norm(exp['state1'] - self.destination)
 
         if dist1 <= self.goals[self.goal]:
-            r = 1
+            r = 0
             term = True
 
         return r, term
 
     def reset(self):
 
-        CPs = [abs(q.CP) for q in self.queues]
-        maxcp = max(CPs)
+        self.set_goal()
+        obs = self.env.reset()
+        state = np.array(self.decode(obs))
 
-        if maxcp > 1:
-            self.interests = [math.pow(cp / maxcp, self.theta) + 0.05 for cp in CPs]
-        else:
-            self.interests = [math.pow(1 - q.T_mean, self.theta) + 0.05 for q in self.queues]
+        return state
+
+    def set_goal(self):
+        CPs = [abs(q.CP) for q in self.queues]
+        maxCP = max(CPs)
+        minCP = min(CPs)
+
+        Rs = [q.R for q in self.queues]
+        maxR = max(Rs)
+        minR = min(Rs)
+
+        try:
+            if maxCP > 1:
+                self.interests = [math.pow((cp - minCP) / (maxCP - minCP), self.theta) + 0.1 for cp in CPs]
+            else:
+                self.interests = [math.pow(1 - (r - minR) / (maxR - minR), self.theta) + 0.1 for r in Rs]
+        except:
+            self.interests = [1.1 for _ in self.goals]
 
         sum = np.sum(self.interests)
         mass = np.random.random() * sum
@@ -59,19 +74,10 @@ class LabyrinthG(Wrapper):
             s += self.interests[idx]
         self.goal = idx
 
-        # self.freqs_act[self.goal] += 1
-
-        obs = self.env.reset()
-        state = np.array(self.decode(obs))
-
-        return state
-
     def get_stats(self):
         stats = {}
         for i, goal in enumerate(self.goals):
-            stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].R_mean))
-            stats['T_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].T_mean))
-            stats['L_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].L_mean))
+            stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].R))
             stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].CP))
             # stats['FA_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_act[i]))
             # stats['FT_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_train[i]))
