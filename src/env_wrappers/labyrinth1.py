@@ -11,7 +11,7 @@ class Labyrinth1(Wrapper):
         self.shaping = bool(args['shaping'])
         self.queues = [CompetenceQueue()]
         self.goals = [0]
-        self.exploration = [LinearSchedule(schedule_timesteps=int(1000),
+        self.exploration = [LinearSchedule(schedule_timesteps=int(10000),
                                           initial_p=1.0,
                                           final_p=.1) for _ in self.goals]
 
