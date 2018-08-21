@@ -1,51 +1,56 @@
 from gym import Wrapper
-from buffers.replayBuffer import ReplayBuffer
-from buffers.prioritizedReplayBuffer import PrioritizedReplayBuffer
+import numpy as np
+import math
+from samplers.competenceQueue import CompetenceQueue
 
 # Wrappers override step, reset functions, as well as the defintion of action, observation and goal spaces.
 
-class Base(Wrapper):
+class CPBased(Wrapper):
     def __init__(self, env, args):
-        super(Base, self).__init__(env)
-        self.rec = None
-        self.buffer = ReplayBuffer(limit = int(1e6),
-                                   names=['state0', 'action', 'state1', 'reward', 'terminal'])
-        self.episode_exp = []
-        self.sampler = None
-        self.exploration_steps = 0
+        super(CPBased, self).__init__(env)
+        self.goals = []
+        self.queues = [CompetenceQueue() for _ in self.goals]
+        self.theta = float(args['theta'])
+        self.steps = []
+        self.interests = []
+        self.goal = None
 
-    def step(self,action):
+    def get_idx(self):
+        CPs = [abs(q.CP) for q in self.queues]
+        maxCP = max(CPs)
+        minCP = min(CPs)
 
-        state, reward, terminal, info = self.env.step(action)
+        Rs = [q.R for q in self.queues]
+        maxR = max(Rs)
+        minR = min(Rs)
 
-        if self.rec is not None: self.rec.capture_frame()
+        try:
+            if maxCP > 1:
+                self.interests = [(cp - minCP) / (maxCP - minCP) for cp in CPs]
+            else:
+                self.interests = [1 - (r - minR) / (maxR - minR) for r in Rs]
+        except:
+            self.interests = [1 for _ in self.goals]
 
-        experience = {'state0': self.prev_state,
-                   'action': action,
-                   'state1': state,
-                   'reward': reward,
-                   'terminal': terminal}
+        weighted_interests = [math.pow(I, self.theta) + 0.1 for I in self.interests]
+        sum = np.sum(weighted_interests)
+        mass = np.random.random() * sum
+        idx = 0
+        s = weighted_interests[0]
+        while mass > s:
+            idx += 1
+            s += weighted_interests[idx]
+        return idx
 
-        self.prev_state = state
-
-        return experience
-
-    def reset(self):
-
-        state = self.env.reset()
-        self.prev_state = state
-        if self.rec is not None: self.rec.capture_frame()
-
-        return state
-
-    def stats(self):
+    def get_stats(self):
         stats = {}
+        for i, goal in enumerate(self.goals):
+            stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].R))
+            stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].CP))
+            stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
+            stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
         return stats
 
-    @property
-    def state_dim(self):
-        return (self.env.observation_space.shape[0],)
-
-    @property
-    def action_dim(self):
-        return (self.env.action_space.shape[0],)
+    # @property
+    # def min_avg_length_ep(self):
+    #     return np.min([q.L_mean for q in self.queues if q.L_mean != 0])

@@ -3,34 +3,21 @@ import numpy as np
 from samplers.competenceQueue import CompetenceQueue
 import math
 from utils.linearSchedule import LinearSchedule
+from .base import CPBased
 
-class PlayroomGM(Wrapper):
+class PlayroomGM(CPBased):
     def __init__(self, env, args):
-        super(PlayroomGM, self).__init__(env)
+        super(PlayroomGM, self).__init__(env, args)
 
-        self.theta = float(args['theta'])
-        self.objects = [obj.name for obj in self.env.objects]
-        self.object_idx = None
-        self.goal = None
-        # self.obj_feat = [[0, 1]] + [[2+i+4*j for i in range(4)] for j in range(len(self.objects) - 1)]
-        self.obj_feat = [[4 + 4 * j] for j in range(len(self.objects))]
+        self.goals = [obj.name for obj in self.env.objects]
+        self.obj_feat = [[4 + 4 * j] for j in range(len(self.goals))]
         self.state_low = self.env.state_low
         self.state_high = self.env.state_high
         self.init_state = self.env.state_init
 
-        self.queues = [CompetenceQueue() for _ in self.objects]
-        self.interests = []
-        self.steps = [0 for _ in self.objects]
-        self.freqs_act = [0 for _ in self.objects]
-        self.freqs_train = [0 for _ in self.objects]
-        self.freqs_act_reward = [0 for _ in self.objects]
-        self.freqs_train_reward = [0 for _ in self.objects]
-        self.td_errors = [0 for _ in self.objects]
-        self.td_errors2 = [0 for _ in self.objects]
-
         self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
                                             initial_p=1.0,
-                                            final_p=.1) for _ in self.objects]
+                                            final_p=.1) for _ in self.goals]
 
     def step(self, action):
         obs, _, _, _ = self.env.step(action)
@@ -50,70 +37,22 @@ class PlayroomGM(Wrapper):
         return r, term
 
     def reset(self):
-
-        CPs = [abs(q.CP) for q in self.queues]
-        maxCP = max(CPs)
-        minCP = min(CPs)
-
-        Rs = [q.R for q in self.queues]
-        maxR = max(Rs)
-        minR = min(Rs)
-
-        try:
-            if maxCP > 1:
-                self.interests = [math.pow((cp - minCP) / (maxCP - minCP), self.theta) + 0.1 for cp in CPs]
-            else:
-                self.interests = [math.pow(1 - (r - minR) / (maxR - minR), self.theta) + 0.1 for r in Rs]
-        except:
-            self.interests = [1.1 for _ in self.objects]
-
-        sum = np.sum(self.interests)
-        mass = np.random.random() * sum
-        idx = 0
-        s = self.interests[0]
-        while mass > s:
-            idx += 1
-            s += self.interests[idx]
-        self.object_idx = idx
-        self.freqs_act[self.object_idx] += 1
-
-        features = self.obj_feat[self.object_idx]
+        goal_idx = self.get_idx()
+        features = self.obj_feat[goal_idx]
         self.goal = np.zeros(shape=self.state_dim)
         for idx in features:
             while True:
                 s = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
                 if s != self.init_state[idx]: break
             self.goal[idx] = s
-
         obs = self.env.reset()
         state = np.array(obs)
-
         return state
 
     def obj2mask(self, obj):
         res = np.zeros(shape=self.state_dim)
         res[self.obj_feat[obj]] = 1
         return res
-
-    def get_stats(self):
-        stats = {}
-        for i, goal in enumerate(self.objects):
-            stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].R_mean))
-            stats['T_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].T_mean))
-            stats['L_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].L_mean))
-            stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].CP))
-            stats['CPTD_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].TDCP))
-            stats['FA_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_act[i]))
-            stats['FT_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_train[i]))
-            stats['FAR_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_act_reward[i]))
-            stats['FTR_{}'.format(goal)] = float("{0:.3f}".format(self.freqs_train_reward[i]))
-            stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
-            stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
-            stats['TD_{}'.format(goal)] = float("{0:.3f}".format(self.td_errors[i]))
-        return stats
-
-    def hindsight(self):
-        return []
 
     @property
     def state_dim(self):
@@ -126,7 +65,3 @@ class PlayroomGM(Wrapper):
     @property
     def action_dim(self):
         return 11
-
-    @property
-    def min_avg_length_ep(self):
-        return np.min([q.L_mean for q in self.queues if q.L_mean != 0])

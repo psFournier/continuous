@@ -22,7 +22,7 @@ class DQN(Agent):
         self.per = bool(args['per'])
         self.self_imitation = bool(int(args['self_imit']))
         self.tutor_imitation = bool(int(args['tutor_imit']))
-        self.her = bool(int(args['her']))
+        self.her = args['her']
 
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal']
 

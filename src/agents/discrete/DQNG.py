@@ -52,8 +52,8 @@ class DQNG(DQN):
             a1 = self.critic.bestAction_model.predict_on_batch([s1, g])
             q = self.critic.target_qValue_model.predict_on_batch([s1, a1, g])
             targets = self.compute_targets(r, t, q)
-            # weights = np.array([(self.env.min_avg_length_ep / self.env.queues[gi].L_mean) ** self.beta for gi in g])
-            self.critic.qValue_model.train_on_batch(x=[s0, a0, g], y=targets)
+            weights = np.array([self.env.interests[gi] ** self.beta for gi in g])
+            self.critic.qValue_model.train_on_batch(x=[s0, a0, g], y=targets, sample_weight=weights)
             self.critic.target_train()
 
     def reset(self):
