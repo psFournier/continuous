@@ -62,7 +62,7 @@ class DQN(Agent):
             for expe in reversed(self.trajectory):
                 R += int(expe['reward'])
                 self.buffer.append(expe)
-            self.env.queues[0].append({'step': self.env_step, 'R': R})
+            self.env.queues[self.env.goal].append({'step': self.env_step, 'R': R})
             self.trajectory.clear()
 
         state = self.env.reset()
@@ -70,11 +70,14 @@ class DQN(Agent):
 
         return state
 
+    def make_input(self, state):
+        return [np.reshape(state, (1, self.critic.s_dim[0]))]
+
     def act(self, state, noise=False):
-        if noise and np.random.rand(1) < self.env.exploration[0].value(self.env_step):
-            action = np.random.randint(0, self.env.action_space.n)
+        if noise and np.random.rand(1) < self.env.explorations[self.env.goal].value(self.env_step):
+            action = np.random.randint(0, self.env.action_dim)
         else:
-            inputs = [np.reshape(state, (1, self.critic.s_dim[0]))]
-            action = self.critic.actModel.predict(inputs)
+            input = self.make_input(state)
+            action = self.critic.actModel.predict(input, batch_size=1)
             action = action[0, 0]
         return action

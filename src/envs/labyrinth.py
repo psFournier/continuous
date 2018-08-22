@@ -76,6 +76,16 @@ class Labyrinth(discrete.DiscreteEnv):
         isd /= isd.sum()
         discrete.DiscreteEnv.__init__(self, nS, nA, P, isd)
 
+    def step(self, action):
+        obs, _, _, _ = super(Labyrinth, self).step(action)
+        state = np.array(list(self.decode(obs)))
+        return state
+
+    def reset(self):
+        obs = super(Labyrinth, self).reset()
+        state = np.array(list(self.decode(obs)))
+        return state
+
     @property
     def nR(self):
         return int(self.desc.shape[0] - 1)
@@ -115,6 +125,7 @@ class Labyrinth(discrete.DiscreteEnv):
         # No need to return anything for human
         if mode != 'human':
             return outfile
+
 
 if __name__ == '__main__':
     env = Labyrinth()

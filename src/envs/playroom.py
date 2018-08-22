@@ -219,7 +219,7 @@ class Playroom(Env):
                 
         self.lastaction = a
 
-        return (self.get_state(), 0, False, {"prob" : 1})
+        return np.array(self.get_state())
 
     def get_underagent(self, x=0, y=0):
         for i, obj in enumerate(self.objects):
@@ -248,7 +248,7 @@ class Playroom(Env):
             obj.s = 0
             obj.in_hand = 0
         self.lastaction = None
-        return self.get_state()
+        return np.array(self.get_state())
 
     @property
     def state_high(self):

@@ -55,7 +55,7 @@ class CriticDQNGM(CriticDQNG):
         margin_model = Model(inputs=[S, A, G, M], outputs=margin)
         margin_model.compile(loss='mae', optimizer=Adam(lr=self.learning_rate))
 
-        return qValue_model, margin_model, bestAction_model, S
+        return qValue_model, margin_model, bestAction_model
 
 
 

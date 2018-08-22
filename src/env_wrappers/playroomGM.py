@@ -9,17 +9,13 @@ class PlayroomGM(CPBased):
     def __init__(self, env, args):
         super(PlayroomGM, self).__init__(env, args)
         self.goals = [obj.name for obj in self.env.objects]
-        self.object = None
+        self.goalVals = None
+        self.mask = None
         self.init()
         self.obj_feat = [[4 + 4 * j] for j in range(len(self.goals))]
         self.state_low = self.env.state_low
         self.state_high = self.env.state_high
         self.init_state = self.env.state_init
-
-    def step(self, action):
-        obs, _, _, _ = self.env.step(action)
-        state = np.array(obs)
-        return state
 
     def eval_exp(self, exp):
         if self.posInit:
@@ -27,8 +23,8 @@ class PlayroomGM(CPBased):
         else:
             r = 0
         term = False
-        goal_feat = self.obj_feat[exp['object']]
-        goal_vals = exp['goal'][goal_feat]
+        goal_feat = self.obj_feat[exp['goal']]
+        goal_vals = exp['goalVals'][goal_feat]
         s1_proj = exp['state1'][goal_feat]
         s0_proj = exp['state0'][goal_feat]
         if ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any()):
@@ -37,16 +33,17 @@ class PlayroomGM(CPBased):
         return r, term
 
     def reset(self):
-        self.object = self.get_idx()
-        features = self.obj_feat[self.object]
-        self.goal = np.zeros(shape=self.state_dim)
+        self.goal = self.get_idx()
+        features = self.obj_feat[self.goal]
+        self.goalVals = np.zeros(shape=self.state_dim)
+        self.mask = np.zeros(shape=self.state_dim)
         for idx in features:
+            self.mask[idx] = 1
             while True:
                 s = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
                 if s != self.init_state[idx]: break
-            self.goal[idx] = s
-        obs = self.env.reset()
-        state = np.array(obs)
+            self.goalVals[idx] = s
+        state = self.env.reset()
         return state
 
     def obj2mask(self, obj):

@@ -89,6 +89,16 @@ class Taxi2(discrete.DiscreteEnv):
         isd /= isd.sum()
         discrete.DiscreteEnv.__init__(self, nS, nA, P, isd)
 
+    def step(self, action):
+        obs, _, _, _ = super(Taxi2, self).step(action)
+        state = np.array(list(self.decode(obs)))
+        return state
+
+    def reset(self):
+        obs = super(Taxi2, self).reset()
+        state = np.array(list(self.decode(obs)))
+        return state
+
     @property
     def nR(self):
         return int(self.desc.shape[0] - 1)

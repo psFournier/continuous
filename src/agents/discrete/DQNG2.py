@@ -7,13 +7,14 @@ import pickle
 import os
 
 from agents import DQNG
+from networks import CriticDQNG
 from buffers import ReplayBuffer, PrioritizedReplayBuffer
 
 class DQNG2(DQNG):
     def __init__(self, args, sess, env, env_test, logger):
+        super(DQNG2, self).__init__(args, env, env_test, logger)
 
-        super(DQNG2, self).__init__(args, sess, env, env_test, logger)
-
+    def init(self, env):
         self.names = ['state0', 'action', 'state1']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 

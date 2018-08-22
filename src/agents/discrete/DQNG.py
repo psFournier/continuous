@@ -46,30 +46,8 @@ class DQNG(DQN):
             self.critic.qvalModel.train_on_batch(x=[s0, a0, g], y=targets, sample_weight=weights)
             self.critic.target_train()
 
-    def reset(self):
-
-        if self.trajectory:
-            R = 0
-            for expe in reversed(self.trajectory):
-                R += int(expe['reward'])
-                self.buffer.append(expe)
-            self.env.queues[self.env.goal].append({'step': self.env_step, 'R': R})
-            self.trajectory.clear()
-
-        state = self.env.reset()
-        self.episode_step = 0
-
-        return state
-
-    def act(self, state, noise=False):
-        if noise and np.random.rand(1) < self.env.explorations[self.env.goal].value(self.env_step):
-            action = np.random.randint(0, self.env.action_space.n)
-        else:
-            inputs = [np.reshape(state, (1, self.critic.s_dim[0])),
-                      np.reshape(self.env.goal, (1, self.critic.g_dim[0]))]
-            action = self.critic.actModel.predict(inputs)
-            action = action[0, 0]
-        return action
+    def make_input(self, state):
+        return [np.expand_dims(i, axis=0) for i in [state, self.env.goal]]
 
     def get_tutor_exp(self, goal):
         for i in range(10):

@@ -20,11 +20,6 @@ class Taxi1G(CPBased):
         # self.trajectories[2] = [t + [0,2,2,1,2,2,5] for t in self.trajectories[0]]
         # self.trajectories[3] = [t + [0,2,0,2,2,0,0,5] for t in self.trajectories[0]]
 
-    def step(self, action):
-        obs, _, _, _ = self.env.step(action)
-        state = np.array(self.decode(obs))
-        return state
-
     def eval_exp(self, exp):
         if self.posInit:
             r = -1
@@ -39,16 +34,9 @@ class Taxi1G(CPBased):
         return r, term
 
     def reset(self):
-        self.goal = self.goals[self.get_idx()]
-        obs = self.env.reset()
-        state = np.array(self.decode(obs))
+        self.goal = self.get_idx()
+        state = self.env.reset()
         return state
-
-    def decode(self, state):
-        return list(self.env.decode(state))
-
-    def encode(self, state):
-        return self.env.encode(*state)
 
     @property
     def state_dim(self):

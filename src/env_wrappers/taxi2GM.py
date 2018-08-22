@@ -8,7 +8,6 @@ class Taxi2GM(CPBased):
     def __init__(self, env, args):
         super(Taxi2GM, self).__init__(env, args)
         self.goals = ['agent', 'passenger', 'taxi']
-        self.object = None
         self.init()
         self.obj_feat = [[0, 1], [2, 3], [4]]
         self.state_low = [0, 0, 0, 0, 0]
@@ -20,11 +19,6 @@ class Taxi2GM(CPBased):
                            (np.array([0, 0, 4, 0, 0]), 1),
                            (np.array([0, 0, 4, 3, 0]), 1)]
 
-    def step(self, action):
-        obs, _, _, _ = self.env.step(action)
-        state = np.array(self.decode(obs))
-        return state
-
     def eval_exp(self, exp):
         if self.posInit:
             r = -1
@@ -32,8 +26,8 @@ class Taxi2GM(CPBased):
             r = 0
         term = False
 
-        goal_feat = self.obj_feat[exp['object']]
-        goal_vals = exp['goal'][goal_feat]
+        goal_feat = self.obj_feat[exp['goal']]
+        goal_vals = exp['goalVals'][goal_feat]
         s1_proj = exp['state1'][goal_feat]
         s0_proj = exp['state0'][goal_feat]
         if ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any()):
@@ -42,28 +36,23 @@ class Taxi2GM(CPBased):
         return r, term
 
     def reset(self):
-        self.object = self.get_idx()
-        features = self.obj_feat[self.object]
-        self.goal = np.zeros(shape=self.state_dim)
-        for idx in features:
-            while True:
-                s = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
-                if s != self.init_state[idx]: break
-            self.goal[idx] = s
-        obs = self.env.reset()
-        state = np.array(self.decode(obs))
+        self.goal = self.get_idx()
+        features = self.obj_feat[self.goal]
+        self.goalVals = self.init_state.copy()
+        self.mask = self.obj2mask(self.goal)
+        while True:
+            for idx in features:
+                self.goalVals[idx] = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
+            if self.goalVals != self.init_state:
+                self.goalVals = np.array(self.goalVals)
+                break
+        state = self.env.reset()
         return state
 
     def obj2mask(self, obj):
         res = np.zeros(shape=self.state_dim)
         res[self.obj_feat[obj]] = 1
         return res
-
-    def decode(self, state):
-        return list(self.env.decode(state))
-
-    def encode(self, state):
-        return self.env.encode(*state)
 
     @property
     def state_dim(self):

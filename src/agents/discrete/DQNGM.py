@@ -17,57 +17,32 @@ class DQNGM(DQNG):
                                   gamma=0.99,
                                   tau=0.001,
                                   learning_rate=0.001)
-        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal', 'object']
+        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goalVals', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
     def step(self):
 
         self.env_step += 1
         self.episode_step += 1
+        self.exp['goalVals'] = self.env.goalVals
         self.exp['goal'] = self.env.goal
-        self.exp['object'] = self.env.object
         self.exp['reward'], self.exp['terminal'] = self.env.eval_exp(self.exp)
         self.trajectory.append(self.exp.copy())
 
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
-            s0, a0, s1, r, t, g, o = [np.array(experiences[name]) for name in self.names]
-            m = np.array([self.env.obj2mask(o[k]) for k in range(self.batch_size)])
+            s0, a0, s1, r, t, gv, g = [np.array(experiences[name]) for name in self.names]
+            m = np.array([self.env.obj2mask(g[k]) for k in range(self.batch_size)])
 
-            a1 = self.critic.actModel.predict_on_batch([s1, g, m])
-            q = self.critic.qvalTModel.predict_on_batch([s1, a1, g, m])
+            a1 = self.critic.actModel.predict_on_batch([s1, gv, m])
+            q = self.critic.qvalTModel.predict_on_batch([s1, a1, gv, m])
 
             targets = self.compute_targets(r, t, q)
-            weights = np.array([self.env.interests[obj] ** self.beta for obj in o])
-            self.loss_qVal, q_values = self.critic.qvalModel.train_on_batch(x=[s0, a0, g, m],
+            weights = np.array([self.env.interests[obj] ** self.beta for obj in g])
+            self.loss_qVal, q_values = self.critic.qvalModel.train_on_batch(x=[s0, a0, gv, m],
                                                                                y=targets,
                                                                                sample_weight=weights)
             self.critic.target_train()
 
-    def reset(self):
-
-        if self.trajectory:
-            R = 0
-            for expe in reversed(self.trajectory):
-                R += int(expe['reward'])
-                self.buffer.append(expe)
-            self.env.queues[self.env.object].append({'step': self.env_step, 'R': R})
-            self.trajectory.clear()
-            # for o in range(len(self.env.objects)):
-            #     self.env.queues[o].appendTD(self.env.td_errors2[o])
-            # self.env.freqs_act_reward[self.env.object_idx] += int(T)
-            # self.env.td_errors2 = [0 for _ in self.env.objects]
-        state = self.env.reset()
-        self.episode_step = 0
-
-        return state
-
-    def act(self, state, noise=False):
-        if noise and np.random.rand(1) < self.env.explorations[self.env.object].value(self.env_step):
-            action = np.random.randint(0, self.env.action_dim)
-        else:
-            mask = self.env.obj2mask(self.env.object)
-            input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, mask]]
-            action = self.critic.actModel.predict(input, batch_size=1)
-            action = action[0, 0]
-        return action
+    def make_input(self, state):
+        return [np.expand_dims(i, axis=0) for i in [state, self.env.goalVals, self.env.mask]]

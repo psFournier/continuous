@@ -39,6 +39,8 @@ if __name__ == '__main__':
     parser.add_argument('--theta', default=0)
     parser.add_argument('--beta', default=0)
     parser.add_argument('--shaping', default=0)
+    parser.add_argument('--posInit', default=0)
+
     # parser.add_argument('--her_xy', default='no')
     # parser.add_argument('--her_eps', default='no')
     # parser.add_argument('--n_split', default=10)

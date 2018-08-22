@@ -24,6 +24,9 @@ class CPBased(Wrapper):
                                             initial_p=1.0,
                                             final_p=.1) for _ in self.goals]
 
+    def step(self, action):
+        return self.env.step(action)
+
     def get_idx(self):
         CPs = [abs(q.CP) for q in self.queues]
         maxCP = max(CPs)
