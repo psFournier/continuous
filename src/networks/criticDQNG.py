@@ -57,13 +57,13 @@ class CriticDQNG(CriticDQN):
         margin_model = Model(inputs=[S, A, G], outputs=margin)
         margin_model.compile(loss='mae', optimizer=Adam(lr=self.learning_rate))
 
-        # advantage = subtract([R, qValue])
-        # mask2 = maximum([advantage, Z])
-        # margin_masked = multiply([margin, mask2])
-        # margin_masked_model = Model(inputs=[S, A, G, R, Z], outputs=margin_masked)
-        # margin_masked_model.compile(loss='mae', optimizer=Adam(lr=self.learning_rate))
+        advantage = subtract([R, qValue])
+        mask2 = maximum([advantage, Z])
+        margin_masked = multiply([margin, mask2])
+        imitation_model = Model(inputs=[S, A, G, R, Z], outputs=margin_masked)
+        imitation_model.compile(loss='mae', optimizer=Adam(lr=self.learning_rate))
 
-        return qValue_model, margin_model, bestAction_model
+        return qValue_model, imitation_model, bestAction_model
 
 
 

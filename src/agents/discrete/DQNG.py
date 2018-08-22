@@ -93,9 +93,9 @@ class DQNG(DQN):
         s0, a0, s1, r, t, g = [np.array(experiences[name]) for name in self.names]
 
         targets_imit = np.zeros((self.batch_size, 1))
-        self.critic.margin_model.train_on_batch(x=[s0, a0, g], y=targets_imit)
+        self.critic.marginModel.train_on_batch(x=[s0, a0, g], y=targets_imit)
 
-        a1 = self.critic.bestAction_model.predict_on_batch([s1, g])
-        q = self.critic.target_qValue_model.predict_on_batch([s1, a1, g])
+        a1 = self.critic.actModel.predict_on_batch([s1, g])
+        q = self.critic.qvalTModel.predict_on_batch([s1, a1, g])
         targets_dqn = self.compute_targets(r, t, q)
-        self.critic.qValue_model.train_on_batch(x=[s0, a0, g], y=targets_dqn)
+        self.critic.qvalModel.train_on_batch(x=[s0, a0, g], y=targets_dqn)

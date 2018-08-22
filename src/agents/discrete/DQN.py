@@ -17,7 +17,7 @@ class DQN(Agent):
         self.init(env)
 
     def init(self, env):
-        self.names = ['state0', 'action', 'state1', 'reward', 'terminal']
+        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'expVal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
         self.critic = CriticDQN(s_dim=env.state_dim,
                                 num_a=env.action_dim,
@@ -34,13 +34,14 @@ class DQN(Agent):
 
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
-            s0, a0, s1, r, t = [np.array(experiences[name]) for name in self.names]
-
+            s0, a0, s1, r, t, e = [np.array(experiences[name]) for name in self.names]
             a1 = self.critic.actModel.predict_on_batch([s1])
             q = self.critic.qvalTModel.predict_on_batch([s1, a1])
-            targets = self.compute_targets(r, t, q)
-
-            self.critic.qvalModel.train_on_batch(x=[s0, a0], y=targets)
+            targets_dqn = self.compute_targets(r, t, q)
+            self.critic.qvalModel.train_on_batch(x=[s0, a0], y=targets_dqn)
+            if self.self_imitation:
+                targets_imit = np.zeros((self.batch_size, 1))
+                self.critic.marginModel.train_on_batch(x=[s0, a0, e], y=targets_imit)
             self.critic.target_train()
 
     def compute_targets(self, r, t, q, clip=True):
@@ -59,8 +60,11 @@ class DQN(Agent):
 
         if self.trajectory:
             R = 0
+            E = 0
             for expe in reversed(self.trajectory):
                 R += int(expe['reward'])
+                E = E * self.critic.gamma + expe['reward']
+                expe['expVal'] = E
                 self.buffer.append(expe)
             self.env.queues[self.env.goal].append({'step': self.env_step, 'R': R})
             self.trajectory.clear()

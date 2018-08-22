@@ -2,10 +2,13 @@ from keras.models import Model
 from keras.layers import Dense, Input, Lambda, Reshape
 from keras.optimizers import Adam
 import keras.backend as K
-from keras.layers.merge import multiply, add, subtract
+from keras.layers.merge import concatenate, multiply, add, subtract, maximum
 
 def margin_fn(indices, num_classes):
     return 0.8 * (1 - K.one_hot(indices, num_classes))
+
+def maxplus(L):
+    return K.maximum(L, 0)
 
 class CriticDQN(object):
     def __init__(self, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001):
@@ -32,6 +35,7 @@ class CriticDQN(object):
 
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
+        E = Input(shape=(1,), dtype='float32')
 
         l1 = Dense(400, activation="relu")(S)
         l2 = Dense(300, activation="relu")(l1)
@@ -64,6 +68,11 @@ class CriticDQN(object):
         margin_model = Model(inputs=[S, A], outputs=margin)
         margin_model.compile(loss='mae', optimizer=Adam(lr=self.learning_rate))
 
-        return qValue_model, margin_model, bestAction_model
+        advantage = subtract([E, qValue])
+        mask2 = Lambda(maxplus)(advantage)
+        margin_masked = multiply([margin, mask2])
+        imitation_model = Model(inputs=[S, A, E], outputs=margin_masked)
+        imitation_model.compile(loss='mae', optimizer=Adam(lr=self.learning_rate))
 
+        return qValue_model, imitation_model, bestAction_model
 
