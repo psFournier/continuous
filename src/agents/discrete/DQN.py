@@ -24,6 +24,12 @@ class DQN(Agent):
         self.tutor_imitation = bool(int(args['tutor_imit']))
         self.her = args['her']
 
+
+
+        self.loss_qVal = []
+        self.critic.target_train()
+
+    def init(self, sess, env):
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal']
 
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
@@ -37,9 +43,6 @@ class DQN(Agent):
 
         self.trajectory = []
 
-        self.loss_qVal = []
-        self.critic.target_train()
-
     def step(self):
 
         self.env_step += 1
@@ -51,11 +54,11 @@ class DQN(Agent):
             experiences = self.buffer.sample(self.batch_size)
             s0, a0, s1, r, t = [np.array(experiences[name]) for name in self.names]
 
-            a1 = self.critic.bestAction_model.predict_on_batch([s1])
-            q = self.critic.target_qValue_model.predict_on_batch([s1, a1])
+            a1 = self.critic.actModel.predict_on_batch([s1])
+            q = self.critic.qvalTModel.predict_on_batch([s1, a1])
             targets = self.compute_targets(r, t, q)
 
-            self.critic.qValue_model.train_on_batch(x=[s0, a0], y=targets)
+            self.critic.qvalModel.train_on_batch(x=[s0, a0], y=targets)
             self.critic.target_train()
 
     def compute_targets(self, r, t, q, clip=True):
@@ -90,6 +93,6 @@ class DQN(Agent):
             action = np.random.randint(0, self.env.action_space.n)
         else:
             inputs = [np.reshape(state, (1, self.critic.s_dim[0]))]
-            action = self.critic.bestAction_model.predict(inputs)
+            action = self.critic.actModel.predict(inputs)
             action = action[0, 0]
         return action

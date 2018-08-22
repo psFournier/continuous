@@ -10,7 +10,7 @@ RENDER_TRAIN = False
 TARGET_CLIP = True
 INVERTED_GRADIENTS = True
 from networks import CriticDQNGM
-from agents import DQN
+from agents import DQNG
 from buffers import ReplayBuffer, PrioritizedReplayBuffer
 from utils.linearSchedule import LinearSchedule
 import random as rnd
@@ -18,26 +18,27 @@ from samplers.competenceQueue import CompetenceQueue
 import math
 
 
-class DQNGM(DQN):
+class DQNGM(DQNG):
     def __init__(self, args, sess, env, env_test, logger):
 
         super(DQNGM, self).__init__(args, sess, env, env_test, logger)
-        self.beta = float(args['beta'])
+
+    def init(self, sess, env):
         self.critic = CriticDQNGM(sess,
-                                 s_dim=env.state_dim,
-                                 g_dim=env.goal_dim,
-                                 num_a=env.action_dim,
-                                 gamma=0.99,
-                                 tau=0.001,
-                                 learning_rate=0.001)
+                                  s_dim=env.state_dim,
+                                  g_dim=env.goal_dim,
+                                  num_a=env.action_dim,
+                                  gamma=0.99,
+                                  tau=0.001,
+                                  learning_rate=0.001)
 
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal', 'object']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
         self.trajectory = []
         self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
-                                          initial_p=1.0,
-                                          final_p=.1) for _ in self.env.goals]
+                                            initial_p=1.0,
+                                            final_p=.1) for _ in self.env.goals]
 
     def step(self):
 

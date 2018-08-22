@@ -21,6 +21,9 @@ class DQNG(DQN):
 
         super(DQNG, self).__init__(args, sess, env, env_test, logger)
         self.beta = float(args['beta'])
+        self.init(sess, env)
+
+    def init(self, sess, env):
         self.critic = CriticDQNG(sess,
                                  s_dim=env.state_dim,
                                  g_dim=env.goal_dim,

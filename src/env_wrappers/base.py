@@ -51,7 +51,7 @@ class CPBased(Wrapper):
         stats = {}
         for i, goal in enumerate(self.goals):
             stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].R))
-            stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].CP))
+            stats['CP_{}'.format(goal)] = float("{0:.3f}".format(abs(self.queues[i].CP)))
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
             stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
         return stats

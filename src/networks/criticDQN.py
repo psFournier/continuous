@@ -17,25 +17,19 @@ class CriticDQN(object):
         self.s_dim = s_dim
         self.a_dim = (1,)
         self.learning_rate = learning_rate
-        self.stat_ops = []
-        self.stat_names = []
-        self.model = None
-        self.target_model = None
-        self.td_errors = None
         self.gamma = gamma
         self.num_actions = num_a
-
         K.set_session(sess)
-
-        self.qValue_model, self.margin_model, self.bestAction_model, self.states = self.create_critic_network()
-        self.target_qValue_model, self.target_margin_model, self.target_bestAction_model, self.target_state = self.create_critic_network()
+        self.qvalModel, self.marginModel, self.actModel = self.create_critic_network()
+        self.qvalTModel, _, _ = self.create_critic_network()
+        self.target_train()
 
     def target_train(self):
-        weights = self.qValue_model.get_weights()
-        target_weights = self.target_qValue_model.get_weights()
+        weights = self.qvalModel.get_weights()
+        target_weights = self.qvalTModel.get_weights()
         for i in range(len(weights)):
             target_weights[i] = self.tau * weights[i] + (1 - self.tau)* target_weights[i]
-        self.target_qValue_model.set_weights(target_weights)
+        self.qvalTModel.set_weights(target_weights)
 
     def create_critic_network(self):
 
@@ -75,6 +69,6 @@ class CriticDQN(object):
         margin_model = Model(inputs=[S, A], outputs=margin)
         margin_model.compile(loss='mae', optimizer=Adam(lr=self.learning_rate))
 
-        return qValue_model, margin_model, bestAction_model, S
+        return qValue_model, margin_model, bestAction_model
 
 
