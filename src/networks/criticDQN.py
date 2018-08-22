@@ -10,6 +10,9 @@ def margin_fn(indices, num_classes):
 def maxplus(L):
     return K.maximum(L, 0)
 
+def argmax(L):
+    return K.argmax(L, axis=2)
+
 class CriticDQN(object):
     def __init__(self, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001):
         self.tau = tau
@@ -52,10 +55,9 @@ class CriticDQN(object):
                       arguments={'axis': 2})(filteredV)
         qValue_model = Model(inputs=[S, A], outputs=qValue)
         qValue_model.compile(loss='mse', optimizer=self.optimizer)
-        qValue_model.metrics_tensors = [qValue_model.targets[0] - qValue_model.outputs[0]]
+        qValue_model.metrics_tensors = [qValue_model.outputs[0]]
 
-        bestAction = Lambda(K.argmax,
-                      arguments={'axis': 2})(V)
+        bestAction = Lambda(argmax)(V)
         bestAction_model = Model(inputs=[S], outputs=bestAction)
 
         margin = Lambda(margin_fn,

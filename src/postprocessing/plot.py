@@ -5,7 +5,7 @@ import os
 import numpy as np
 from scipy.interpolate import interp1d
 
-runs = glob.glob('../../log/cluster/2208/dqng_T*/*/')
+runs = glob.glob('../../log/cluster/2208/dqn_*/*/')
 frames = []
 
 for run in runs:
@@ -27,10 +27,10 @@ print(df.columns)
 print(df['agent'].unique())
 # ys = ['agent', 'passenger', 'taxi']
 # ys = ['light', 'sound', 'toy1', 'toy2']
-ys = range(4)
+ys = range(1)
 y = ['R_{}'.format(i) for i in ys]
 x = ['step']
-params = ['agent', 'theta', 'beta']
+params = ['agent', 'self_imit']
 # df = df[(df['agent'] == 'dqng')]
 df = df[(df['beta'] == 0)]
 df = df[(df['theta'] == 0)]
@@ -44,10 +44,10 @@ op_dict = {a:[np.mean, np.std] for a in y}
 
 a, b = 2,2
 fig1, ax1 = plt.subplots(a, b, figsize=(18,10))
-for i, val in enumerate(y):
-    for num_run, g2 in df.groupby('num_run'):
-        ax1[i % a, i // a].scatter(g2['step'], g2[val], label=num_run, s=10)
-    ax1[i % a, i // a].set_title(label=val)
+for i, (name, g) in enumerate(df.groupby(params)):
+    for num_run, g2 in g.groupby('num_run'):
+        ax1[i % a, i // a].scatter(g2['step'], g2[y], label=num_run, s=10)
+    ax1[i % a, i // a].set_title(label=name)
     ax1[i % a, i // a].legend()
 
 # a, b = 2,2

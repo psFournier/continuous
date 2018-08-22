@@ -63,6 +63,8 @@ class CPBased(Wrapper):
             stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
         return stats
 
+
+
     # @property
     # def min_avg_length_ep(self):
     #     return np.min([q.L_mean for q in self.queues if q.L_mean != 0])
