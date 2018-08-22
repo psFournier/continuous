@@ -1,25 +1,20 @@
-from keras.initializers import RandomUniform
 from keras.models import Model
 from keras.layers import Dense, Input, Lambda, Reshape
 from keras.optimizers import Adam
-import tensorflow as tf
 import keras.backend as K
-from keras.layers.merge import concatenate, multiply, add, subtract
-from keras.losses import mse
+from keras.layers.merge import multiply, add, subtract
 
 def margin_fn(indices, num_classes):
     return 0.8 * (1 - K.one_hot(indices, num_classes))
 
 class CriticDQN(object):
-    def __init__(self, sess, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001):
-        self.sess = sess
+    def __init__(self, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001):
         self.tau = tau
         self.s_dim = s_dim
         self.a_dim = (1,)
         self.learning_rate = learning_rate
         self.gamma = gamma
         self.num_actions = num_a
-        K.set_session(sess)
         self.qvalModel, self.marginModel, self.actModel = self.create_critic_network()
         self.qvalTModel, _, _ = self.create_critic_network()
         self.target_train()

@@ -1,47 +1,29 @@
-import time
 import numpy as np
-import tensorflow as tf
-import json_tricks
-import pickle
-
-import os
 RENDER_TRAIN = False
 INVERTED_GRADIENTS = True
 from networks import CriticDQN
 from agents.agent import Agent
 from buffers import ReplayBuffer, PrioritizedReplayBuffer
-from utils.linearSchedule import LinearSchedule
-import random as rnd
-
 
 class DQN(Agent):
 
-    def __init__(self, args, sess, env, env_test, logger):
-
-        super(DQN, self).__init__(args, sess, env, env_test, logger)
+    def __init__(self, args, env, env_test, logger):
+        super(DQN, self).__init__(args, env, env_test, logger)
         self.per = bool(args['per'])
         self.self_imitation = bool(int(args['self_imit']))
         self.tutor_imitation = bool(int(args['tutor_imit']))
         self.her = args['her']
+        self.trajectory = []
+        self.init(env)
 
-
-
-        self.loss_qVal = []
-        self.critic.target_train()
-
-    def init(self, sess, env):
+    def init(self, env):
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal']
-
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
-
-        self.critic = CriticDQN(sess,
-                                s_dim=env.state_dim,
+        self.critic = CriticDQN(s_dim=env.state_dim,
                                 num_a=env.action_dim,
                                 gamma=0.99,
                                 tau=0.001,
                                 learning_rate=0.001)
-
-        self.trajectory = []
 
     def step(self):
 

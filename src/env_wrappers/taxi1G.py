@@ -1,7 +1,4 @@
-from gym import Wrapper
 import numpy as np
-from samplers.competenceQueue import CompetenceQueue
-import math
 from utils.linearSchedule import LinearSchedule
 from .base import CPBased
 

@@ -1,44 +1,24 @@
-import time
 import numpy as np
-import tensorflow as tf
-import json_tricks
-import pickle
-
-import os
-
 RENDER_TRAIN = False
 TARGET_CLIP = True
 INVERTED_GRADIENTS = True
 from networks import CriticDQNGM
 from agents import DQNG
 from buffers import ReplayBuffer, PrioritizedReplayBuffer
-from utils.linearSchedule import LinearSchedule
-import random as rnd
-from samplers.competenceQueue import CompetenceQueue
-import math
-
 
 class DQNGM(DQNG):
-    def __init__(self, args, sess, env, env_test, logger):
+    def __init__(self, args, env, env_test, logger):
+        super(DQNGM, self).__init__(args, env, env_test, logger)
 
-        super(DQNGM, self).__init__(args, sess, env, env_test, logger)
-
-    def init(self, sess, env):
-        self.critic = CriticDQNGM(sess,
-                                  s_dim=env.state_dim,
+    def init(self, env):
+        self.critic = CriticDQNGM(s_dim=env.state_dim,
                                   g_dim=env.goal_dim,
                                   num_a=env.action_dim,
                                   gamma=0.99,
                                   tau=0.001,
                                   learning_rate=0.001)
-
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal', 'object']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
-
-        self.trajectory = []
-        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
-                                            initial_p=1.0,
-                                            final_p=.1) for _ in self.env.goals]
 
     def step(self):
 
@@ -54,12 +34,12 @@ class DQNGM(DQNG):
             s0, a0, s1, r, t, g, o = [np.array(experiences[name]) for name in self.names]
             m = np.array([self.env.obj2mask(o[k]) for k in range(self.batch_size)])
 
-            a1 = self.critic.bestAction_model.predict_on_batch([s1, g, m])
-            q = self.critic.target_qValue_model.predict_on_batch([s1, a1, g, m])
+            a1 = self.critic.actModel.predict_on_batch([s1, g, m])
+            q = self.critic.qvalTModel.predict_on_batch([s1, a1, g, m])
 
             targets = self.compute_targets(r, t, q)
             weights = np.array([self.env.interests[obj] ** self.beta for obj in o])
-            self.loss_qVal, q_values = self.critic.qValue_model.train_on_batch(x=[s0, a0, g, m],
+            self.loss_qVal, q_values = self.critic.qvalModel.train_on_batch(x=[s0, a0, g, m],
                                                                                y=targets,
                                                                                sample_weight=weights)
             self.critic.target_train()
@@ -83,11 +63,11 @@ class DQNGM(DQNG):
         return state
 
     def act(self, state, noise=False):
-        if noise and np.random.rand(1) < self.explorations[self.env.object].value(self.env_step):
+        if noise and np.random.rand(1) < self.env.explorations[self.env.object].value(self.env_step):
             action = np.random.randint(0, self.env.action_dim)
         else:
             mask = self.env.obj2mask(self.env.object)
             input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, mask]]
-            action = self.critic.bestAction_model.predict(input, batch_size=1)
+            action = self.critic.actModel.predict(input, batch_size=1)
             action = action[0, 0]
         return action

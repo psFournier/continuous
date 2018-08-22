@@ -9,9 +9,8 @@ TARGET_CLIP = False
 INVERTED_GRADIENTS = False
 
 class Agent():
-    def __init__(self, args, sess, env, env_test, logger, buffer=None):
+    def __init__(self, args, env, env_test, logger, buffer=None):
 
-        self.sess = sess
         self.env = env
         self.env_test = env_test
         self.buffer = buffer

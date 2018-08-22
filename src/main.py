@@ -70,30 +70,28 @@ if __name__ == '__main__':
         env.seed(int(args['random_seed']))
         env_test.seed(int(args['random_seed']))
 
-    with tf.Session() as sess:
+    # if args['agent'] == 'ddpg':
+    #     agent = DDPG(args, env, env_test, logger)
+    # elif args['agent'] == 'td3':
+    #     agent = TD3(args, env, env_test, logger)
+    if args['agent'] == 'dqn':
+        agent = DQN(args, env, env_test, logger)
+    elif args['agent'] == 'dqng':
+        agent = DQNG(args, env, env_test, logger)
+    elif args['agent'] == 'dqngm':
+        agent = DQNGM(args, env, env_test, logger)
+    else:
+        raise RuntimeError
+    # elif args['agent'] == 'qlearning':
+    #     agent = Qlearning.Qlearning(args, sess, env, env_test, logger)
+    # elif args['agent'] == 'qlearning_off':
+    #     agent = Qlearning_offpolicy.Qlearning_offPolicy(args, sess, env, env_test, logger)
+    # elif args['agent'] == 'qlearningfd':
+    #     with open(os.path.join(args['log_dir'],
+    #                            'qlearning_Taxi-v1_1',
+    #                            '20180628141516_051865',
+    #                            'policy.pkl'), 'rb') as input:
+    #         Q_tutor = pickle.load(input)
+    #     agent = QlearningfD.QlearningfD(args, sess, env, env_test, Q_tutor, logger)
 
-        if args['agent'] == 'ddpg':
-            agent = DDPG(args, sess, env, env_test, logger)
-        elif args['agent'] == 'td3':
-            agent = TD3(args, sess, env, env_test, logger)
-        elif args['agent'] == 'dqn':
-            agent = DQN(args, sess, env, env_test, logger)
-        elif args['agent'] == 'dqng':
-            agent = DQNG(args, sess, env, env_test, logger)
-        elif args['agent'] == 'dqngm':
-            agent = DQNGM(args, sess, env, env_test, logger)
-        # elif args['agent'] == 'qlearning':
-        #     agent = Qlearning.Qlearning(args, sess, env, env_test, logger)
-        # elif args['agent'] == 'qlearning_off':
-        #     agent = Qlearning_offpolicy.Qlearning_offPolicy(args, sess, env, env_test, logger)
-        # elif args['agent'] == 'qlearningfd':
-        #     with open(os.path.join(args['log_dir'],
-        #                            'qlearning_Taxi-v1_1',
-        #                            '20180628141516_051865',
-        #                            'policy.pkl'), 'rb') as input:
-        #         Q_tutor = pickle.load(input)
-        #     agent = QlearningfD.QlearningfD(args, sess, env, env_test, Q_tutor, logger)
-        else:
-            raise RuntimeError
-
-        agent.run()
+    agent.run()
