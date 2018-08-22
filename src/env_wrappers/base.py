@@ -2,23 +2,27 @@ from gym import Wrapper
 import numpy as np
 import math
 from samplers.competenceQueue import CompetenceQueue
+from utils.linearSchedule import LinearSchedule
 
 # Wrappers override step, reset functions, as well as the defintion of action, observation and goal spaces.
 
 class CPBased(Wrapper):
     def __init__(self, env, args):
         super(CPBased, self).__init__(env)
-        self.goals = []
-        self.queues = [CompetenceQueue() for _ in self.goals]
         self.theta = float(args['theta'])
-        self.steps = []
-        self.interests = []
+        self.shaping = bool(args['shaping'])
+        self.posInit = bool(args['posInit'])
+        self.goals = []
         self.goal = None
+        self.init()
 
     def init(self):
         self.queues = [CompetenceQueue() for _ in self.goals]
         self.steps = [0 for _ in self.goals]
         self.interests = [0 for _ in self.goals]
+        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
+                                            initial_p=1.0,
+                                            final_p=.1) for _ in self.goals]
 
     def get_idx(self):
         CPs = [abs(q.CP) for q in self.queues]

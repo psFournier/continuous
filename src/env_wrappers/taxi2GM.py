@@ -2,7 +2,6 @@ from gym import Wrapper
 import numpy as np
 from samplers.competenceQueue import CompetenceQueue
 import math
-from utils.linearSchedule import LinearSchedule
 from .base import CPBased
 
 class Taxi2GM(CPBased):
@@ -21,24 +20,24 @@ class Taxi2GM(CPBased):
                            (np.array([0, 0, 4, 0, 0]), 1),
                            (np.array([0, 0, 4, 3, 0]), 1)]
 
-        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
-                                            initial_p=1.0,
-                                            final_p=.1) for _ in self.goals]
-
     def step(self, action):
         obs, _, _, _ = self.env.step(action)
         state = np.array(self.decode(obs))
         return state
 
     def eval_exp(self, exp):
+        if self.posInit:
+            r = -1
+        else:
+            r = 0
         term = False
-        r = -1
+
         goal_feat = self.obj_feat[exp['object']]
         goal_vals = exp['goal'][goal_feat]
         s1_proj = exp['state1'][goal_feat]
         s0_proj = exp['state0'][goal_feat]
         if ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any()):
-            r = 0
+            r += 1
             term = True
         return r, term
 

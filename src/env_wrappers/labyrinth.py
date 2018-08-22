@@ -2,18 +2,15 @@ from gym import Wrapper
 import numpy as np
 from samplers.competenceQueue import CompetenceQueue
 from utils.linearSchedule import LinearSchedule
+from .base import CPBased
 
-class Labyrinth(Wrapper):
+class Labyrinth(CPBased):
     def __init__(self, env, args):
-        super(Labyrinth, self).__init__(env)
+        super(Labyrinth, self).__init__(env, args)
         self.gamma = 0.99
-        self.destination = np.array([0, 4])
-        self.shaping = bool(args['shaping'])
-        self.queues = [CompetenceQueue()]
         self.goals = [0]
-        self.exploration = [LinearSchedule(schedule_timesteps=int(10000),
-                                          initial_p=1.0,
-                                          final_p=.1) for _ in self.goals]
+        self.init()
+        self.destination = np.array([0, 4])
 
     def step(self, action):
         obs, _, _, _ = self.env.step(action)
@@ -21,11 +18,14 @@ class Labyrinth(Wrapper):
         return state
 
     def eval_exp(self, exp):
-        r = 0
+        if self.posInit:
+            r = -1
+        else:
+            r = 0
         term = False
 
         if (exp['state1'] == self.destination).all():
-            r = 1
+            r += 1
             term = True
 
         if self.shaping:
@@ -45,16 +45,6 @@ class Labyrinth(Wrapper):
         state = np.array(self.decode(obs))
 
         return state
-
-    def get_stats(self):
-        stats = {}
-        for goal in self.goals:
-            stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[goal].R_mean))
-            stats['T_{}'.format(goal)] = float("{0:.3f}".format(self.queues[goal].T_mean))
-            stats['L_{}'.format(goal)] = float("{0:.3f}".format(self.queues[goal].L_mean))
-            stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.queues[goal].CP))
-        return stats
-
 
     def decode(self, state):
         return list(self.env.decode(state))

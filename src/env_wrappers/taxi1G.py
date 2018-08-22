@@ -5,13 +5,10 @@ from .base import CPBased
 class Taxi1G(CPBased):
     def __init__(self, env, args):
         super(Taxi1G, self).__init__(env, args)
-
         self.goals = range(4)
         self.init()
         self.goal_states = [np.array(x) for x in [(0, 0, 4), (0, 4, 1), (4, 0, 2), (4, 3, 3)]]
-        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
-                                            initial_p=1.0,
-                                            final_p=.1) for _ in self.goals]
+
         # self.trajectories = {}
         # self.trajectories[0] = [[3,3,1,1,4]
         #                         # [3,1,3,1,4],
@@ -29,11 +26,15 @@ class Taxi1G(CPBased):
         return state
 
     def eval_exp(self, exp):
+        if self.posInit:
+            r = -1
+        else:
+            r = 0
         term = False
-        r = -1
+
         goal_state = self.goal_states[exp['goal']]
         if ((exp['state1'] == goal_state).all() and (exp['state0'] != goal_state).any()):
-            r = 0
+            r += 1
             term = True
         return r, term
 

@@ -8,7 +8,6 @@ from .base import CPBased
 class PlayroomGM(CPBased):
     def __init__(self, env, args):
         super(PlayroomGM, self).__init__(env, args)
-
         self.goals = [obj.name for obj in self.env.objects]
         self.object = None
         self.init()
@@ -17,24 +16,23 @@ class PlayroomGM(CPBased):
         self.state_high = self.env.state_high
         self.init_state = self.env.state_init
 
-        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
-                                            initial_p=1.0,
-                                            final_p=.1) for _ in self.goals]
-
     def step(self, action):
         obs, _, _, _ = self.env.step(action)
         state = np.array(obs)
         return state
 
     def eval_exp(self, exp):
+        if self.posInit:
+            r = -1
+        else:
+            r = 0
         term = False
-        r = -1
         goal_feat = self.obj_feat[exp['object']]
         goal_vals = exp['goal'][goal_feat]
         s1_proj = exp['state1'][goal_feat]
         s0_proj = exp['state0'][goal_feat]
         if ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any()):
-            r = 0
+            r += 1
             term = True
         return r, term
 

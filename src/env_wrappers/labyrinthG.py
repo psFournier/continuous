@@ -10,11 +10,7 @@ class LabyrinthG(CPBased):
         super(LabyrinthG, self).__init__(env, args)
         self.goals = range(4)
         self.init()
-        self.gamma = 0.99
         self.destination = np.array([0, 4])
-        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
-                                          initial_p=1.0,
-                                          final_p=.1) for _ in self.goals]
 
     def step(self, action):
         obs, _, _, _ = self.env.step(action)
@@ -22,11 +18,14 @@ class LabyrinthG(CPBased):
         return state
 
     def eval_exp(self, exp):
-        r = -1
+        if self.posInit:
+            r = -1
+        else:
+            r = 0
         term = False
         dist1 = np.linalg.norm(exp['state1'] - self.destination)
         if dist1 <= self.goals[self.goal]:
-            r = 0
+            r += 1
             term = True
         return r, term
 
