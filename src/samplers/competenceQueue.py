@@ -13,7 +13,6 @@ class CompetenceQueue():
     def append(self, point):
         self.points.append(point)
         Rs, steps = zip(*[(point['R'], point['step']) for point in self.points])
-        self.R = np.sum(Rs) / self.size
         if self.size >= 4:
             mid = min(self.size // 2, self.window)
             R1 = np.mean(Rs[-mid:])

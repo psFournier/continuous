@@ -5,7 +5,7 @@ import os
 import numpy as np
 from scipy.interpolate import interp1d
 
-runs = glob.glob('../../log/cluster/2108/dqn*/*/')
+runs = glob.glob('../../log/cluster/2208/dqngm_P*/*/')
 frames = []
 
 for run in runs:
@@ -25,18 +25,14 @@ for run in runs:
 df = pd.concat(frames, ignore_index=True)
 print(df.columns)
 print(df['agent'].unique())
-# y = ['testR_0', 'testR_1', 'testR_2', 'testR_3']
-y = ['T_0', 'T_1', 'T_2', 'T_3']
-# y = ['R_0', 'R_1', 'R_2', 'R_3']
-# y = ['I_toy2', 'I_toy1', 'I_light', 'I_sound']
-# y = ['CP_toy2', 'CP_toy1', 'CP_light', 'CP_sound']
-# y = ['FA_toy2', 'FA_toy1', 'FA_light', 'FA_sound']
-# y = ['TD_toy2', 'TD_toy1', 'TD_light', 'TD_sound']
-
-# x = ['FAR_0', 'FAR_1', 'FAR_2', 'FAR_3']
+ys = ['agent', 'passenger', 'taxi']
+ys = ['light', 'sound', 'toy1', 'toy2']
+y = ['R_{}'.format(i) for i in ys]
 x = ['step']
-params = ['agent', 'theta']
+params = ['agent', 'theta', 'beta']
 # df = df[(df['agent'] == 'dqng')]
+# df = df[(df['beta'] == 0)]
+# df = df[(df['theta'] == 0)]
 
 # params += ['num_run']
 # df = df.fillna(-1)
@@ -59,9 +55,9 @@ for j, (name, g) in enumerate(df.groupby(params)):
     for i, val in enumerate(y):
         # ax[i % a, i // a].scatter(g['FAR_{}'.format(j)], g[val], label=val, s=10)
         ax2[i % a, i // a].plot(g['step'], g[val]['mean'], label=name)
-        ax2[i % a, i // a].fill_between(g['step'],
-                        g[val]['mean'] - 0.5 * g[val]['std'],
-                        g[val]['mean'] + 0.5 * g[val]['std'], alpha=0.25, linewidth=0)
+        # ax2[i % a, i // a].fill_between(g['step'],
+        #                 g[val]['mean'] - 0.5 * g[val]['std'],
+        #                 g[val]['mean'] + 0.5 * g[val]['std'], alpha=0.25, linewidth=0)
         ax2[i % a, i // a].set_title(label=val)
         # ax[i % a, i // a].set_xlim([0,1000])
         ax2[i % a, i // a].legend()

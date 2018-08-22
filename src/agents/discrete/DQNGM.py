@@ -46,7 +46,7 @@ class DQNGM(DQN):
         self.exp['goal'] = self.env.goal
         self.exp['object'] = self.env.object
         self.exp['reward'], self.exp['terminal'] = self.env.eval_exp(self.exp)
-        self.trajectory.append(self.exp)
+        self.trajectory.append(self.exp.copy())
 
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
