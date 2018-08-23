@@ -9,9 +9,9 @@ from utils.linearSchedule import LinearSchedule
 class CPBased(Wrapper):
     def __init__(self, env, args):
         super(CPBased, self).__init__(env)
-        self.theta = float(args['theta'])
-        self.shaping = bool(args['shaping'])
-        self.posInit = bool(args['posInit'])
+        self.theta = float(args['--theta'])
+        self.shaping = args['--shaping'] != '0'
+        self.posInit = args['--posInit'] != '0'
         self.goals = []
         self.goal = None
         self.init()

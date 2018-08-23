@@ -9,10 +9,10 @@ class DQN(Agent):
 
     def __init__(self, args, env, env_test, logger):
         super(DQN, self).__init__(args, env, env_test, logger)
-        self.per = bool(args['per'])
-        self.self_imitation = bool(int(args['self_imit']))
-        self.tutor_imitation = bool(int(args['tutor_imit']))
-        self.her = args['her']
+        self.per = args['--per'] != '0'
+        self.self_imitation = args['--self_imit'] != '0'
+        self.tutor_imitation = args['--tutor_imit'] != '0'
+        self.her = args['--her'] != '0'
         self.trajectory = []
         self.init(env)
 
@@ -24,6 +24,7 @@ class DQN(Agent):
                                 gamma=0.99,
                                 tau=0.001,
                                 learning_rate=0.001)
+        self.metrics['imitloss'] = 0
 
     def step(self):
 
@@ -35,13 +36,19 @@ class DQN(Agent):
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
             s0, a0, s1, r, t, e = [np.array(experiences[name]) for name in self.names]
+
+            if self.self_imitation:
+                targets_imit = np.zeros((self.batch_size, 1))
+                imitL, margin = self.critic.marginModel.train_on_batch(x=[s0, a0, e], y=targets_imit)
+                self.metrics['imitloss'] += imitL
+
             a1 = self.critic.actModel.predict_on_batch([s1])
             q = self.critic.qvalTModel.predict_on_batch([s1, a1])
             targets_dqn = self.compute_targets(r, t, q)
-            self.critic.qvalModel.train_on_batch(x=[s0, a0], y=targets_dqn)
-            if self.self_imitation:
-                targets_imit = np.zeros((self.batch_size, 1))
-                self.critic.marginModel.train_on_batch(x=[s0, a0, e], y=targets_imit)
+            dqnL, qval = self.critic.qvalModel.train_on_batch(x=[s0, a0], y=targets_dqn)
+            self.metrics['dqnloss'] += dqnL
+            self.metrics['qval'] += np.mean(qval)
+
             self.critic.target_train()
 
     def compute_targets(self, r, t, q, clip=True):
@@ -61,6 +68,7 @@ class DQN(Agent):
         if self.trajectory:
             R = 0
             E = 0
+            if self.trajectory[-1]['terminal']: print('done')
             for expe in reversed(self.trajectory):
                 R += int(expe['reward'])
                 if self.trajectory[-1]['terminal']:

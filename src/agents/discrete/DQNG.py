@@ -11,7 +11,7 @@ import random as rnd
 class DQNG(DQN):
     def __init__(self, args, env, env_test, logger):
         super(DQNG, self).__init__(args, env, env_test, logger)
-        self.beta = float(args['beta'])
+        self.beta = float(args['--beta'])
 
     def init(self, env):
         self.critic = CriticDQNG(s_dim=env.state_dim,

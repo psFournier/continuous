@@ -27,11 +27,11 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         ReplayBuffer.__init__
         """
         super(PrioritizedReplayBuffer, self).__init__(limit=limit, names=names)
-        self.alpha = float(args['alpha'])
+        self.alpha = float(args['--alpha'])
         assert self.alpha > 0
 
-        # self.beta_schedule = LinearSchedule(int(args['max_steps']),
-        #                                initial_p=float(args['beta0']),
+        # self.beta_schedule = LinearSchedule(int(args['--max_steps']),
+        #                                initial_p=float(args['--beta0']),
         #                                final_p=1.0)
         self.epsilon = 1e-6
         # self.epsilon_a = 0.001

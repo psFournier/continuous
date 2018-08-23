@@ -15,15 +15,16 @@ class Agent():
         self.env_test = env_test
         self.buffer = buffer
         self.logger = logger
-        self.log_dir = args['log_dir']
-        self.ep_steps = int(args['episode_steps'])
-        self.eval_freq = int(args['eval_freq'])
+        self.log_dir = args['--log_dir']
+        self.ep_steps = int(args['--ep_steps'])
+        self.eval_freq = int(args['--eval_freq'])
         self.batch_size = 64
-        self.max_steps = int(args['max_steps'])
+        self.max_steps = int(args['--max_steps'])
         self.env_step = 0
         self.episode_step = 0
         self.stats = {}
         self.exp = {}
+        self.metrics = {'qval': 0, 'dqnloss': 0}
 
     def run(self):
         self.exp['state0'] = self.reset()
@@ -78,6 +79,9 @@ class Agent():
             #     self.stats['testR_{}'.format(i)] = R
             wrapper_stats = self.env.get_stats()
             self.stats['step'] = self.env_step
+            for metric, val in self.metrics.items():
+                self.stats[metric] = val / self.eval_freq
+                self.metrics[metric] = 0
 
             for key, val in wrapper_stats.items():
                 self.stats[key] = val
