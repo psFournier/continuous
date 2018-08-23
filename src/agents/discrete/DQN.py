@@ -14,6 +14,7 @@ class DQN(Agent):
         self.tutor_imitation = args['--tutor_imit'] != '0'
         self.her = args['--her'] != '0'
         self.trajectory = []
+        self.margin = float(args['--margin'])
         self.init(env)
 
     def init(self, env):
@@ -23,7 +24,8 @@ class DQN(Agent):
                                 num_a=env.action_dim,
                                 gamma=0.99,
                                 tau=0.001,
-                                learning_rate=0.001)
+                                learning_rate=0.001,
+                                margin=self.margin)
         self.metrics['imitloss'] = 0
 
     def step(self):
@@ -39,7 +41,10 @@ class DQN(Agent):
 
             if self.self_imitation:
                 targets_imit = np.zeros((self.batch_size, 1))
-                imitL, margin = self.critic.marginModel.train_on_batch(x=[s0, a0, e], y=targets_imit)
+                # imitL, margin = self.critic.marginModel.train_on_batch(x=[s0, a0, e],
+                #                                                        y=[targets_imit, targets_imit])
+                imitL, margin = self.critic.marginModel.train_on_batch(x=[s0, a0, e],
+                                                                       y=targets_imit)
                 self.metrics['imitloss'] += imitL
 
             a1 = self.critic.actModel.predict_on_batch([s1])

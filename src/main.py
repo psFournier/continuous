@@ -31,6 +31,7 @@ Options:
   --eval_freq VAL          Logging frequency [default: 2000]
   --per YES_NO             Prioritized Experience Replay [default: 0]
   --her YES_NO             Hindsight Experience Replay [default: 0]
+  --margin VAL             Large margin loss margin [default: 0.3]
 
 """
 
