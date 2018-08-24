@@ -20,7 +20,7 @@ class DQNG(DQN):
                                  gamma=0.99,
                                  tau=0.001,
                                  learning_rate=0.001)
-        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal']
+        self.names += ['goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
         self.tutor_buffer = None
         if self.tutor_imitation:

@@ -20,18 +20,9 @@ class Taxi1G(CPBased):
         # self.trajectories[2] = [t + [0,2,2,1,2,2,5] for t in self.trajectories[0]]
         # self.trajectories[3] = [t + [0,2,0,2,2,0,0,5] for t in self.trajectories[0]]
 
-    def eval_exp(self, exp):
-        if self.posInit:
-            r = -1
-        else:
-            r = 0
-        term = False
-
+    def is_term(self, exp):
         goal_state = self.goal_states[exp['goal']]
-        if ((exp['state1'] == goal_state).all() and (exp['state0'] != goal_state).any()):
-            r += 1
-            term = True
-        return r, term
+        return ((exp['state1'] == goal_state).all() and (exp['state0'] != goal_state).any())
 
     def reset(self):
         self.goal = self.get_idx()

@@ -18,7 +18,7 @@ class DQN(Agent):
         self.init(env)
 
     def init(self, env):
-        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'expVal']
+        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'expVal', 'step']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
         self.critic = CriticDQN(s_dim=env.state_dim,
                                 num_a=env.action_dim,
@@ -71,18 +71,20 @@ class DQN(Agent):
     def reset(self):
 
         if self.trajectory:
-            R = 0
-            E = 0
-            if self.trajectory[-1]['terminal']: print('done')
+            R, E, S = 0, 0, 0
+            if self.trajectory[-1]['terminal']:
+                print('done')
+                self.env.dones[self.env.goal] += 1
             for expe in reversed(self.trajectory):
                 R += int(expe['reward'])
+                S += 1
                 if self.trajectory[-1]['terminal']:
                     E = E * self.critic.gamma + expe['reward']
                     expe['expVal'] = E
                 else:
                     expe['expVal'] = -self.ep_steps
                 self.buffer.append(expe)
-            self.env.queues[self.env.goal].append({'step': self.env_step, 'R': R})
+            self.env.queues[self.env.goal].append({'step': self.env_step, 'R': R, 'S': S})
             self.trajectory.clear()
 
         state = self.env.reset()

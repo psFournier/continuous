@@ -10,6 +10,7 @@ class CPBased(Wrapper):
     def __init__(self, env, args):
         super(CPBased, self).__init__(env)
         self.theta = float(args['--theta'])
+        self.gamma = float(args['--gamma'])
         self.shaping = args['--shaping'] != '0'
         self.posInit = args['--posInit'] != '0'
         self.goals = []
@@ -20,12 +21,28 @@ class CPBased(Wrapper):
         self.queues = [CompetenceQueue() for _ in self.goals]
         self.steps = [0 for _ in self.goals]
         self.interests = [0 for _ in self.goals]
+        self.dones = [0 for _ in self.goals]
         self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
                                             initial_p=1.0,
                                             final_p=.1) for _ in self.goals]
 
     def step(self, action):
         return self.env.step(action)
+
+    def is_term(self, exp):
+        return False
+
+    def eval_exp(self, exp):
+        term = self.is_term(exp)
+        if term:
+            r = 1
+            if self.posInit:
+                r += (self.gamma - 1) + (1 - self.gamma ** (exp['step'] + 1)) / (self.gamma ** exp['step'])
+        else:
+            r = 0
+            if self.posInit:
+                r += (self.gamma - 1)
+        return r, term
 
     def get_idx(self):
         CPs = [abs(q.CP) for q in self.queues]
@@ -60,7 +77,9 @@ class CPBased(Wrapper):
             stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].R))
             stats['CP_{}'.format(goal)] = float("{0:.3f}".format(abs(self.queues[i].CP)))
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
-            stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
+            stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].S))
+            stats['done_{}'.format(goal)] = float("{0:.3f}".format(self.dones[i]))
+            stats['step_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
         return stats
 
 

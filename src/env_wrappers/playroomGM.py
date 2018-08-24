@@ -17,20 +17,12 @@ class PlayroomGM(CPBased):
         self.state_high = self.env.state_high
         self.init_state = self.env.state_init
 
-    def eval_exp(self, exp):
-        if self.posInit:
-            r = -1
-        else:
-            r = 0
-        term = False
+    def is_term(self, exp):
         goal_feat = self.obj_feat[exp['goal']]
         goal_vals = exp['goalVals'][goal_feat]
         s1_proj = exp['state1'][goal_feat]
         s0_proj = exp['state0'][goal_feat]
-        if ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any()):
-            r += 1
-            term = True
-        return r, term
+        return ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any())
 
     def reset(self):
         self.goal = self.get_idx()

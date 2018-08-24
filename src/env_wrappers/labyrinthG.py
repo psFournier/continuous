@@ -12,17 +12,8 @@ class LabyrinthG(CPBased):
         self.init()
         self.destination = np.array([0, 4])
 
-    def eval_exp(self, exp):
-        if self.posInit:
-            r = -1
-        else:
-            r = 0
-        term = False
-        dist1 = np.linalg.norm(exp['state1'] - self.destination)
-        if dist1 <= self.goals[self.goal]:
-            r += 1
-            term = True
-        return r, term
+    def is_term(self, exp):
+        return np.linalg.norm(exp['state1'] - self.destination) <= self.goals[self.goal]
 
     def reset(self):
         self.goal = self.get_idx()

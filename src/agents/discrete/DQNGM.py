@@ -17,7 +17,7 @@ class DQNGM(DQNG):
                                   gamma=0.99,
                                   tau=0.001,
                                   learning_rate=0.001)
-        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goalVals', 'goal']
+        self.names += ['goalVals']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
     def step(self):

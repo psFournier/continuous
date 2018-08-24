@@ -129,8 +129,14 @@ class Labyrinth(discrete.DiscreteEnv):
 
 if __name__ == '__main__':
     env = Labyrinth()
-    env.reset()
-    for _ in range(100000):
+    s = env.reset()
+    acts = [0, 0, 0, 0, 2, 1, 2, 0, 2, 2, 1, 1, 1, 1]
+    r = 0
+    for a in acts:
         env.render()
-        a = np.random.randint(4)
-        env.step(a)
+        dist0 = -np.linalg.norm(s - np.array([0, 4]))
+        s = env.step(a)
+        dist1 = -np.linalg.norm(s - np.array([0, 4]))
+        shaping = 0.99 * dist1 - dist0
+        r += shaping
+    print(r)
