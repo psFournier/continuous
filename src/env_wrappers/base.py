@@ -37,7 +37,7 @@ class CPBased(Wrapper):
         if term:
             r = 1
             if self.posInit:
-                r += (self.gamma - 1) + (1 - self.gamma ** (exp['step'] + 1)) / (self.gamma ** exp['step'])
+                r += -1
         else:
             r = 0
             if self.posInit:

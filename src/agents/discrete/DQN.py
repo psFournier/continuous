@@ -15,10 +15,10 @@ class DQN(Agent):
         self.her = args['--her'] != '0'
         self.trajectory = []
         self.margin = float(args['--margin'])
+        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'expVal']
         self.init(env)
 
     def init(self, env):
-        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'expVal', 'step']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
         self.critic = CriticDQN(s_dim=env.state_dim,
                                 num_a=env.action_dim,
@@ -29,7 +29,6 @@ class DQN(Agent):
         self.metrics['imitloss'] = 0
 
     def step(self):
-
         self.env_step += 1
         self.episode_step += 1
         self.exp['reward'], self.exp['terminal'] = self.env.eval_exp(self.exp)

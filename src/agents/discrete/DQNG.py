@@ -27,7 +27,6 @@ class DQNG(DQN):
             self.get_tutor_exp(goal=3)
 
     def step(self):
-
         self.env_step += 1
         self.episode_step += 1
         self.env.steps[self.env.goal] += 1
@@ -37,7 +36,7 @@ class DQNG(DQN):
 
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
-            s0, a0, s1, r, t, g = [np.array(experiences[name]) for name in self.names]
+            s0, a0, s1, r, t, e, g = [np.array(experiences[name]) for name in self.names]
 
             a1 = self.critic.actModel.predict_on_batch([s1, g])
             q = self.critic.qvalTModel.predict_on_batch([s1, a1, g])
@@ -90,7 +89,7 @@ class DQNG(DQN):
 
     def train_imitation(self):
         experiences = self.tutor_buffer.sample(self.batch_size)
-        s0, a0, s1, r, t, g = [np.array(experiences[name]) for name in self.names]
+        s0, a0, s1, r, t, e, step, g = [np.array(experiences[name]) for name in self.names]
 
         targets_imit = np.zeros((self.batch_size, 1))
         self.critic.marginModel.train_on_batch(x=[s0, a0, g], y=targets_imit)

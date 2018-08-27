@@ -17,11 +17,10 @@ class DQNGM(DQNG):
                                   gamma=0.99,
                                   tau=0.001,
                                   learning_rate=0.001)
-        self.names += ['goalVals']
+        self.names += ['goalVals', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
 
     def step(self):
-
         self.env_step += 1
         self.episode_step += 1
         self.exp['goalVals'] = self.env.goalVals
@@ -31,7 +30,7 @@ class DQNGM(DQNG):
 
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
-            s0, a0, s1, r, t, gv, g = [np.array(experiences[name]) for name in self.names]
+            s0, a0, s1, r, t, e, gv, g = [np.array(experiences[name]) for name in self.names]
             m = np.array([self.env.obj2mask(g[k]) for k in range(self.batch_size)])
 
             a1 = self.critic.actModel.predict_on_batch([s1, gv, m])
