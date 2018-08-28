@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-DIR = '../../log/cluster/2808'
-ENV = 'dqnsimit2_Labyrinth-v0'
+DIR = '../../log/local/'
+ENV = 'dqnlm_Labyrinth-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
@@ -13,7 +13,7 @@ if 1:
     for run in runs:
 
         config = pd.read_json(os.path.join(run, 'config.txt'), lines=True)
-
+        config['--time'] = pd.to_datetime(config['--time'])
         try:
             df = pd.read_json(os.path.join(run, 'log_steps', 'progress.json'), lines=True)
             config = pd.concat([config] * df.shape[0], ignore_index=True)

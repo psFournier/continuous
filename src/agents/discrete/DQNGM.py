@@ -11,14 +11,11 @@ class DQNGM(DQNG):
         super(DQNGM, self).__init__(args, env, env_test, logger)
 
     def init(self, env):
-        self.critic = CriticDQNGM(s_dim=env.state_dim,
-                                  g_dim=env.goal_dim,
-                                  num_a=env.action_dim,
-                                  gamma=0.99,
-                                  tau=0.001,
-                                  learning_rate=0.001)
+        self.critic = CriticDQNGM(s_dim=env.state_dim, g_dim=env.goal_dim, num_a=env.action_dim)
         self.names += ['goalVals', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
+        self.metrics['dqnloss'] = 0
+        self.metrics['qval'] = 0
 
     def step(self):
         self.env_step += 1
@@ -32,15 +29,14 @@ class DQNGM(DQNG):
             experiences = self.buffer.sample(self.batch_size)
             s0, a0, s1, r, t, e, gv, g = [np.array(experiences[name]) for name in self.names]
             m = np.array([self.env.obj2mask(g[k]) for k in range(self.batch_size)])
-
-            a1 = self.critic.actModel.predict_on_batch([s1, gv, m])
+            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, g, m])
+            a1 = np.argmax(a1Probs, axis=1)
             q = self.critic.qvalTModel.predict_on_batch([s1, a1, gv, m])
-
             targets = self.compute_targets(r, t, q)
-            weights = np.array([self.env.interests[obj] ** self.beta for obj in g])
-            self.loss_qVal, q_values = self.critic.qvalModel.train_on_batch(x=[s0, a0, gv, m],
-                                                                               y=targets,
-                                                                               sample_weight=weights)
+            # weights = np.array([self.env.interests[obj] ** self.beta for obj in g])
+            loss = self.critic.qvalModel.train_on_batch([s0, a0, gv, m], targets)
+            self.metrics['dqnloss'] += loss[0]
+            self.metrics['qval'] += np.mean(loss[1])
             self.critic.target_train()
 
     def make_input(self, state):

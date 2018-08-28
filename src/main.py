@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQN, DQNG, TD3, DDPG, DQNGM, DQNsImit, DQNsImit2
+from agents import DQN, DQNG, TD3, DDPG, DQNGM, DQNI, DQNLM
 from utils.logger import Logger
 import datetime
 from utils.util import load
@@ -18,8 +18,6 @@ Usage:
   main.py --env=<ENV> --agent=<AGENT> [options]
 
 Options:
-  --self_imit YES_NO       Imitates itself [default: 0]
-  --tutor_imit YES_NO      Imitates the tutor [default: 0]
   --seed SEED              Random seed
   --theta THETA            CP importance for goal selection [default: 0]
   --beta BETA              CP importance for training samples weights [default: 0]
@@ -40,11 +38,13 @@ Options:
 
 def build_logger(args):
     param_strings = [args['--agent'], args['--env']]
-    now = datetime.datetime.now().strftime("%Y%m%d%H%M%S_%f")
-    log_dir = os.path.join(args['--log_dir'], '_'.join(param_strings), now)
+    now = datetime.datetime.now()
+    log_dir = os.path.join(args['--log_dir'], '_'.join(param_strings), now.strftime("%Y%m%d%H%M%S_%f"))
     os.makedirs(log_dir, exist_ok=True)
+    args['--time'] = now
+    print(args)
     with open(os.path.join(log_dir, 'config.txt'), 'w') as config_file:
-        config_file.write(json.dumps(args))
+        config_file.write(json.dumps(args, default=str))
     logger = Logger(dir=os.path.join(log_dir,'log_steps'),
                          format_strs=['stdout', 'json', 'tensorboard_{}'.format(int(args['--eval_freq']))])
 
@@ -52,8 +52,6 @@ def build_logger(args):
 
 if __name__ == '__main__':
     args = docopt(help)
-    print(args)
-
     logger = build_logger(args)
     env = make(args['--env'], args)
     env_test = make(args['--env'], args)
@@ -71,10 +69,10 @@ if __name__ == '__main__':
     #     agent = TD3(args, env, env_test, logger)
     if args['--agent'] == 'dqn':
         agent = DQN(args, env, env_test, logger)
-    elif args['--agent'] == 'dqnsimit':
-        agent = DQNsImit(args, env, env_test, logger)
-    elif args['--agent'] == 'dqnsimit2':
-        agent = DQNsImit2(args, env, env_test, logger)
+    elif args['--agent'] == 'dqni':
+        agent = DQNI(args, env, env_test, logger)
+    elif args['--agent'] == 'dqnlm':
+        agent = DQNLM(args, env, env_test, logger)
     elif args['--agent'] == 'dqng':
         agent = DQNG(args, env, env_test, logger)
     elif args['--agent'] == 'dqngm':

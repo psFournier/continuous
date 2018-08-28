@@ -10,49 +10,32 @@ class DQN(Agent):
     def __init__(self, args, env, env_test, logger):
         super(DQN, self).__init__(args, env, env_test, logger)
         self.per = args['--per'] != '0'
-        self.self_imitation = args['--self_imit'] != '0'
-        self.tutor_imitation = args['--tutor_imit'] != '0'
         self.her = args['--her'] != '0'
         self.trajectory = []
-        self.margin = float(args['--margin'])
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'expVal']
         self.init(env)
 
     def init(self, env):
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
-        self.critic = CriticDQN(s_dim=env.state_dim,
-                                num_a=env.action_dim,
-                                gamma=0.99,
-                                tau=0.001,
-                                learning_rate=0.001,
-                                margin=self.margin)
-        self.metrics['imitloss'] = 0
+        self.critic = CriticDQN(s_dim=env.state_dim, num_a=env.action_dim)
+        self.metrics['dqnloss'] = 0
+        self.metrics['qval'] = 0
 
     def step(self):
         self.env_step += 1
         self.episode_step += 1
         self.exp['reward'], self.exp['terminal'] = self.env.eval_exp(self.exp)
         self.trajectory.append(self.exp.copy())
-
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
             s0, a0, s1, r, t, e = [np.array(experiences[name]) for name in self.names]
-
-            if self.self_imitation:
-                targets_imit = np.zeros((self.batch_size, 1))
-                # imitL, margin = self.critic.marginModel.train_on_batch(x=[s0, a0, e],
-                #                                                        y=[targets_imit, targets_imit])
-                imitL, margin = self.critic.marginModel.train_on_batch(x=[s0, a0, e],
-                                                                       y=targets_imit)
-                self.metrics['imitloss'] += imitL
-
-            a1 = self.critic.actModel.predict_on_batch([s1])
+            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1])
+            a1 = np.argmax(a1Probs, axis=1)
             q = self.critic.qvalTModel.predict_on_batch([s1, a1])
             targets_dqn = self.compute_targets(r, t, q)
-            dqnL, qval = self.critic.qvalModel.train_on_batch(x=[s0, a0], y=targets_dqn)
-            self.metrics['dqnloss'] += dqnL
-            self.metrics['qval'] += np.mean(qval)
-
+            loss = self.critic.qvalModel.train_on_batch([s0, a0], targets_dqn)
+            self.metrics['dqnloss'] += loss[0]
+            self.metrics['qval'] += np.mean(loss[1])
             self.critic.target_train()
 
     def compute_targets(self, r, t, q, clip=True):
@@ -99,6 +82,7 @@ class DQN(Agent):
             action = np.random.randint(0, self.env.action_dim)
         else:
             input = self.make_input(state)
-            action = self.critic.actModel.predict(input, batch_size=1)
-            action = action[0, 0]
+            actionProbs = self.critic.actionProbsModel.predict(input, batch_size=1)
+            # action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
+            action = np.argmax(actionProbs[0], axis=0)
         return action
