@@ -18,7 +18,7 @@ class Agent():
         self.log_dir = args['--log_dir']
         self.ep_steps = int(args['--ep_steps'])
         self.eval_freq = int(args['--eval_freq'])
-        self.batch_size = 64
+        self.batch_size = int(args['--batchsize'])
         self.max_steps = int(args['--max_steps'])
         self.env_step = 0
         self.episode_step = 0

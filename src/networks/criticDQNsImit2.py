@@ -4,8 +4,8 @@ from keras.optimizers import Adam
 import keras.backend as K
 from keras.layers.merge import multiply, add
 
-class CriticDQN(object):
-    def __init__(self, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001, margin=0.3):
+class CriticDQNsImit2(object):
+    def __init__(self, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001, margin=0.3, imit=1):
         self.tau = tau
         self.s_dim = s_dim
         self.a_dim = (1,)
@@ -13,6 +13,7 @@ class CriticDQN(object):
         self.gamma = gamma
         self.num_actions = num_a
         self.margin = margin
+        self.imitweight = imit
         self.qvalModel, self.marginModel, self.actModel = self.create_critic_network()
         self.qvalTModel, _, _ = self.create_critic_network()
         self.target_train()
@@ -63,13 +64,11 @@ class CriticDQN(object):
         qValue_model.metrics_tensors = [qValue]
 
         bestValue = Lambda(lambda x: K.max(x, axis=2))(V)
-        filter = Lambda(self.filterFn, output_shape=(1,))([E, bestValue])
+        filter1 = Lambda(self.filterFn, output_shape=(1,))([E, bestValue])
         margin = Lambda(self.marginFn, output_shape=(1,))([A, V, qValue])
-        out1 = multiply([filter, margin])
-        imitation_model = Model(inputs=[S, A, E], outputs=out1)
-        imitation_model.compile(loss='mse', optimizer=self.optimizer)
-        # imitation_model = Model(inputs=[S, A, E], outputs=[margin2, filter2])
-        # imitation_model.compile(loss=['mae', 'mse'], optimizer=self.optimizer)
+        out1 = add([multiply([filter1, margin]), margin])
+        imitation_model = Model(inputs=[S, A, E], outputs=[out1, qValue])
+        imitation_model.compile(loss=['mse', 'mse'], loss_weights=[self.imitweight, 1], optimizer=self.optimizer)
         imitation_model.metrics_tensors = [margin]
 
         return qValue_model, imitation_model, bestAction_model

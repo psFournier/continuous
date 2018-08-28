@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQN, DQNG, TD3, DDPG, DQNGM
+from agents import DQN, DQNG, TD3, DDPG, DQNGM, DQNsImit, DQNsImit2
 from utils.logger import Logger
 import datetime
 from utils.util import load
@@ -33,7 +33,9 @@ Options:
   --her YES_NO             Hindsight Experience Replay [default: 0]
   --margin VAL             Large margin loss margin [default: 0.3]
   --gamma VAL              Discount factor [default: 0.99]
-
+  --batchsize VAL          Batch size [default: 64]
+  --imitweight VAL         Weight for imitaiton loss with imitaiton [default: 1]
+  
 """
 
 def build_logger(args):
@@ -49,30 +51,6 @@ def build_logger(args):
     return logger
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser(description='provide arguments for agent')
-    #
-    # parser.add_argument('--random-seed', default=1)
-    # parser.add_argument('--env', default='HalfCheetah-v2')
-    # parser.add_argument('--agent', default='td3')
-    # parser.add_argument('--per', default=0)
-    # parser.add_argument('--her', default=0)
-    # parser.add_argument('--self_imit', default=0)
-    # parser.add_argument('--tutor_imit', default=0)
-    # parser.add_argument('--theta', default=0)
-    # parser.add_argument('--beta', default=0)
-    # parser.add_argument('--shaping', default=0)
-    # parser.add_argument('--posInit', default=0)
-    #
-    # parser.add_argument('--max_steps', help='max num of episodes to do while training', default=500000)
-    # parser.add_argument('--log_dir', help='directory for storing run info',
-    #                     default='/home/pierre/PycharmProjects/continuous/log/local/')
-    # parser.add_argument('--episode_steps', help='number of steps in the environment during evaluation', default=200)
-    # parser.add_argument('--eval_freq', help='freq for critic and actor stats computation', default=2000)
-    #
-    # args = vars(parser.parse_args())
-    #
-    # pp.pprint(args)
-
     args = docopt(help)
     print(args)
 
@@ -93,6 +71,10 @@ if __name__ == '__main__':
     #     agent = TD3(args, env, env_test, logger)
     if args['--agent'] == 'dqn':
         agent = DQN(args, env, env_test, logger)
+    elif args['--agent'] == 'dqnsimit':
+        agent = DQNsImit(args, env, env_test, logger)
+    elif args['--agent'] == 'dqnsimit2':
+        agent = DQNsImit2(args, env, env_test, logger)
     elif args['--agent'] == 'dqng':
         agent = DQNG(args, env, env_test, logger)
     elif args['--agent'] == 'dqngm':
