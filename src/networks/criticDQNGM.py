@@ -11,8 +11,8 @@ class CriticDQNGM(CriticDQNG):
 
     def initModels(self):
         S = Input(shape=self.s_dim)
-        G = Input(shape=self.g_dim)
         A = Input(shape=(1,), dtype='uint8')
+        G = Input(shape=self.g_dim)
         M = Input(shape=self.g_dim)
         qvals = self.create_critic_network(S, G, M)
         actionProbs = Lambda(lambda x: K.softmax(x))(qvals)
@@ -21,6 +21,16 @@ class CriticDQNGM(CriticDQNG):
         self.qvalModel = Model([S, A, G, M], qval)
         self.qvalModel.compile(loss='mse', optimizer=self.optimizer)
         self.qvalModel.metrics_tensors += [qval]
+
+    def initTargetModels(self):
+        S = Input(shape=self.s_dim)
+        A = Input(shape=(1,), dtype='uint8')
+        G = Input(shape=self.g_dim)
+        M = Input(shape=self.g_dim)
+        targetQvals = self.create_critic_network(S, G, M)
+        targetQval = Lambda(self.actionFilterFn, output_shape=(1,))([A, targetQvals])
+        self.qvalTModel = Model([S, A, G, M], targetQval)
+        self.target_train()
 
     def create_critic_network(self, S, G=None, M=None):
         c1 = concatenate(inputs=[S, G, M])

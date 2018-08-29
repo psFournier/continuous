@@ -78,6 +78,7 @@ class DQN(Agent):
         return [np.reshape(state, (1, self.critic.s_dim[0]))]
 
     def act(self, state, noise=False):
+
         if noise and np.random.rand(1) < self.env.explorations[self.env.goal].value(self.env_step):
             action = np.random.randint(0, self.env.action_dim)
         else:

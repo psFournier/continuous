@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 DIR = '../../log/cluster/last'
-ENV = 'dqnlm_Labyrinth-v0'
+ENV = 'dqn_Labyrinth-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
@@ -37,7 +37,7 @@ params = ['--agent', '--posInit', '--max_steps', '--margin', '--shaping', '--imi
 
 if 0:
     df1 = df
-    df1 = df1[(df1['--posInit'] == 0)]
+    # df1 = df1[(df1['--posInit'] == 0)]
     # df1 = df1[(df1['--shaping'] == 0)]
     for param in params:
         print(df1[param].unique())
@@ -55,7 +55,7 @@ if 1:
 
     df2 = df
     # df2 = df2[(df2['--self_imit'] == 0)]
-    df2 = df2[(df2['--posInit'] == 1)]
+    df2 = df2[(df2['--posInit'] <= 2)]
     # df2 = df2[(df2['--shaping'] == 0)]
     # df2 = df2[(df2['--max_steps'] == 50000)]
     for param in params:
@@ -70,7 +70,7 @@ if 1:
     a, b = 1,1
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
     for j, (name, g) in enumerate(df2.groupby(params)):
-        for i, val in enumerate(['S_0']):
+        for i, val in enumerate(['qval']):
             # ax[i % a, i // a].scatter(g['FAR_{}'.format(j)], g[val], label=val, s=10)
             ax2[i % a, i // a].plot(g['step'], g[val]['median'], label=name)
             ax2[i % a, i // a].fill_between(g['step'],
