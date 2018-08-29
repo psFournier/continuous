@@ -32,7 +32,8 @@ Options:
   --margin VAL             Large margin loss margin [default: 0.3]
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]
-  --imitweight VAL         Weight for imitaiton loss with imitaiton [default: 1]
+  --imitweight1 VAL        Weight for imitaiton loss with imitaiton [default: 1]
+  --imitweight2 VAL        Weight for imitaiton loss with imitaiton [default: 1]
   
 """
 

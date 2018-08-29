@@ -6,8 +6,8 @@ from keras.layers.merge import multiply, add
 from .criticDQN import  CriticDQN
 
 class CriticDQNI(CriticDQN):
-    def __init__(self, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001, weight=1):
-        self.weights = [1, weight, weight]
+    def __init__(self, s_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001, weight1=1, weight2=1):
+        self.weights = [1, weight1, weight2]
         super(CriticDQNI, self).__init__(s_dim, num_a, gamma, tau, learning_rate)
 
     def initModels(self):

@@ -10,12 +10,16 @@ from buffers import ReplayBuffer, PrioritizedReplayBuffer
 class DQNI(DQN):
 
     def __init__(self, args, env, env_test, logger):
-        self.imitweight = float(args['--imitweight'])
+        self.imitweight1 = float(args['--imitweight1'])
+        self.imitweight2 = float(args['--imitweight2'])
         super(DQNI, self).__init__(args, env, env_test, logger)
 
     def init(self, env):
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
-        self.critic = CriticDQNI(s_dim=env.state_dim, num_a=env.action_dim, weight=self.imitweight)
+        self.critic = CriticDQNI(s_dim=env.state_dim,
+                                 num_a=env.action_dim,
+                                 weight1=self.imitweight1,
+                                 weight2=self.imitweight2)
         self.metrics['dqnloss'] = 0
         self.metrics['imitloss1'] = 0
         self.metrics['imitloss2'] = 0

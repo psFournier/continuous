@@ -12,7 +12,7 @@ class CPBased(Wrapper):
         self.theta = float(args['--theta'])
         self.gamma = float(args['--gamma'])
         self.shaping = args['--shaping'] != '0'
-        self.posInit = args['--posInit'] != '0'
+        self.posInit = int(args['--posInit'])
         self.goals = []
         self.goal = None
         self.init()
@@ -36,12 +36,20 @@ class CPBased(Wrapper):
         term = self.is_term(exp)
         if term:
             r = 1
-            if self.posInit:
-                r += -1
         else:
             r = 0
-            if self.posInit:
-                r += (self.gamma - 1)
+
+        if self.posInit == 1:
+            r += self.gamma - 1
+            if term:
+                r -= self.gamma
+
+        elif self.posInit == 2:
+            r += self.gamma - 1
+
+        elif self.posInit == 3:
+            r -= 1
+
         return r, term
 
     def get_idx(self):
