@@ -9,3 +9,4 @@ from .discrete.DQNG import DQNG
 from .discrete.DQNGM import DQNGM
 from .discrete.DQNI import DQNI
 from .discrete.DQNLM import DQNLM
+from .discrete.DQNGLM import DQNGLM

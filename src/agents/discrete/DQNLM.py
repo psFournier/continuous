@@ -32,7 +32,6 @@ class DQNLM(DQN):
         self.episode_step += 1
         self.exp['reward'], self.exp['terminal'] = self.env.eval_exp(self.exp)
         self.trajectory.append(self.exp.copy())
-
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
             s0, a0, s1, r, t, e = [np.array(experiences[name]) for name in self.names]
