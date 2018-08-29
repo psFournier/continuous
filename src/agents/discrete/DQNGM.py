@@ -29,7 +29,7 @@ class DQNGM(DQNG):
             experiences = self.buffer.sample(self.batch_size)
             s0, a0, s1, r, t, e, gv, g = [np.array(experiences[name]) for name in self.names]
             m = np.array([self.env.obj2mask(g[k]) for k in range(self.batch_size)])
-            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, g, m])
+            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, gv, m])
             a1 = np.argmax(a1Probs, axis=1)
             q = self.critic.qvalTModel.predict_on_batch([s1, a1, gv, m])
             targets = self.compute_targets(r, t, q)
