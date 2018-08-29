@@ -29,11 +29,13 @@ class CPBased(Wrapper):
     def step(self, action):
         return self.env.step(action)
 
-    def is_term(self, exp):
+    def is_term(self, exp, goal):
         return False
 
-    def eval_exp(self, exp):
-        term = self.is_term(exp)
+    def eval_exp(self, exp, goal=None):
+        if goal is None:
+            goal = exp['goal']
+        term = self.is_term(exp, goal)
         if term:
             r = 1
         else:

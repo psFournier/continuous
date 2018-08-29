@@ -2,28 +2,31 @@ import numpy as np
 RENDER_TRAIN = False
 TARGET_CLIP = True
 INVERTED_GRADIENTS = True
-from networks import CriticDQNGLM
-from agents import DQN
+from networks import CriticDQNGLM, CriticDQNGI
+from agents import DQNLM
 from buffers import ReplayBuffer, PrioritizedReplayBuffer
 import random as rnd
 
 
-class DQNGLM(DQN):
+class DQNGLM(DQNLM):
     def __init__(self, args, env, env_test, logger):
-        self.margin = float(args['--margin'])
-        self.imitweight1 = float(args['--imitweight1'])
-        self.imitweight2 = float(args['--imitweight2'])
         super(DQNGLM, self).__init__(args, env, env_test, logger)
-        self.beta = float(args['--beta'])
 
     def init(self, env):
-        self.critic = CriticDQNGLM(s_dim=env.state_dim,
-                                   g_dim=env.goal_dim,
-                                   num_a=env.action_dim,
-                                   margin=self.margin,
-                                   weight1=self.imitweight1,
-                                   weight2=self.imitweight2)
-        self.names += ['goal']
+        if self.margin is None:
+            self.critic = CriticDQNGI(s_dim=env.state_dim,
+                                       g_dim=env.goal_dim,
+                                       num_a=env.action_dim,
+                                       weight1=self.imitweight1,
+                                       weight2=self.imitweight2)
+        else:
+            self.critic = CriticDQNGLM(s_dim=env.state_dim,
+                                       g_dim=env.goal_dim,
+                                       num_a=env.action_dim,
+                                       margin=float(self.margin),
+                                       weight1=self.imitweight1,
+                                       weight2=self.imitweight2)
+        self.names += ['expVal', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
         self.metrics['dqnloss'] = 0
         self.metrics['imitloss1'] = 0
@@ -56,28 +59,28 @@ class DQNGLM(DQN):
     def make_input(self, state):
         return [np.expand_dims(i, axis=0) for i in [state, self.env.goal]]
 
-    def reset(self):
+    def processEp(self):
+        super(DQNGLM, self).processEp()
+        if self.her:
+            self.hindsight()
 
-        if self.trajectory:
-            R, E, S = 0, 0, 0
-            if self.trajectory[-1]['terminal']:
-                print('done')
-                self.env.dones[self.env.goal] += 1
+    def hindsight(self):
+        reached = {goal: False for goal in self.env.goals if goal != self.env.goal}
+        for goal, _ in reached.items():
+            E = 0
             for expe in reversed(self.trajectory):
-                R += int(expe['reward'])
-                S += 1
-                if self.trajectory[-1]['terminal']:
-                    E = E * self.critic.gamma + expe['reward']
+                r, term = self.env.eval_exp(expe, goal)
+                if term:
+                    reached[goal] = True
+                    E = 0
+                    print('done goal {} unwillingly'.format(goal))
+                if reached[goal]:
+                    expe['goal'] = goal
+                    expe['reward'] = r
+                    expe['terminal'] = term
+                    E = E * self.critic.gamma + r
                     expe['expVal'] = E
-                else:
-                    expe['expVal'] = -self.ep_steps
-                self.buffer.append(expe)
-            self.env.queues[self.env.goal].append({'step': self.env_step, 'R': R, 'S': S})
-            self.trajectory.clear()
-
-        state = self.env.reset()
-        self.episode_step = 0
-        return state
+                    self.buffer.append(expe.copy())
 
     # def get_tutor_exp(self, goal):
     #     for i in range(10):

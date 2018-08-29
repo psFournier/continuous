@@ -15,6 +15,7 @@ class DQNI(DQN):
         super(DQNI, self).__init__(args, env, env_test, logger)
 
     def init(self, env):
+        self.names += ['expVal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
         self.critic = CriticDQNI(s_dim=env.state_dim,
                                  num_a=env.action_dim,
@@ -30,7 +31,6 @@ class DQNI(DQN):
         self.episode_step += 1
         self.exp['reward'], self.exp['terminal'] = self.env.eval_exp(self.exp)
         self.trajectory.append(self.exp.copy())
-
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
             s0, a0, s1, r, t, e = [np.array(experiences[name]) for name in self.names]
@@ -45,3 +45,13 @@ class DQNI(DQN):
             self.metrics['imitloss2'] += loss[3]
             self.metrics['qval'] += np.mean(loss[4])
             self.critic.target_train()
+
+    def processEp(self):
+        E = 0
+        for expe in reversed(self.trajectory):
+            if self.trajectory[-1]['terminal']:
+                E = E * self.critic.gamma + expe['reward']
+                expe['expVal'] = E
+            else:
+                expe['expVal'] = -self.ep_steps
+            self.buffer.append(expe.copy())

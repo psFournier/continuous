@@ -1,7 +1,7 @@
 import numpy as np
 RENDER_TRAIN = False
 INVERTED_GRADIENTS = True
-from networks import CriticDQNLM
+from networks import CriticDQNLM, CriticDQNI
 from agents.agent import Agent
 from agents import DQN
 
@@ -10,18 +10,25 @@ from buffers import ReplayBuffer, PrioritizedReplayBuffer
 class DQNLM(DQN):
 
     def __init__(self, args, env, env_test, logger):
-        self.margin = float(args['--margin'])
+        self.margin = args['--margin']
         self.imitweight1 = float(args['--imitweight1'])
         self.imitweight2 = float(args['--imitweight2'])
         super(DQNLM, self).__init__(args, env, env_test, logger)
 
     def init(self, env):
+        self.names += ['expVal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
-        self.critic = CriticDQNLM(s_dim=env.state_dim,
-                                  num_a=env.action_dim,
-                                  margin=self.margin,
-                                  weight1=self.imitweight1,
-                                  weight2=self.imitweight2)
+        if self.margin is None:
+            self.critic = CriticDQNI(s_dim=env.state_dim,
+                                     num_a=env.action_dim,
+                                     weight1=self.imitweight1,
+                                     weight2=self.imitweight2)
+        else:
+            self.critic = CriticDQNLM(s_dim=env.state_dim,
+                                      num_a=env.action_dim,
+                                      margin=float(self.margin),
+                                      weight1=self.imitweight1,
+                                      weight2=self.imitweight2)
         self.metrics['dqnloss'] = 0
         self.metrics['imitloss1'] = 0
         self.metrics['imitloss2'] = 0
@@ -46,3 +53,14 @@ class DQNLM(DQN):
             self.metrics['imitloss2'] += loss[3]
             self.metrics['qval'] += np.mean(loss[4])
             self.critic.target_train()
+
+    def processEp(self):
+        E = 0
+        for expe in reversed(self.trajectory):
+            if self.trajectory[-1]['terminal']:
+                E = E * self.critic.gamma + expe['reward']
+                expe['expVal'] = E
+            else:
+                expe['expVal'] = -self.ep_steps
+            self.buffer.append(expe.copy())
+

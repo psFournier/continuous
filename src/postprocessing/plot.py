@@ -5,11 +5,11 @@ import os
 import numpy as np
 
 DIR = '../../log/cluster/last'
-ENV = 'dqn_Labyrinth-v0'
+ENV = 'dqng_LabyrinthG-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
-if 1:
+if 0:
     for run in runs:
 
         config = pd.read_json(os.path.join(run, 'config.txt'), lines=True)
@@ -30,10 +30,13 @@ else:
 # ys = ['agent', 'passenger', 'taxi']
 # ys = ['light', 'sound', 'toy1', 'toy2']
 print(df.columns)
-y = ['R_0', 'S_0', 'done_0', 'qval', 'dqnloss']
+y = ['S_{}'.format(i) for i in range(4)]
 # y = ['imitloss']
 x = ['step']
-params = ['--agent', '--posInit', '--max_steps', '--margin', '--shaping', '--imitweight1', '--imitweight2']
+params = ['--agent', '--batchsize', '--beta', '--env',
+       '--ep_steps', '--eval_freq', '--gamma', '--her', '--imitweight1',
+       '--imitweight2', '--margin', '--max_steps', '--per',
+       '--posInit', '--shaping', '--theta']
 
 if 0:
     df1 = df
@@ -55,9 +58,9 @@ if 1:
 
     df2 = df
     # df2 = df2[(df2['--self_imit'] == 0)]
-    df2 = df2[(df2['--posInit'] <= 2)]
+    df2 = df2[(df2['--posInit'] == 1)]
     # df2 = df2[(df2['--shaping'] == 0)]
-    # df2 = df2[(df2['--max_steps'] == 50000)]
+    df2 = df2[(df2['--max_steps'] == 200000)]
     for param in params:
         print(df2[param].unique())
 
@@ -67,10 +70,10 @@ if 1:
         return x.quantile(0.9)
     op_dict = {a:[np.median, np.mean, quant_inf, quant_sup] for a in y}
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
-    a, b = 1,1
+    a, b = 2,2
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
     for j, (name, g) in enumerate(df2.groupby(params)):
-        for i, val in enumerate(['qval']):
+        for i, val in enumerate(y):
             # ax[i % a, i // a].scatter(g['FAR_{}'.format(j)], g[val], label=val, s=10)
             ax2[i % a, i // a].plot(g['step'], g[val]['median'], label=name)
             ax2[i % a, i // a].fill_between(g['step'],

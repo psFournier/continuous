@@ -29,7 +29,7 @@ class DQNG(DQN):
         self.trajectory.append(self.exp.copy())
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
-            s0, a0, s1, r, t, e, g = [np.array(experiences[name]) for name in self.names]
+            s0, a0, s1, r, t, g = [np.array(experiences[name]) for name in self.names]
             a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, g])
             a1 = np.argmax(a1Probs, axis=1)
             q = self.critic.qvalTModel.predict_on_batch([s1, a1, g])
@@ -42,6 +42,25 @@ class DQNG(DQN):
 
     def make_input(self, state):
         return [np.expand_dims(i, axis=0) for i in [state, self.env.goal]]
+
+    def processEp(self):
+        super(DQNG, self).processEp()
+        if self.her:
+            self.hindsight()
+
+    def hindsight(self):
+        reached = {goal: False for goal in self.env.goals if goal != self.env.goal}
+        for goal, _ in reached.items():
+            for expe in reversed(self.trajectory):
+                r, term = self.env.eval_exp(expe, goal)
+                if term:
+                    reached[goal] = True
+                    print('done goal {} unwillingly'.format(goal))
+                if reached[goal]:
+                    expe['goal'] = goal
+                    expe['reward'] = r
+                    expe['terminal'] = term
+                    self.buffer.append(expe.copy())
 
     # def get_tutor_exp(self, goal):
     #     for i in range(10):

@@ -12,10 +12,10 @@ class Labyrinth(CPBased):
         self.init()
         self.destination = np.array([0, 4])
 
-    def is_term(self, exp):
+    def is_term(self, exp, goal):
         return (exp['state1'] == self.destination).all()
 
-    def eval_exp(self, exp):
+    def eval_exp(self, exp, goal=None):
         r, term = super(Labyrinth, self).eval_exp(exp)
         if self.shaping:
             dist0 = -np.linalg.norm(exp['state0'] - self.destination)
