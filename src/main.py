@@ -28,7 +28,7 @@ Options:
   --eval_freq VAL          Logging frequency [default: 2000]
   --per YES_NO             Prioritized Experience Replay [default: 0]
   --her YES_NO             Hindsight Experience Replay [default: 0]
-  --margin VAL             Large margin loss margin
+  --margin VAL             Large margin loss margin [default: 1]
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]
   --imitweight1 VAL        Weight for imitaiton loss with imitaiton [default: 1]

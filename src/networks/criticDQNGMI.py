@@ -6,15 +6,21 @@ from keras.layers.merge import concatenate, multiply, add, subtract, maximum
 from .criticDQNGM import CriticDQNGM
 
 class CriticDQNGMI(CriticDQNGM):
-    def __init__(self, s_dim, g_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001):
+    def __init__(self, s_dim, g_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001, weight1=1, weight2=1, margin=0.3):
+        self.weights = [1, weight1, weight2]
+        self.margin = margin
         super(CriticDQNGMI, self).__init__(s_dim, g_dim, num_a, gamma, tau, learning_rate)
 
     def marginFn(self, inputs):
         a = inputs[0]
         v = inputs[1]
         q = inputs[2]
-        margin = 0.5 * 0.14 * (1 - K.one_hot(a, self.num_actions))
-        return K.max(v + margin) - q
+        margin = self.margin * (1 - K.one_hot(a, self.num_actions))
+        vmax = K.max(v)
+        vmin = K.min(v)
+        vnorm = (v - vmin) / (vmax - vmin)
+        qnorm = (q - vmin) / (vmax - vmin)
+        return K.max(vnorm + margin) - qnorm
 
     def initModels(self):
         S = Input(shape=self.s_dim)
@@ -32,7 +38,7 @@ class CriticDQNGMI(CriticDQNGM):
         imitLossPolicy = multiply([advantage, margin])
         self.qvalModel = Model([S, A, G, M, E], [qval, imitLossPolicy, advantage])
         self.qvalModel.compile(loss=['mse', 'mae', 'mse'],
-                               loss_weights=[1, 1, 1],
+                               loss_weights=self.weights,
                                optimizer=self.optimizer)
         self.qvalModel.metrics_tensors += [qval]
 

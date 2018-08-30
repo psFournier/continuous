@@ -8,10 +8,18 @@ from buffers import ReplayBuffer, PrioritizedReplayBuffer
 
 class DQNGMI(DQN):
     def __init__(self, args, env, env_test, logger):
+        self.margin = args['--margin']
+        self.imitweight1 = float(args['--imitweight1'])
+        self.imitweight2 = float(args['--imitweight2'])
         super(DQNGMI, self).__init__(args, env, env_test, logger)
 
     def init(self, env):
-        self.critic = CriticDQNGMI(s_dim=env.state_dim, g_dim=env.goal_dim, num_a=env.action_dim)
+        self.critic = CriticDQNGMI(s_dim=env.state_dim,
+                                   g_dim=env.goal_dim,
+                                   num_a=env.action_dim,
+                                   margin=float(self.margin),
+                                   weight1=self.imitweight1,
+                                   weight2=self.imitweight2)
         self.names += ['expVal', 'goalVals', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
         self.metrics['dqnloss'] = 0
