@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQN, DQNG, TD3, DDPG, DQNGM, DQNI, DQNLM, DQNGLM
+from agents import DQN, DQNG, TD3, DDPG, DQNGM, DQNI, DQNLM, DQNGLM, DQNGMI
 from utils.logger import Logger
 import datetime
 from utils.util import load
@@ -20,9 +20,8 @@ Usage:
 Options:
   --seed SEED              Random seed
   --theta THETA            CP importance for goal selection [default: 0]
-  --beta BETA              CP importance for training samples weights [default: 0]
   --shaping YES_NO         Reward shaping [default: 0]
-  --posInit YES_NO         Positive initialisation [default: 0]
+  --opt_init YES_NO        Positive initialisation [default: 0]
   --max_steps VAL          Maximum total steps [default: 200000]
   --ep_steps VAL           Maximum episode steps [default: 200]
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
@@ -80,6 +79,8 @@ if __name__ == '__main__':
         agent = DQNGLM(args, env, env_test, logger)
     elif args['--agent'] == 'dqngm':
         agent = DQNGM(args, env, env_test, logger)
+    elif args['--agent'] == 'dqngmi':
+        agent = DQNGMI(args, env, env_test, logger)
     else:
         raise RuntimeError
     # elif args['agent'] == 'qlearning':

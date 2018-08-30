@@ -5,3 +5,4 @@ from .criticDQNI import CriticDQNI
 from .criticDQNLM import CriticDQNLM
 from .criticDQNGLM import CriticDQNGLM
 from .criticDQNGI import CriticDQNGI
+from .criticDQNGMI import CriticDQNGMI

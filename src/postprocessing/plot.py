@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-DIR = '../../log/cluster/last'
-ENV = 'dqng_LabyrinthG-v0'
+DIR = '../../log/cluster/3008'
+ENV = 'dqnglm_Taxi1G-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
@@ -30,17 +30,17 @@ else:
 # ys = ['agent', 'passenger', 'taxi']
 # ys = ['light', 'sound', 'toy1', 'toy2']
 print(df.columns)
-y = ['S_{}'.format(i) for i in range(4)]
+y = ['R_{}'.format(i) for i in range(5)]
 # y = ['imitloss']
 x = ['step']
 params = ['--agent', '--batchsize', '--beta', '--env',
        '--ep_steps', '--eval_freq', '--gamma', '--her', '--imitweight1',
-       '--imitweight2', '--margin', '--max_steps', '--per',
-       '--posInit', '--shaping', '--theta']
+       '--imitweight2', '--max_steps', '--per',
+       '--opt_init', '--shaping', '--theta']
 
 if 0:
     df1 = df
-    # df1 = df1[(df1['--posInit'] == 0)]
+    # df1 = df1[(df1['--opt_init'] == 0)]
     # df1 = df1[(df1['--shaping'] == 0)]
     for param in params:
         print(df1[param].unique())
@@ -57,28 +57,35 @@ if 0:
 if 1:
 
     df2 = df
-    # df2 = df2[(df2['--self_imit'] == 0)]
-    df2 = df2[(df2['--posInit'] == 1)]
+    # df2 = df2[(df2['--her'] == 0)]
+    # df2 = df2[(df2['--opt_init'] == 1)]
     # df2 = df2[(df2['--shaping'] == 0)]
-    df2 = df2[(df2['--max_steps'] == 200000)]
-    for param in params:
-        print(df2[param].unique())
+    # df2 = df2[(df2['--theta'] == 0)]
 
     def quant_inf(x):
-        return x.quantile(0.1)
+        return x.quantile(0.2)
     def quant_sup(x):
-        return x.quantile(0.9)
+        return x.quantile(0.8)
     op_dict = {a:[np.median, np.mean, quant_inf, quant_sup] for a in y}
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
-    a, b = 2,2
+
+    paramsStudied = []
+    for param in params:
+        l = df2[param].unique()
+        print(param, l)
+        if len(l) > 1:
+            paramsStudied.append(param)
+
+    print(params)
+    a, b = 2,3
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
-    for j, (name, g) in enumerate(df2.groupby(params)):
+    for j, (name, g) in enumerate(df2.groupby(paramsStudied)):
         for i, val in enumerate(y):
             # ax[i % a, i // a].scatter(g['FAR_{}'.format(j)], g[val], label=val, s=10)
-            ax2[i % a, i // a].plot(g['step'], g[val]['median'], label=name)
-            ax2[i % a, i // a].fill_between(g['step'],
-                                            g[val]['quant_inf'],
-                                            g[val]['quant_sup'], alpha=0.25, linewidth=0)
+            ax2[i % a, i // a].plot(g['step'], g[val]['median']+1, label=name)
+            # ax2[i % a, i // a].fill_between(g['step'],
+            #                                 g[val]['quant_inf'],
+            #                                 g[val]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=val)
             ax2[i % a, i // a].legend()
             if val == 'dqnloss':

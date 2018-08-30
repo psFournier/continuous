@@ -13,19 +13,19 @@ class DQNGLM(DQNLM):
         super(DQNGLM, self).__init__(args, env, env_test, logger)
 
     def init(self, env):
-        if self.margin is None:
-            self.critic = CriticDQNGI(s_dim=env.state_dim,
-                                       g_dim=env.goal_dim,
-                                       num_a=env.action_dim,
-                                       weight1=self.imitweight1,
-                                       weight2=self.imitweight2)
-        else:
-            self.critic = CriticDQNGLM(s_dim=env.state_dim,
-                                       g_dim=env.goal_dim,
-                                       num_a=env.action_dim,
-                                       margin=float(self.margin),
-                                       weight1=self.imitweight1,
-                                       weight2=self.imitweight2)
+        # if self.margin is None:
+        #     self.critic = CriticDQNGI(s_dim=env.state_dim,
+        #                                g_dim=env.goal_dim,
+        #                                num_a=env.action_dim,
+        #                                weight1=self.imitweight1,
+        #                                weight2=self.imitweight2)
+        # else:
+        self.critic = CriticDQNGLM(s_dim=env.state_dim,
+                                   g_dim=env.goal_dim,
+                                   num_a=env.action_dim,
+                                   margin=float(self.margin),
+                                   weight1=self.imitweight1,
+                                   weight2=self.imitweight2)
         self.names += ['expVal', 'goal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
         self.metrics['dqnloss'] = 0

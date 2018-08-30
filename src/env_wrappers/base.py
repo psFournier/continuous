@@ -12,7 +12,7 @@ class CPBased(Wrapper):
         self.theta = float(args['--theta'])
         self.gamma = float(args['--gamma'])
         self.shaping = args['--shaping'] != '0'
-        self.posInit = int(args['--posInit'])
+        self.opt_init = int(args['--opt_init'])
         self.goals = []
         self.goal = None
         self.init()
@@ -29,27 +29,25 @@ class CPBased(Wrapper):
     def step(self, action):
         return self.env.step(action)
 
-    def is_term(self, exp, goal):
+    def is_term(self, exp):
         return False
 
-    def eval_exp(self, exp, goal=None):
-        if goal is None:
-            goal = exp['goal']
-        term = self.is_term(exp, goal)
+    def eval_exp(self, exp):
+        term = self.is_term(exp)
         if term:
             r = 1
         else:
             r = 0
 
-        if self.posInit == 1:
+        if self.opt_init == 1:
             r += self.gamma - 1
             if term:
                 r -= self.gamma
 
-        elif self.posInit == 2:
+        elif self.opt_init == 2:
             r += self.gamma - 1
 
-        elif self.posInit == 3:
+        elif self.opt_init == 3:
             r -= 1
 
         return r, term
