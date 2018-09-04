@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-DIR = '../../log/cluster/3008'
-ENV = 'dqnglm_Taxi1G-v0'
+DIR = '../../log/cluster/0409'
+ENV = 'dqngm*_PlayroomGM-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
@@ -30,10 +30,9 @@ else:
 # ys = ['agent', 'passenger', 'taxi']
 # ys = ['light', 'sound', 'toy1', 'toy2']
 print(df.columns)
-y = ['R_{}'.format(i) for i in range(5)]
 # y = ['imitloss']
 x = ['step']
-params = ['--agent', '--batchsize', '--beta', '--env',
+params = ['--agent', '--batchsize', '--env',
        '--ep_steps', '--eval_freq', '--gamma', '--her', '--imitweight1',
        '--imitweight2', '--max_steps', '--per',
        '--opt_init', '--shaping', '--theta']
@@ -57,11 +56,11 @@ if 0:
 if 1:
 
     df2 = df
-    # df2 = df2[(df2['--her'] == 0)]
-    # df2 = df2[(df2['--opt_init'] == 1)]
+    df2 = df2[(df2['--agent'] == 'dqngmi')]
+    # df2 = df2[(df2['--opt_init'] == 0)]
     # df2 = df2[(df2['--shaping'] == 0)]
     # df2 = df2[(df2['--theta'] == 0)]
-
+    y = ['S_'+i for i in ['light', 'sound', 'toy1', 'toy2']]
     def quant_inf(x):
         return x.quantile(0.2)
     def quant_sup(x):
@@ -77,7 +76,7 @@ if 1:
             paramsStudied.append(param)
 
     print(params)
-    a, b = 2,3
+    a, b = 2,2
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
     for j, (name, g) in enumerate(df2.groupby(paramsStudied)):
         for i, val in enumerate(y):

@@ -53,12 +53,7 @@ class DQN(Agent):
     def reset(self):
 
         if self.trajectory:
-            if self.trajectory[-1]['terminal']:
-                print('done')
-                self.env.dones[self.env.goal] += 1
-            R = np.sum([exp['reward'] for exp in self.trajectory])
-            S = len(self.trajectory)
-            self.env.queues[self.env.goal].append({'step': self.env_step, 'R': R, 'S': S})
+            self.env.processEp(self.trajectory)
             self.processEp()
             self.trajectory.clear()
 
@@ -75,8 +70,9 @@ class DQN(Agent):
         return [np.reshape(state, (1, self.critic.s_dim[0]))]
 
     def act(self, state, noise=False):
-
-        if noise and np.random.rand(1) < self.env.explorations[self.env.goal].value(self.env_step):
+        t = self.env_step
+        T = self.env.queues[self.env.goal].T
+        if noise and np.random.rand(1) < self.env.explorations[self.env.goal].value(t, T):
             action = np.random.randint(0, self.env.action_dim)
         else:
             input = self.make_input(state)
