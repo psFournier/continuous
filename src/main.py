@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQN, DQNG, TD3, DDPG, DQNGM, DQNI, DQNLM, DQNGLM, DQNGMI
+from agents import DQN, DQNG, TD3, DDPG, DQNGM
 from utils.logger import Logger
 import datetime
 from utils.util import load

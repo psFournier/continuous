@@ -22,6 +22,7 @@ class CriticDQNGM(CriticDQNG):
         if self.args['--imit'] == '0':
             self.qvalModel = Model([S, A, G, M], qval)
             self.qvalModel.compile(loss='mse', optimizer=self.optimizer)
+            self.qvalModel.metrics_tensors = [qval]
 
         if self.args['--imit'] == '1':
             E = Input(shape=(1,), dtype='float32')

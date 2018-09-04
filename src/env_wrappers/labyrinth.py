@@ -12,17 +12,17 @@ class Labyrinth(CPBased):
         self.init()
         self.destination = np.array([0, 4])
 
-    def is_term(self, exp, goal):
+    def is_term(self, exp):
         return (exp['state1'] == self.destination).all()
 
     def eval_exp(self, exp):
-        r, term = super(Labyrinth, self).eval_exp(exp)
+        exp = super(Labyrinth, self).eval_exp(exp)
         if self.shaping:
             dist0 = -np.linalg.norm(exp['state0'] - self.destination)
             dist1 = -np.linalg.norm(exp['state1'] - self.destination)
             shaping = self.gamma * dist1 - dist0
-            r += shaping
-        return r, term
+            exp['reward'] += shaping
+        return exp
 
     def reset(self):
         self.env.unwrapped.destrow = self.destination[0]

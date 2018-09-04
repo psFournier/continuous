@@ -10,7 +10,7 @@ class DQNGM(DQNG):
     def __init__(self, args, env, env_test, logger):
         super(DQNGM, self).__init__(args, env, env_test, logger)
 
-    def init(self, env, args):
+    def init(self, args ,env):
         self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goalVals', 'goal']
         if args['--imit'] != '0':
             self.names.append('expVal')
@@ -42,7 +42,7 @@ class DQNGM(DQNG):
             q = self.critic.qvalTModel.predict_on_batch([s1, a1, gv, m])
             targets_dqn = self.compute_targets(r, t, q)
 
-            if self.args['--imit'] == 0:
+            if self.args['--imit'] == '0':
                 targets = targets_dqn
                 inputs = [s0, a0, gv, m]
             else:
