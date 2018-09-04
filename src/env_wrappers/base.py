@@ -48,7 +48,9 @@ class CPBased(Wrapper):
         else:
             r = 0
         r = self.transform_r(r, term)
-        return r, term
+        exp['reward'] = r
+        exp['terminal'] = term
+        return exp
 
     def transform_r(self, r, term):
         if self.opt_init == 1:

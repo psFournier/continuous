@@ -6,8 +6,8 @@ from keras.layers.merge import concatenate, multiply, add, subtract, maximum
 from .criticDQNG import CriticDQNG
 
 class CriticDQNGM(CriticDQNG):
-    def __init__(self, s_dim, g_dim, num_a, gamma=0.99, tau=0.001, learning_rate=0.001):
-        super(CriticDQNGM, self).__init__(s_dim, g_dim, num_a, gamma, tau, learning_rate)
+    def __init__(self, args, env):
+        super(CriticDQNGM, self).__init__(args, env)
 
     def initModels(self):
         S = Input(shape=self.s_dim)
@@ -18,9 +18,31 @@ class CriticDQNGM(CriticDQNG):
         actionProbs = Lambda(lambda x: K.softmax(x))(qvals)
         self.actionProbsModel = Model([S, G, M], actionProbs)
         qval = Lambda(self.actionFilterFn, output_shape=(1,))([A, qvals])
-        self.qvalModel = Model([S, A, G, M], qval)
-        self.qvalModel.compile(loss='mse', optimizer=self.optimizer)
-        self.qvalModel.metrics_tensors += [qval]
+
+        if self.args['--imit'] == '0':
+            self.qvalModel = Model([S, A, G, M], qval)
+            self.qvalModel.compile(loss='mse', optimizer=self.optimizer)
+
+        if self.args['--imit'] == '1':
+            E = Input(shape=(1,), dtype='float32')
+            actionProb = Lambda(self.actionFilterFn, output_shape=(1,))([A, actionProbs])
+            val = Lambda(lambda x: K.max(x, axis=1, keepdims=True))(qvals)
+            advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
+            imit = Lambda(lambda x: -K.log(x[0]) * x[1], name='imit')([actionProb, advantage])
+            self.qvalModel = Model([S, A, G, M, E], [qval, imit, advantage])
+            self.qvalModel.compile(loss=['mse', 'mae', 'mse'],
+                                   loss_weights=[1, float(self.args['--w1']), float(self.args['--w2'])],
+                                   optimizer=self.optimizer)
+
+        if self.args['--imit'] == '2':
+            E = Input(shape=(1,), dtype='float32')
+            val = Lambda(lambda x: K.max(x, axis=1, keepdims=True))(qvals)
+            advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
+            imit = Lambda(self.marginFn, output_shape=(1,), name='imit')([A, qvals, qval, advantage])
+            self.qvalModel = Model([S, A, G, M, E], [qval, imit, advantage])
+            self.qvalModel.compile(loss=['mse', 'mae', 'mse'],
+                                   loss_weights=[1, float(self.args['--w1']), float(self.args['--w2'])],
+                                   optimizer=self.optimizer)
 
     def initTargetModels(self):
         S = Input(shape=self.s_dim)

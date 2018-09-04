@@ -94,6 +94,18 @@ register(
 )
 
 register(
+    id='Playroom-v0',
+    entry_point='envs:Playroom',
+    wrapper_entry_point='env_wrappers.playroom:Playroom'
+)
+
+register(
+    id='PlayroomG-v0',
+    entry_point='envs:Playroom',
+    wrapper_entry_point='env_wrappers.playroomG:PlayroomG'
+)
+
+register(
     id='PlayroomGM-v0',
     entry_point='envs:Playroom',
     wrapper_entry_point='env_wrappers.playroomGM:PlayroomGM'

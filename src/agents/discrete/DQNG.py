@@ -1,65 +1,77 @@
 import numpy as np
 RENDER_TRAIN = False
-TARGET_CLIP = True
-INVERTED_GRADIENTS = True
 from networks import CriticDQNG
 from agents import DQN
-from buffers import ReplayBuffer, PrioritizedReplayBuffer
-import random as rnd
-
+from buffers import ReplayBuffer
 
 class DQNG(DQN):
     def __init__(self, args, env, env_test, logger):
         super(DQNG, self).__init__(args, env, env_test, logger)
 
-    def init(self, env):
-        self.critic = CriticDQNG(s_dim=env.state_dim, g_dim=env.goal_dim, num_a=env.action_dim)
-        self.names += ['goal']
+    def init(self, env, args):
+        self.names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal']
+        if args['--imit'] != '0':
+            self.names.append('expVal')
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
-        self.metrics['dqnloss'] = 0
-        self.metrics['qval'] = 0
+        self.critic = CriticDQNG(args, env)
 
     def step(self):
-        self.env_step += 1
-        self.episode_step += 1
-        self.env.steps[self.env.goal] += 1
+
         self.exp['goal'] = self.env.goal
-        self.exp['reward'], self.exp['terminal'] = self.env.eval_exp(self.exp)
+        self.env.steps[self.env.goal] += 1
+
+        self.exp = self.env.eval_exp(self.exp)
         self.trajectory.append(self.exp.copy())
+
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
-            s0, a0, s1, r, t, g = [np.array(experiences[name]) for name in self.names]
+            s1 = experiences['state1']
+            s0 = experiences['state0']
+            r = experiences['reward']
+            t = experiences['terminal']
+            a0 = experiences['action']
+            g = experiences['goal']
+
             a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, g])
             a1 = np.argmax(a1Probs, axis=1)
             q = self.critic.qvalTModel.predict_on_batch([s1, a1, g])
             targets_dqn = self.compute_targets(r, t, q)
-            # weights = np.array([self.env.interests[gi] ** self.beta for gi in g])
-            loss = self.critic.qvalModel.train_on_batch([s0, a0, g], targets_dqn)
-            self.metrics['dqnloss'] += loss[0]
-            self.metrics['qval'] += np.mean(loss[1])
+
+            if self.args['--imit'] == 0:
+                targets = targets_dqn
+                inputs = [s0, a0, g]
+            else:
+                e = experiences['expVal']
+                targets = [targets_dqn, np.zeros((self.batch_size, 1)), np.zeros((self.batch_size, 1))]
+                inputs = [s0, a0, g, e]
+            loss = self.critic.qvalModel.train_on_batch(inputs, targets)
+
+            for i, metric in enumerate(self.critic.qvalModel.metrics_names):
+                self.metrics[metric] += loss[i]
+
             self.critic.target_train()
 
     def make_input(self, state):
         return [np.expand_dims(i, axis=0) for i in [state, self.env.goal]]
 
-    def processEp(self):
-        super(DQNG, self).processEp()
-        if self.her:
-            self.hindsight()
+    # def reset(self):
+    #     super(DQNG, self).reset()
+        # if self.args['--her'] != '0':
+        #     self.hindsight()
 
-    def hindsight(self):
-        reached = {goal: False for goal in self.env.goals if goal != self.env.goal}
-        for goal, _ in reached.items():
-            for expe in reversed(self.trajectory):
-                r, term = self.env.eval_exp(expe, goal)
-                if term:
-                    reached[goal] = True
-                    print('done goal {} unwillingly'.format(goal))
-                if reached[goal]:
-                    expe['goal'] = goal
-                    expe['reward'] = r
-                    expe['terminal'] = term
-                    self.buffer.append(expe.copy())
+    # def hindsight(self):
+    #     reached = {goal: False for goal in self.env.goals if goal != self.env.goal}
+    #     for goal, _ in reached.items():
+    #         for expe in reversed(self.trajectory):
+    #             r, term = self.env.eval_exp(expe, goal)
+    #             if term:
+    #                 reached[goal] = True
+    #                 print('done goal {} unwillingly'.format(goal))
+    #             if reached[goal]:
+    #                 expe['goal'] = goal
+    #                 expe['reward'] = r
+    #                 expe['terminal'] = term
+    #                 self.buffer.append(expe.copy())
 
     # def get_tutor_exp(self, goal):
     #     for i in range(10):

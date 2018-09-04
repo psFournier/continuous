@@ -31,9 +31,10 @@ Options:
   --margin VAL             Large margin loss margin [default: 1]
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]
-  --imitweight1 VAL        Weight for imitaiton loss with imitaiton [default: 1]
-  --imitweight2 VAL        Weight for imitaiton loss with imitaiton [default: 1]
-  
+  --w1 VAL        Weight for imitaiton loss with imitaiton [default: 1]
+  --w2 VAL        Weight for imitaiton loss with imitaiton [default: 1]
+  --imit YES_NO            Self imitation [default: 0]
+
 """
 
 def build_logger(args):

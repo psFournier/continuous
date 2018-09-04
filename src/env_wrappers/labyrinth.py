@@ -15,7 +15,7 @@ class Labyrinth(CPBased):
     def is_term(self, exp, goal):
         return (exp['state1'] == self.destination).all()
 
-    def eval_exp(self, exp, goal=None):
+    def eval_exp(self, exp):
         r, term = super(Labyrinth, self).eval_exp(exp)
         if self.shaping:
             dist0 = -np.linalg.norm(exp['state0'] - self.destination)

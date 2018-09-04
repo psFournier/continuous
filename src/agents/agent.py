@@ -24,7 +24,7 @@ class Agent():
         self.episode_step = 0
         self.stats = {}
         self.exp = {}
-        self.metrics = {'qval': 0, 'dqnloss': 0}
+        self.metrics = {}
 
     def run(self):
         self.exp['state0'] = self.reset()
@@ -35,6 +35,8 @@ class Agent():
                 self.exp['action'] = self.act(self.exp['state0'], noise=True)
                 self.exp['state1'] = self.env.step(self.exp['action'])
                 self.step()
+                self.env_step += 1
+                self.episode_step += 1
                 self.exp['state0'] = self.exp['state1']
 
                 if (self.exp['terminal'] or self.episode_step >= self.ep_steps):

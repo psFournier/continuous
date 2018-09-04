@@ -27,9 +27,7 @@ class ReplayBuffer(object):
         batch_idxs = [np.random.randint(0, self.nb_entries) for _ in range(batch_size)]
         result = {}
         for name, value in self.contents.items():
-            result[name] = value.get_batch(batch_idxs)
-        result['indices'] = batch_idxs
-        result['weights'] = [1] * batch_size
+            result[name] = np.array(value.get_batch(batch_idxs))
         return result
 
     @property
