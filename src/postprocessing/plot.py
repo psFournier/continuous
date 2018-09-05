@@ -37,7 +37,7 @@ params = ['--agent', '--batchsize', '--env',
        '--w2', '--max_steps', '--per',
        '--opt_init', '--shaping', '--theta']
 
-if 1:
+if 0:
     df1 = df
     # df1 = df1[(df1['--opt_init'] == 0)]
     # df1 = df1[(df1['--shaping'] == 0)]
@@ -53,14 +53,14 @@ if 1:
         # ax1[i % a, i // a].legend()
         # ax1[i % a, i // a].set_ylim([0, 0.0001])
 
-if 0:
+if 1:
 
     df2 = df
     # df2 = df2[(df2['--agent'] == 'dqngmi')]
     # df2 = df2[(df2['--opt_init'] == 0)]
     # df2 = df2[(df2['--shaping'] == 0)]
     # df2 = df2[(df2['--theta'] == 0)]
-    y = ['T_'+str(i) for i in range(4)]
+    y = ['S_'+str(i) for i in range(1)]
     def quant_inf(x):
         return x.quantile(0.2)
     def quant_sup(x):
@@ -76,15 +76,15 @@ if 0:
             paramsStudied.append(param)
 
     print(params)
-    a, b = 2,2
+    a, b = 3,2
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
-    for j, (name, g) in enumerate(df2.groupby(paramsStudied)):
-        for i, val in enumerate(y):
+    for i, (name, g) in enumerate(df2.groupby(paramsStudied)):
+        for j, val in enumerate(y):
             # ax[i % a, i // a].scatter(g['FAR_{}'.format(j)], g[val], label=val, s=10)
             ax2[i % a, i // a].plot(g['step'], g[val]['median'], label=name)
-            # ax2[i % a, i // a].fill_between(g['step'],
-            #                                 g[val]['quant_inf'],
-            #                                 g[val]['quant_sup'], alpha=0.25, linewidth=0)
+            ax2[i % a, i // a].fill_between(g['step'],
+                                            g[val]['quant_inf'],
+                                            g[val]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=val)
             ax2[i % a, i // a].legend()
             if val == 'dqnloss':
