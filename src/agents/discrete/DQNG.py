@@ -31,8 +31,9 @@ class DQNG(DQN):
             t = experiences['terminal']
             a0 = experiences['action']
             g = experiences['goal']
+            temp = np.expand_dims([1], axis=0)
 
-            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, g])
+            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, g, temp])
             a1 = np.argmax(a1Probs, axis=1)
             q = self.critic.qvalTModel.predict_on_batch([s1, a1, g])
             targets_dqn = self.compute_targets(r, t, q)
@@ -51,8 +52,11 @@ class DQNG(DQN):
 
             self.critic.target_train()
 
-    def make_input(self, state):
-        return [np.expand_dims(i, axis=0) for i in [state, self.env.goal]]
+    def make_input(self, state, t, T):
+        input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal]]
+        temp = self.env.explorations[self.env.goal].value(t, T)
+        input.append(np.array(temp))
+        return input
 
     # def reset(self):
     #     super(DQNG, self).reset()

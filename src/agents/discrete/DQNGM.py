@@ -36,8 +36,8 @@ class DQNGM(DQNG):
             g = experiences['goal']
             gv = experiences['goalVals']
             m = np.array([self.env.obj2mask(g[k]) for k in range(self.batch_size)])
-
-            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, gv, m])
+            temp = np.expand_dims([1], axis=0)
+            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, gv, m, temp])
             a1 = np.argmax(a1Probs, axis=1)
             q = self.critic.qvalTModel.predict_on_batch([s1, a1, gv, m])
             targets_dqn = self.compute_targets(r, t, q)
@@ -56,5 +56,8 @@ class DQNGM(DQNG):
 
             self.critic.target_train()
 
-    def make_input(self, state):
-        return [np.expand_dims(i, axis=0) for i in [state, self.env.goalVals, self.env.mask]]
+    def make_input(self, state, t, T):
+        input = [np.expand_dims(i, axis=0) for i in [state, self.env.goalVals, self.env.mask]]
+        temp = self.env.explorations[self.env.goal].value(t, T)
+        input.append(np.expand_dims(temp, axis=0))
+        return input

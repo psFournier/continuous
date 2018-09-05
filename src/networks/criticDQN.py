@@ -31,9 +31,10 @@ class CriticDQN(object):
     def initModels(self):
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
+        T = Input(shape=(1,), dtype='float32')
         qvals = self.create_critic_network(S)
-        actionProbs = Lambda(lambda x: K.softmax(x))(qvals)
-        self.actionProbsModel = Model([S], actionProbs)
+        actionProbs = Lambda(lambda x: K.softmax(x[0]/x[1]))([qvals, T])
+        self.actionProbsModel = Model([S, T], actionProbs)
         qval = Lambda(self.actionFilterFn, output_shape=(1,), name='qval')([A, qvals])
 
         if self.args['--imit'] == '0':

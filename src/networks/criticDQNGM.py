@@ -12,11 +12,12 @@ class CriticDQNGM(CriticDQNG):
     def initModels(self):
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
+        T = Input(shape=(1,), dtype='float32')
         G = Input(shape=self.g_dim)
         M = Input(shape=self.g_dim)
         qvals = self.create_critic_network(S, G, M)
-        actionProbs = Lambda(lambda x: K.softmax(x))(qvals)
-        self.actionProbsModel = Model([S, G, M], actionProbs)
+        actionProbs = Lambda(lambda x: K.softmax(x[0] / x[1]))([qvals, T])
+        self.actionProbsModel = Model([S, G, M, T], actionProbs)
         qval = Lambda(self.actionFilterFn, output_shape=(1,))([A, qvals])
 
         if self.args['--imit'] == '0':

@@ -35,8 +35,9 @@ class DQN(Agent):
             r = experiences['reward']
             t = experiences['terminal']
             a0 = experiences['action']
+            temp = np.expand_dims([1], axis=0)
 
-            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1])
+            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, temp])
             a1 = np.argmax(a1Probs, axis=1)
             q = self.critic.qvalTModel.predict_on_batch([s1, a1])
             targets_dqn = self.compute_targets(r, t, q)
@@ -91,17 +92,21 @@ class DQN(Agent):
 
         return state
 
-    def make_input(self, state):
-        return [np.reshape(state, (1, self.critic.s_dim[0]))]
+    def make_input(self, state, t, T):
+        input = [np.reshape(state, (1, self.critic.s_dim[0]))]
+        temp = self.env.explorations[self.env.goal].value(t, T)
+        input.append(np.array(temp))
+        return input
 
     def act(self, state, noise=False):
         t = self.env_step
         T = self.env.queues[self.env.goal].T
-        if noise and np.random.rand(1) < self.env.explorations[self.env.goal].value(t, T):
-            action = np.random.randint(0, self.env.action_dim)
+        input = self.make_input(state, t, T)
+        actionProbs = self.critic.actionProbsModel.predict(input, batch_size=1)
+        if noise:
+            action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
         else:
-            input = self.make_input(state)
-            actionProbs = self.critic.actionProbsModel.predict(input, batch_size=1)
-            # action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
             action = np.argmax(actionProbs[0], axis=0)
         return action
+
+

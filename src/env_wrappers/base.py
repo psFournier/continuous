@@ -22,8 +22,8 @@ class CPBased(Wrapper):
         self.steps = [0 for _ in self.goals]
         self.interests = [0 for _ in self.goals]
         self.dones = [0 for _ in self.goals]
-        self.explorations = [LinearSchedule(schedule_timesteps=int(5000),
-                                            initial_p=1.0,
+        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
+                                            initial_p=10.0,
                                             final_p=.5) for _ in self.goals]
 
     def processEp(self, episode):
