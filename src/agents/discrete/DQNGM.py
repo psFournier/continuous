@@ -56,8 +56,8 @@ class DQNGM(DQNG):
 
             self.critic.target_train()
 
-    def make_input(self, state, t, T):
+    def make_input(self, state, t):
         input = [np.expand_dims(i, axis=0) for i in [state, self.env.goalVals, self.env.mask]]
-        temp = self.env.explorations[self.env.goal].value(t, T)
+        temp = self.env.explor_val(t)
         input.append(np.expand_dims(temp, axis=0))
         return input

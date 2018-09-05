@@ -5,35 +5,68 @@ import math
 from utils.linearSchedule import LinearSchedule
 from .base import CPBased
 
-class PlayroomG(CPBased):
+class PlayroomG(Wrapper):
     def __init__(self, env, args):
-        super(PlayroomG, self).__init__(env, args)
-        self.goals = [obj.name for obj in self.env.objects]
-        self.goalVals = None
-        self.init()
-        self.obj_feat = [[4 + 4 * j] for j in range(len(self.goals))]
+        super(PlayroomG, self).__init__(env)
         self.state_low = self.env.state_low
         self.state_high = self.env.state_high
         self.init_state = self.env.state_init
+        self.opt_init = int(args['--opt_init'])
+        self.gamma = float(args['--gamma'])
+        self.queue = CompetenceQueue()
+
+    def processEp(self, episode):
+        T = int(episode[-1]['terminal'])
+        R = np.sum([exp['reward'] for exp in episode])
+        S = len(episode)
+        self.queue.append({'R': R, 'S': S, 'T': T})
+
+    def explor_val(self, t):
+        return 10 + max(float(t)/10000, 1)*(0.5 - 10)
+
+    def step(self, action):
+        return self.env.step(action)
+
+    def eval_exp(self, exp):
+        term = self.is_term(exp)
+        if term:
+            r = 1
+        else:
+            r = 0
+        r = self.transform_r(r, term)
+        exp['reward'] = r
+        exp['terminal'] = term
+        return exp
+
+    def transform_r(self, r, term):
+        if self.opt_init == 1:
+            r += self.gamma - 1
+            if term:
+                r -= self.gamma
+        elif self.opt_init == 2:
+            r += self.gamma - 1
+        elif self.opt_init == 3:
+            r -= 1
+        return r
 
     def is_term(self, exp):
-        goal_feat = self.obj_feat[exp['goal']]
-        goal_vals = exp['goalVals'][goal_feat]
-        s1_proj = exp['state1'][goal_feat]
-        s0_proj = exp['state0'][goal_feat]
-        return ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any())
+        return ((exp['state1'] == self.goal).all() and (exp['state0'] != self.goal).any())
 
     def reset(self):
-        self.goal = self.get_idx()
-        features = self.obj_feat[self.goal]
-        self.goalVals = np.zeros(shape=self.state_dim)
-        for idx in features:
-            while True:
-                s = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
-                if s != self.init_state[idx]: break
-            self.goalVals[idx] = s
+        self.goal = np.zeros(shape=self.goal_dim)
+        while True:
+            for idx in range(self.goal_dim[0]):
+                self.goal[idx] = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
+            if (self.goal != self.init_state).any(): break
         state = self.env.reset()
         return state
+
+    def get_stats(self):
+        stats = {}
+        stats['R'] = float("{0:.3f}".format(self.queue.R))
+        stats['S'] = float("{0:.3f}".format(self.queue.S))
+        stats['T'] = float("{0:.3f}".format(self.queue.T))
+        return stats
 
     @property
     def state_dim(self):

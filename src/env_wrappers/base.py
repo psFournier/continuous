@@ -26,6 +26,10 @@ class CPBased(Wrapper):
                                             initial_p=10.0,
                                             final_p=.5) for _ in self.goals]
 
+    def explor_val(self, t):
+        T = self.queues[self.goal].T
+        return self.explorations[self.goal].value(t, T)
+
     def processEp(self, episode):
         T = int(episode[-1]['terminal'])
         if T:

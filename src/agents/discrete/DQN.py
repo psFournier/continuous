@@ -92,16 +92,14 @@ class DQN(Agent):
 
         return state
 
-    def make_input(self, state, t, T):
+    def make_input(self, state, t):
         input = [np.reshape(state, (1, self.critic.s_dim[0]))]
-        temp = self.env.explorations[self.env.goal].value(t, T)
-        input.append(np.array(temp))
+        temp = self.env.explor_val(t)
+        input.append(np.expand_dims(temp, axis=0))
         return input
 
     def act(self, state, noise=False):
-        t = self.env_step
-        T = self.env.queues[self.env.goal].T
-        input = self.make_input(state, t, T)
+        input = self.make_input(state, self.env_step)
         actionProbs = self.critic.actionProbsModel.predict(input, batch_size=1)
         if noise:
             action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
