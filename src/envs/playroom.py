@@ -180,17 +180,17 @@ class Playroom(Env):
             if h >= 0:
                 self.objects[h].x = self.x
 
-        # elif a==Actions.TAKE:
-        #     h = self.get_held()
-        #     o = self.get_underagent()
-        #     if o >= 0 and h == -1:
-        #         self.objects[o].act(a)
-        #
-        # elif a==Actions.PUT:
-        #     h = self.get_held()
-        #     o = self.get_underagent()
-        #     if o == -1 and h >= 0:
-        #         self.objects[h].act(a)
+        elif a==Actions.TAKE:
+            h = self.get_held()
+            o = self.get_underagent()
+            if o >= 0 and h == -1:
+                self.objects[o].act(a)
+
+        elif a==Actions.PUT:
+            h = self.get_held()
+            o = self.get_underagent()
+            if o == -1 and h >= 0:
+                self.objects[h].act(a)
 
         elif a==Actions.TOUCH:
             o = self.get_underagent()
@@ -271,10 +271,8 @@ class Playroom(Env):
 if __name__ == '__main__':
     env = Playroom()
     env.reset()
-    for i in range(100000):
-        while True:
-            a = np.random.randint(11)
-            if a != 4 and a != 5: break
+    for a in [0, 0, 2, 2, 4, 2, 2, 5, 3, 1]:
+        # a = np.random.randint(11)
         env.step(a)
 
     # def render(self, mode='human'):
