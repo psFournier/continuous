@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 DIR = '../../log/cluster/0409'
-ENV = 'dqngm*_PlayroomGM-v0'
+ENV = 'dqn*_Labyrinth*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
@@ -33,34 +33,34 @@ print(df.columns)
 # y = ['imitloss']
 x = ['step']
 params = ['--agent', '--batchsize', '--env',
-       '--ep_steps', '--eval_freq', '--gamma', '--her', '--imitweight1',
-       '--imitweight2', '--max_steps', '--per',
+       '--ep_steps', '--eval_freq', '--gamma', '--her', '--w1',
+       '--w2', '--max_steps', '--per',
        '--opt_init', '--shaping', '--theta']
 
-if 0:
+if 1:
     df1 = df
     # df1 = df1[(df1['--opt_init'] == 0)]
     # df1 = df1[(df1['--shaping'] == 0)]
     for param in params:
         print(df1[param].unique())
-    a, b = 3, 4
+    a, b = 3,2
     fig1, ax1 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
 
     for i, (name, g) in enumerate(df1.groupby(params)):
         for num_run, g2 in g.groupby('num_run'):
-            ax1[i % a, i // a].plot(g2['step'], g2['S_0'])
+            ax1[i % a, i // a].plot(g2['step'], g2['T_0'])
         ax1[i % a, i // a].set_title(label=name)
         # ax1[i % a, i // a].legend()
         # ax1[i % a, i // a].set_ylim([0, 0.0001])
 
-if 1:
+if 0:
 
     df2 = df
-    df2 = df2[(df2['--agent'] == 'dqngmi')]
+    # df2 = df2[(df2['--agent'] == 'dqngmi')]
     # df2 = df2[(df2['--opt_init'] == 0)]
     # df2 = df2[(df2['--shaping'] == 0)]
     # df2 = df2[(df2['--theta'] == 0)]
-    y = ['S_'+i for i in ['light', 'sound', 'toy1', 'toy2']]
+    y = ['T_'+str(i) for i in range(4)]
     def quant_inf(x):
         return x.quantile(0.2)
     def quant_sup(x):
@@ -81,7 +81,7 @@ if 1:
     for j, (name, g) in enumerate(df2.groupby(paramsStudied)):
         for i, val in enumerate(y):
             # ax[i % a, i // a].scatter(g['FAR_{}'.format(j)], g[val], label=val, s=10)
-            ax2[i % a, i // a].plot(g['step'], g[val]['median']+1, label=name)
+            ax2[i % a, i // a].plot(g['step'], g[val]['median'], label=name)
             # ax2[i % a, i // a].fill_between(g['step'],
             #                                 g[val]['quant_inf'],
             #                                 g[val]['quant_sup'], alpha=0.25, linewidth=0)

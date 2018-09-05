@@ -65,20 +65,20 @@ class CPBased(Wrapper):
 
     def get_idx(self):
         CPs = [abs(q.CP) for q in self.queues]
-        maxCP = max(CPs)
-        minCP = min(CPs)
-
         Rs = [q.R for q in self.queues]
         maxR = max(Rs)
         minR = min(Rs)
+        self.interests = [CP * (1 - (R - minR) / (maxR - minR + 0.001)) for CP, R in zip(CPs, Rs)]
 
-        try:
-            if maxCP > 1:
-                self.interests = [(cp - minCP) / (maxCP - minCP) for cp in CPs]
-            else:
-                self.interests = [1 - (r - minR) / (maxR - minR) for r in Rs]
-        except:
-            self.interests = [1 for _ in self.queues]
+        # maxCP = max(CPs)
+        # minCP = min(CPs)
+        # try:
+        #     if maxCP > 1:
+        #         self.interests = [(cp - minCP) / (maxCP - minCP) for cp in CPs]
+        #     else:
+        #         self.interests = [1 - (r - minR) / (maxR - minR) for r in Rs]
+        # except:
+        #     self.interests = [1 for _ in self.queues]
 
         weighted_interests = [math.pow(I, self.theta) + 0.1 for I in self.interests]
         sum = np.sum(weighted_interests)
