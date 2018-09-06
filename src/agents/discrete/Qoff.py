@@ -12,21 +12,18 @@ class Qoff(Agent):
         self.args = args
         self.gamma = 0.99
         self.lr = 0.1
+        self.names = ['state0', 'action', 'state1', 'reward', 'terminal']
         self.init(args, env)
 
     def init(self, args ,env):
         self.critic = np.zeros(shape=(5, 5, 4))
         self.buffer = ReplayBuffer(limit=int(1e6),
-                                   names=['state0', 'action', 'state1', 'reward', 'terminal'])
+                                   names=self.names)
 
     def train(self):
         if self.buffer.nb_entries > self.batch_size:
-            experiences = self.buffer.sample(self.batch_size)
-            s1 = experiences['state1']
-            s0 = experiences['state0']
-            r = experiences['reward']
-            t = experiences['terminal']
-            a0 = experiences['action']
+            exp = self.buffer.sample(self.batch_size)
+            s0, a0, s1, r, t, g, m = [exp[name] for name in self.names]
             for k in range(self.batch_size):
                 target = r[k] + (1 - t[k]) * self.gamma * np.max(self.critic[tuple(s1[k])])
                 self.critic[tuple(s0[k])][a0[k]] = self.lr * target + \

@@ -19,14 +19,8 @@ class DQNGM(DQNG):
 
     def train(self):
         if self.buffer.nb_entries > self.batch_size:
-            experiences = self.buffer.sample(self.batch_size)
-            s1 = experiences['state1']
-            s0 = experiences['state0']
-            r = experiences['reward']
-            t = experiences['terminal']
-            a0 = experiences['action']
-            g = experiences['goal']
-            m = experiences['mask']
+            exp = self.buffer.sample(self.batch_size)
+            s0, a0, s1, r, t, g, m = [exp[name] for name in self.names]
             temp = np.expand_dims([1], axis=0)
             a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, g, m, temp])
             a1 = np.argmax(a1Probs, axis=1)
@@ -37,7 +31,7 @@ class DQNGM(DQNG):
                 targets = targets_dqn
                 inputs = [s0, a0, g, m]
             else:
-                e = experiences['expVal']
+                e = exp['expVal']
                 targets = [targets_dqn, np.zeros((self.batch_size, 1)), np.zeros((self.batch_size, 1))]
                 inputs = [s0, a0, g, m, e]
             loss = self.critic.qvalModel.train_on_batch(inputs, targets)
