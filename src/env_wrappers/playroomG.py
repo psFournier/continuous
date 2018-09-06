@@ -66,7 +66,8 @@ class PlayroomG(Wrapper):
         while True:
             for idx in range(self.goal_dim[0]):
                 self.goal[idx] = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
-            if (self.goal != self.init_state).any(): break
+            if (self.goal != self.init_state).any():
+                break
         state = self.env.reset()
         return state
 

@@ -35,14 +35,14 @@ class PlayroomGM(CPBased):
     def reset(self):
         self.goal = self.get_idx()
         features = self.obj_feat[self.goal]
-        self.goalVals = np.zeros(shape=self.state_dim)
+        self.goalVals = np.array(self.init_state)
         self.mask = np.zeros(shape=self.state_dim)
-        for idx in features:
-            self.mask[idx] = 1
-            while True:
-                s = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
-                if s != self.init_state[idx]: break
-            self.goalVals[idx] = s
+        while True:
+            for idx in features:
+                self.mask[idx] = 1
+                self.goalVals[idx] = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
+            if (self.goalVals != self.init_state).any():
+                break
         state = self.env.reset()
         return state
 
