@@ -22,13 +22,14 @@ class CPBased(Wrapper):
         self.steps = [0 for _ in self.goals]
         self.interests = [0 for _ in self.goals]
         self.dones = [0 for _ in self.goals]
-        self.explorations = [LinearSchedule(schedule_timesteps=int(10000),
-                                            initial_p=10.0,
-                                            final_p=.5) for _ in self.goals]
 
-    def explor_val(self, t):
-        T = self.queues[self.goal].T
-        return self.explorations[self.goal].value(t, T)
+    # def explor_temp(self, t):
+    #     T = self.queues[self.goal].T
+    #     return self.explorations[self.goal].value(t, T)
+
+    def explor_eps(self):
+        step = self.steps[self.goal]
+        return 1 + min(float(step) / 1e4, 1) * (0.1 - 1)
 
     def processEp(self, episode):
         T = int(episode[-1]['terminal'])
@@ -39,8 +40,12 @@ class CPBased(Wrapper):
         S = len(episode)
         self.queues[self.goal].append({'R': R, 'S': S, 'T': T})
 
-    def step(self, action):
-        return self.env.step(action)
+    def step(self, exp):
+        self.steps[self.goal] += 1
+        exp['state1'] = self.env.step(exp['action'])
+        exp['goal'] = self.goal
+        exp = self.eval_exp(exp)
+        return exp
 
     def is_term(self, exp):
         return False

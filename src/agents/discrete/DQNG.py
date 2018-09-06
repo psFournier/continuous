@@ -15,13 +15,7 @@ class DQNG(DQN):
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names)
         self.critic = CriticDQNG(args, env)
 
-    def step(self):
-
-        self.exp['goal'] = self.env.goal
-
-        self.exp = self.env.eval_exp(self.exp)
-        self.trajectory.append(self.exp.copy())
-
+    def train(self):
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
             s1 = experiences['state1']
@@ -53,8 +47,8 @@ class DQNG(DQN):
 
     def make_input(self, state, t):
         input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal]]
-        temp = self.env.explor_val(t)
-        input.append(np.expand_dims(temp, axis=0))
+        # temp = self.env.explor_temp(t)
+        input.append(np.expand_dims([0.5], axis=0))
         return input
 
     # def reset(self):

@@ -25,6 +25,7 @@ class Agent():
         self.stats = {}
         self.exp = {}
         self.metrics = {}
+        self.trajectory = []
 
     def run(self):
         self.exp['state0'] = self.reset()
@@ -32,9 +33,10 @@ class Agent():
             while self.env_step < self.max_steps:
 
                 if RENDER_TRAIN: self.env.render(mode='human')
-                self.exp['action'] = self.act(self.exp['state0'], noise=True)
-                self.exp['state1'] = self.env.step(self.exp['action'])
-                self.step()
+                self.exp['action'] = self.act(self.exp['state0'])
+                self.exp = self.env.step(self.exp)
+                self.trajectory.append(self.exp.copy())
+                self.train()
                 self.env_step += 1
                 self.episode_step += 1
                 self.exp['state0'] = self.exp['state1']
@@ -55,10 +57,10 @@ class Agent():
     def reset(self):
         return self.env.reset()
 
-    def step(self):
+    def train(self):
         pass
 
-    def act(self, state, noise=True):
+    def act(self, state):
         pass
 
     def log(self):

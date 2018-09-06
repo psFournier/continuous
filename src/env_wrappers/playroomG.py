@@ -14,6 +14,7 @@ class PlayroomG(Wrapper):
         self.opt_init = int(args['--opt_init'])
         self.gamma = float(args['--gamma'])
         self.queue = CompetenceQueue()
+        self.steps = [0]
 
     def processEp(self, episode):
         T = int(episode[-1]['terminal'])
@@ -21,11 +22,19 @@ class PlayroomG(Wrapper):
         S = len(episode)
         self.queue.append({'R': R, 'S': S, 'T': T})
 
-    def explor_val(self, t):
-        return 10 + max(float(t)/10000, 1)*(0.5 - 10)
+    # def explor_temp(self, t):
+    #     return 10 + max(float(t)/10000, 1)*(0.5 - 10)
 
-    def step(self, action):
-        return self.env.step(action)
+    def explor_eps(self):
+        step = self.steps[0]
+        return 1 + min(float(step) / 5e4, 1) * (0.1 - 1)
+
+    def step(self, exp):
+        self.steps[0] += 1
+        exp['state1'] = self.env.step(exp['action'])
+        exp['goal'] = self.goal
+        exp = self.eval_exp(exp)
+        return exp
 
     def eval_exp(self, exp):
         term = self.is_term(exp)

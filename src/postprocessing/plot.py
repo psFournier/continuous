@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-DIR = '../../log/cluster/0409'
-ENV = 'dqn*_Labyrinth*-v0'
+DIR = '../../log/cluster/0609'
+ENV = 'dqn*_*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
@@ -60,7 +60,7 @@ if 1:
     # df2 = df2[(df2['--opt_init'] == 0)]
     # df2 = df2[(df2['--shaping'] == 0)]
     # df2 = df2[(df2['--theta'] == 0)]
-    y = ['S_'+str(i) for i in range(1)]
+    y = ['step_'+i for i in ['light', 'sound', 'toy1', 'toy2']]
     def quant_inf(x):
         return x.quantile(0.2)
     def quant_sup(x):
@@ -78,8 +78,8 @@ if 1:
     print(params)
     a, b = 3,2
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
-    for i, (name, g) in enumerate(df2.groupby(paramsStudied)):
-        for j, val in enumerate(y):
+    for j, (name, g) in enumerate(df2.groupby(paramsStudied)):
+        for i, val in enumerate(y):
             # ax[i % a, i // a].scatter(g['FAR_{}'.format(j)], g[val], label=val, s=10)
             ax2[i % a, i // a].plot(g['step'], g[val]['median'], label=name)
             ax2[i % a, i // a].fill_between(g['step'],

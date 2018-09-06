@@ -10,7 +10,6 @@ class DQN(Agent):
     def __init__(self, args, env, env_test, logger):
         super(DQN, self).__init__(args, env, env_test, logger)
         self.args = args
-        self.trajectory = []
         self.init(args, env)
         for metric in self.critic.qvalModel.metrics_names:
             self.metrics[metric] = 0
@@ -23,11 +22,7 @@ class DQN(Agent):
                                    names=self.names)
         self.critic = CriticDQN(args, env)
 
-    def step(self):
-
-        self.exp = self.env.eval_exp(self.exp)
-        self.trajectory.append(self.exp.copy())
-
+    def train(self):
         if self.buffer.nb_entries > self.batch_size:
             experiences = self.buffer.sample(self.batch_size)
             s1 = experiences['state1']
@@ -94,17 +89,20 @@ class DQN(Agent):
 
     def make_input(self, state, t):
         input = [np.reshape(state, (1, self.critic.s_dim[0]))]
-        temp = self.env.explor_val(t)
-        input.append(np.expand_dims(temp, axis=0))
+        # temp = self.env.explor_temp(t)
+        input.append(np.expand_dims([0.5], axis=0))
         return input
 
-    def act(self, state, noise=False):
+    def act(self, state):
         input = self.make_input(state, self.env_step)
         actionProbs = self.critic.actionProbsModel.predict(input, batch_size=1)
-        if noise:
+        if self.args['--explo'] == '1':
             action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
         else:
-            action = np.argmax(actionProbs[0], axis=0)
+            if np.random.random() < self.env.explor_eps():
+                action = np.random.choice(range(self.env.action_dim))
+            else:
+                action = np.argmax(actionProbs[0], axis=0)
         return action
 
 

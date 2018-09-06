@@ -18,9 +18,10 @@ class LinearSchedule(object):
         self.final_p = final_p
         self.initial_p = initial_p
 
-    def value(self, t, T):
+    def value(self, t):
         """See Schedule.value"""
-        return self.initial_p - T * (self.final_p - self.initial_p)
+        return self.initial_p + min(float(t) / self.schedule_timesteps, 1) * (self.final_p - self.initial_p)
+        # return self.initial_p - T * (self.final_p - self.initial_p)
         # if T == 0:
         #     return 10
         # elif t < self.schedule_timesteps:
