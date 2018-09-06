@@ -5,11 +5,11 @@ import math
 from utils.linearSchedule import LinearSchedule
 from .base import CPBased
 
-class PlayroomGM(CPBased):
+class PlayroomGO(CPBased):
     def __init__(self, env, args):
-        super(PlayroomGM, self).__init__(env, args)
+        super(PlayroomGO, self).__init__(env, args)
         self.goals = ['agent'] + [obj.name for obj in self.env.objects]
-        self.goalVals = None
+        self.object = None
         self.init()
         self.obj_feat = [[0, 1]] + [[4*j + i + 2 for i in range(4)] for j in range(len(self.env.objects))]
         self.state_low = self.env.state_low
@@ -17,33 +17,49 @@ class PlayroomGM(CPBased):
         self.init_state = self.env.state_init
 
     def step(self, exp):
-        self.steps[self.goal] += 1
+        self.steps[self.object] += 1
         exp['goal'] = self.goal
-        exp['goalVals'] = self.goalVals
+        exp['mask'] = self.obj2mask(self.object)
         exp['state1'] = self.env.step(exp['action'])
         exp = self.eval_exp(exp)
         return exp
 
+    def explor_eps(self):
+        step = self.steps[self.object]
+        return 1 + min(float(step) / 1e4, 1) * (0.1 - 1)
+
+    def processEp(self, episode):
+        T = int(episode[-1]['terminal'])
+        if T:
+            print('done')
+            self.dones[self.object] += 1
+        R = np.sum([exp['reward'] for exp in episode])
+        S = len(episode)
+        self.queues[self.object].append({'R': R, 'S': S, 'T': T})
+
     def is_term(self, exp):
-        goal_feat = self.obj_feat[exp['goal']]
-        goal_vals = exp['goalVals'][goal_feat]
-        s1_proj = exp['state1'][goal_feat]
-        s0_proj = exp['state0'][goal_feat]
-        return ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any())
+        indices = np.where(exp['mask'])
+        goal = exp['goal'][indices]
+        s1_proj = exp['state1'][indices]
+        s0_proj = exp['state0'][indices]
+        return ((s1_proj == goal).all() and (s0_proj != goal).any())
 
     def reset(self):
-        self.goal = self.get_idx()
-        features = self.obj_feat[self.goal]
-        self.goalVals = np.array(self.init_state)
-        self.mask = np.zeros(shape=self.state_dim)
+        self.object = self.get_idx()
+        features = self.obj_feat[self.object]
+        self.goal = np.array(self.init_state)
         while True:
             for idx in features:
-                self.mask[idx] = 1
-                self.goalVals[idx] = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
-            if (self.goalVals != self.init_state).any():
+                self.goal[idx] = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
+            if (self.goal != self.init_state).any():
                 break
         state = self.env.reset()
         return state
+
+    def obj2mask(self, obj):
+        res = np.zeros(shape=self.state_dim)
+        res[self.obj_feat[obj]] = 1
+        return res
 
     @property
     def state_dim(self):

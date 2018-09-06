@@ -112,6 +112,12 @@ register(
 )
 
 register(
+    id='PlayroomGO-v0',
+    entry_point='envs:Playroom',
+    wrapper_entry_point='env_wrappers.playroomGO:PlayroomGO'
+)
+
+register(
     id='Labyrinth-v0',
     entry_point='envs:Labyrinth',
     wrapper_entry_point='env_wrappers.labyrinth:Labyrinth'
