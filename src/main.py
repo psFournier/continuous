@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQN, DQNG, TD3, DDPG, DQNGM
+from agents import DQN, DQNG, TD3, DDPG, DQNGM, Qoff
 from utils.logger import Logger
 import datetime
 from utils.util import load
@@ -69,20 +69,14 @@ if __name__ == '__main__':
     #     agent = DDPG(args, env, env_test, logger)
     # elif args['agent'] == 'td3':
     #     agent = TD3(args, env, env_test, logger)
-    if args['--agent'] == 'dqn':
+    if args['--agent'] == 'qoff':
+        agent = Qoff(args, env, env_test, logger)
+    elif args['--agent'] == 'dqn':
         agent = DQN(args, env, env_test, logger)
-    elif args['--agent'] == 'dqni':
-        agent = DQNI(args, env, env_test, logger)
-    elif args['--agent'] == 'dqnlm':
-        agent = DQNLM(args, env, env_test, logger)
     elif args['--agent'] == 'dqng':
         agent = DQNG(args, env, env_test, logger)
-    elif args['--agent'] == 'dqnglm':
-        agent = DQNGLM(args, env, env_test, logger)
     elif args['--agent'] == 'dqngm':
         agent = DQNGM(args, env, env_test, logger)
-    elif args['--agent'] == 'dqngmi':
-        agent = DQNGMI(args, env, env_test, logger)
     else:
         raise RuntimeError
     # elif args['agent'] == 'qlearning':

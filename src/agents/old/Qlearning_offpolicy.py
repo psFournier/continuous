@@ -10,7 +10,7 @@ class Qlearning_offPolicy(Agent):
 
         self.env.buffer = ReplayBuffer(limit=int(1e6),
                                        names=['state0', 'action', 'state1', 'reward', 'terminal'])
-        self.batch_size = 32
+
         self.gamma = 0.99
         self.lr = 0.1
         self.Q = np.zeros(shape=(env.state_dim + env.action_dim))
