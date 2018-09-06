@@ -118,6 +118,12 @@ register(
 )
 
 register(
+    id='PlayroomGF-v0',
+    entry_point='envs:Playroom',
+    wrapper_entry_point='env_wrappers.playroomGF:PlayroomGF'
+)
+
+register(
     id='Labyrinth-v0',
     entry_point='envs:Labyrinth',
     wrapper_entry_point='env_wrappers.labyrinth:Labyrinth'
