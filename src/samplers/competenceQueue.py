@@ -28,6 +28,10 @@ class CompetenceQueue():
             self.T = np.mean(Ts[-mid:])
 
     @property
+    def mincp(self):
+        return 1/self.window
+
+    @property
     def size(self):
         return len(self.points['R'])
 

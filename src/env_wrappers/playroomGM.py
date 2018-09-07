@@ -23,19 +23,15 @@ class PlayroomGM(CPBased):
         exp['mask'] = self.mask
         exp['state1'] = self.env.step(exp['action'])
         exp = self.eval_exp(exp)
+        if exp['terminal']:
+            self.dones[self.object] += 1
         return exp
 
     def explor_eps(self):
         step = self.steps[self.object]
         return 1 + min(float(step) / 1e4, 1) * (0.1 - 1)
 
-    def processEp(self, episode):
-        T = int(episode[-1]['terminal'])
-        if T:
-            print('done')
-            self.dones[self.object] += 1
-        R = np.sum([exp['reward'] for exp in episode])
-        S = len(episode)
+    def processEp(self, R, S, T):
         self.queues[self.object].append({'R': R, 'S': S, 'T': T})
 
     def is_term(self, exp):
@@ -47,6 +43,7 @@ class PlayroomGM(CPBased):
 
     def reset(self):
         self.object = self.get_idx()
+        self.attempts[self.object] += 1
         features = self.obj_feat[self.object]
         self.goal = np.array(self.init_state)
         self.mask = self.obj2mask(self.object)

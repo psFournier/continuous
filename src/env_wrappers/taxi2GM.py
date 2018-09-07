@@ -8,34 +8,52 @@ class Taxi2GM(CPBased):
     def __init__(self, env, args):
         super(Taxi2GM, self).__init__(env, args)
         self.goals = ['agent', 'passenger', 'taxi']
+        self.object = None
+        self.mask = None
         self.init()
         self.obj_feat = [[0, 1], [2, 3], [4]]
         self.state_low = [0, 0, 0, 0, 0]
         self.state_high = [self.env.nR - 1, self.env.nC - 1, self.env.nR - 1, self.env.nC - 1, 1]
         self.init_state = [2, 2, 0, 0, 0]
-
         self.test_goals = [(np.array([0, 0, 0, 0, 1]), 2),
                            (np.array([0, 0, 0, 4, 0]), 1),
                            (np.array([0, 0, 4, 0, 0]), 1),
                            (np.array([0, 0, 4, 3, 0]), 1)]
 
+    def step(self, exp):
+        self.steps[self.object] += 1
+        exp['goal'] = self.goal
+        exp['mask'] = self.mask
+        exp['state1'] = self.env.step(exp['action'])
+        exp = self.eval_exp(exp)
+        if exp['terminal']:
+            self.dones[self.object] += 1
+        return exp
+
+    def explor_eps(self):
+        step = self.steps[self.object]
+        return 1 + min(float(step) / 1e4, 1) * (0.1 - 1)
+
+    def processEp(self, R, S, T):
+        self.queues[self.object].append({'R': R, 'S': S, 'T': T})
+
     def is_term(self, exp):
-        goal_feat = self.obj_feat[exp['goal']]
-        goal_vals = exp['goalVals'][goal_feat]
-        s1_proj = exp['state1'][goal_feat]
-        s0_proj = exp['state0'][goal_feat]
-        return ((s1_proj == goal_vals).all() and (s0_proj != goal_vals).any())
+        indices = np.where(exp['mask'])
+        goal = exp['goal'][indices]
+        s1_proj = exp['state1'][indices]
+        s0_proj = exp['state0'][indices]
+        return ((s1_proj == goal).all() and (s0_proj != goal).any())
 
     def reset(self):
-        self.goal = self.get_idx()
-        features = self.obj_feat[self.goal]
-        self.goalVals = self.init_state.copy()
-        self.mask = self.obj2mask(self.goal)
+        self.object = self.get_idx()
+        self.attempts[self.object] += 1
+        features = self.obj_feat[self.object]
+        self.goal = np.array(self.init_state)
+        self.mask = self.obj2mask(self.object)
         while True:
             for idx in features:
-                self.goalVals[idx] = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
-            if self.goalVals != self.init_state:
-                self.goalVals = np.array(self.goalVals)
+                self.goal[idx] = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
+            if (self.goal != self.init_state).any():
                 break
         state = self.env.reset()
         return state

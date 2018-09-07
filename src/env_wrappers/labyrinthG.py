@@ -17,6 +17,7 @@ class LabyrinthG(CPBased):
 
     def reset(self):
         self.goal = self.get_idx()
+        self.attempts[self.goal] += 1
         state = self.env.reset()
         return state
 

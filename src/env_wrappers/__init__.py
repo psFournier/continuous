@@ -130,6 +130,12 @@ register(
 )
 
 register(
+    id='Labyrinth2-v0',
+    entry_point='envs:Labyrinth',
+    wrapper_entry_point='env_wrappers.labyrinth2:Labyrinth2'
+)
+
+register(
     id='LabyrinthG-v0',
     entry_point='envs:Labyrinth',
     wrapper_entry_point='env_wrappers.labyrinthG:LabyrinthG'

@@ -19,11 +19,12 @@ class Taxi1G(CPBased):
         # self.trajectories[2] = [t + [0,2,2,1,2,2,5] for t in self.trajectories[0]]
         # self.trajectories[3] = [t + [0,2,0,2,2,0,0,5] for t in self.trajectories[0]]
 
-    def is_term(self, exp, goal):
-        return (exp['state1'][2] == goal) and (exp['state0'][2] != goal)
+    def is_term(self, exp):
+        return (exp['state1'][2] == exp['goal']) and (exp['state0'][2] != exp['goal'])
 
     def reset(self):
         self.goal = self.get_idx()
+        self.attempts[self.goal] += 1
         state = self.env.reset()
         return state
 

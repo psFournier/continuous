@@ -62,7 +62,10 @@ class DQN(Agent):
     def reset(self):
 
         if self.trajectory:
-            self.env.processEp(self.trajectory)
+            T = int(self.trajectory[-1]['terminal'])
+            R = np.sum([self.env.unshape(exp['reward'], exp['terminal']) for exp in self.trajectory])
+            S = len(self.trajectory)
+            self.env.processEp(R, S, T)
             if self.args['--imit'] == '0':
                 for expe in reversed(self.trajectory):
                     self.buffer.append(expe.copy())
@@ -95,7 +98,9 @@ class DQN(Agent):
         if self.args['--explo'] == '1':
             action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
         else:
-            if np.random.random() < self.env.explor_eps():
+            # eps = self.env.explor_eps()
+            eps = 1 + min(float(self.env_step) / 1e4, 1) * (0.1 - 1)
+            if np.random.random() < eps:
                 action = np.random.choice(range(self.env.action_dim))
             else:
                 action = np.argmax(actionProbs[0], axis=0)

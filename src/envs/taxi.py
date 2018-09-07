@@ -19,11 +19,11 @@ import numpy as np
 
 MAP = [
     " _ _ _ _ _ ",
+    "|       | |",
+    "|    _ _| |",
     "|  _ _  | |",
-    "| |  _  | |",
-    "| | | | | |",
-    "| |   |_| |",
-    "|_ _|_ _ _|",
+    "|_ _    | |",
+    "|_ _ _ _ _|",
     ]
 
 class Taxi1(discrete.DiscreteEnv):
@@ -44,19 +44,20 @@ class Taxi1(discrete.DiscreteEnv):
 
     def __init__(self):
         self.desc = np.asarray(MAP,dtype='c')
-        self.locs = locs = [(0,0), (0,4), (4,0), (4,3)]
+        self.locs = locs = [(0,0), (0,4), (0,3), (4,3)]
         maxR = self.nR-1
         maxC = self.nC-1
         nS = self.nR * self.nC * 5
         isd = np.zeros(nS)
         nA = 6
         P = {s : {a : [] for a in range(nA)} for s in range(nS)}
-        initial_state = self.encode(0, 0, 2)
-        isd[initial_state] = 1
+        # isd[initial_state] = 1
         for taxirow in range(self.nR):
             for taxicol in range(self.nC):
                 for status in range(5):
                         state = self.encode(taxirow, taxicol, status)
+                        if taxirow == 0 and taxicol == 0 and status < 4:
+                            isd[self.encode(taxirow, taxicol, status)] = 1
                         for a in range(nA):
                             newtaxirow, newtaxicol, newstatus = taxirow, taxicol, status
 

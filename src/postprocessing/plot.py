@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 DIR = '../../log/cluster/0609'
-ENV = 'dqn*_*-v0'
+ENV = 'dqn*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
@@ -43,12 +43,12 @@ if 0:
     # df1 = df1[(df1['--shaping'] == 0)]
     for param in params:
         print(df1[param].unique())
-    a, b = 3,2
+    a, b = 2,2
     fig1, ax1 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
 
     for i, (name, g) in enumerate(df1.groupby(params)):
         for num_run, g2 in g.groupby('num_run'):
-            ax1[i % a, i // a].plot(g2['step'], g2['T_0'])
+            ax1[i % a, i // a].plot(g2['step'], g2['R_0'])
         ax1[i % a, i // a].set_title(label=name)
         # ax1[i % a, i // a].legend()
         # ax1[i % a, i // a].set_ylim([0, 0.0001])
@@ -60,7 +60,8 @@ if 1:
     # df2 = df2[(df2['--opt_init'] == 0)]
     # df2 = df2[(df2['--shaping'] == 0)]
     # df2 = df2[(df2['--theta'] == 0)]
-    y = ['step_'+i for i in ['light', 'sound', 'toy1', 'toy2']]
+    y = ['I_'+i for i in ['agent', 'light', 'sound', 'toy1', 'toy2']]
+    # y = ['R_0']
     def quant_inf(x):
         return x.quantile(0.2)
     def quant_sup(x):

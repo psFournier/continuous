@@ -3,7 +3,7 @@ import numpy as np
 import math
 from samplers.competenceQueue import CompetenceQueue
 from utils.linearSchedule import LinearSchedule
-
+from abc import ABCMeta, abstractmethod
 # Wrappers override step, reset functions, as well as the defintion of action, observation and goal spaces.
 
 class CPBased(Wrapper):
@@ -15,13 +15,15 @@ class CPBased(Wrapper):
         self.opt_init = int(args['--opt_init'])
         self.goals = []
         self.goal = None
-        self.init()
 
     def init(self):
+        self.queue = CompetenceQueue()
         self.queues = [CompetenceQueue() for _ in self.goals]
         self.steps = [0 for _ in self.goals]
         self.interests = [0 for _ in self.goals]
         self.dones = [0 for _ in self.goals]
+        self.attempts = [0 for _ in self.goals]
+        self.mincp = min([q.mincp for q in self.queues])
 
     # def explor_temp(self, t):
     #     T = self.queues[self.goal].T
@@ -31,20 +33,17 @@ class CPBased(Wrapper):
         step = self.steps[self.goal]
         return 1 + min(float(step) / 1e4, 1) * (0.1 - 1)
 
-    def processEp(self, episode):
-        T = int(episode[-1]['terminal'])
-        if T:
-            print('done')
-            self.dones[self.goal] += 1
-        R = np.sum([exp['reward'] for exp in episode])
-        S = len(episode)
+    def processEp(self, R, S, T):
         self.queues[self.goal].append({'R': R, 'S': S, 'T': T})
+        self.queue.append({'R': R, 'S': S, 'T': T})
 
     def step(self, exp):
         self.steps[self.goal] += 1
         exp['state1'] = self.env.step(exp['action'])
         exp['goal'] = self.goal
         exp = self.eval_exp(exp)
+        if exp['terminal']:
+            self.dones[self.goal] += 1
         return exp
 
     def is_term(self, exp):
@@ -56,20 +55,31 @@ class CPBased(Wrapper):
             r = 1
         else:
             r = 0
-        r = self.transform_r(r, term)
+        r = self.shape(r, term)
         exp['reward'] = r
         exp['terminal'] = term
         return exp
 
-    def transform_r(self, r, term):
+    def shape(self, r, term):
         if self.opt_init == 1:
-            r += self.gamma - 1
+            r += (self.gamma - 1)
             if term:
                 r -= self.gamma
         elif self.opt_init == 2:
-            r += self.gamma - 1
+            r += (self.gamma - 1)
         elif self.opt_init == 3:
             r -= 1
+        return r
+
+    def unshape(self, r, term):
+        if self.opt_init == 1:
+            r -= (self.gamma - 1)
+            if term:
+                r += self.gamma
+        elif self.opt_init == 2:
+            r -= (self.gamma - 1)
+        elif self.opt_init == 3:
+            r += 1
         return r
 
     def get_idx(self):
@@ -77,17 +87,15 @@ class CPBased(Wrapper):
         Rs = [q.R for q in self.queues]
         maxR = max(Rs)
         minR = min(Rs)
-        self.interests = [CP * (1 - (R - minR) / (maxR - minR + 0.001)) for CP, R in zip(CPs, Rs)]
+        maxCP = max(CPs)
+        minCP = min(CPs)
 
-        # maxCP = max(CPs)
-        # minCP = min(CPs)
-        # try:
-        #     if maxCP > 1:
-        #         self.interests = [(cp - minCP) / (maxCP - minCP) for cp in CPs]
-        #     else:
-        #         self.interests = [1 - (r - minR) / (maxR - minR) for r in Rs]
-        # except:
-        #     self.interests = [1 for _ in self.queues]
+        if maxCP > self.mincp:
+            self.interests = [(cp - minCP) / (maxCP - minCP + 0.001) for cp in CPs]
+        else:
+            self.interests = [1 - (r - minR) / (maxR - minR + 0.001) for r in Rs]
+
+        # self.interests = [CP * (1 - (R - minR) / (maxR - minR + 0.001)) for CP, R in zip(CPs, Rs)]
 
         weighted_interests = [math.pow(I, self.theta) + 0.1 for I in self.interests]
         sum = np.sum(weighted_interests)
@@ -109,6 +117,11 @@ class CPBased(Wrapper):
             stats['T_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].T))
             stats['done_{}'.format(goal)] = float("{0:.3f}".format(self.dones[i]))
             stats['step_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
+            stats['attempt_{}'.format(goal)] = float("{0:.3f}".format(self.attempts[i]))
+        stats['R'] = float("{0:.3f}".format(self.queue.R))
+        stats['CP'] = float("{0:.3f}".format(abs(self.queue.CP)))
+        stats['S'] = float("{0:.3f}".format(self.queue.S))
+        stats['T'] = float("{0:.3f}".format(self.queue.T))
         return stats
 
 
