@@ -15,6 +15,8 @@ class CPBased(Wrapper):
         self.opt_init = int(args['--opt_init'])
         self.goals = []
         self.goal = None
+        self.minR = self.shape(-1, False)
+        self.maxR = self.shape(0, True)
 
     def init(self):
         self.queue = CompetenceQueue()
@@ -52,10 +54,10 @@ class CPBased(Wrapper):
     def eval_exp(self, exp):
         term = self.is_term(exp)
         if term:
-            r = 1
+            r = self.maxR
         else:
-            r = 0
-        r = self.shape(r, term)
+            r = self.minR
+        # r = self.shape(r, term)
         exp['reward'] = r
         exp['terminal'] = term
         return exp
@@ -123,7 +125,6 @@ class CPBased(Wrapper):
         stats['S'] = float("{0:.3f}".format(self.queue.S))
         stats['T'] = float("{0:.3f}".format(self.queue.T))
         return stats
-
 
 
     # @property
