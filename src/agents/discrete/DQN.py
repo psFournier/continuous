@@ -52,7 +52,7 @@ class DQN(Agent):
         for k in range(self.batch_size):
             target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
             if clip:
-                target_clip = np.clip(target, -self.env.minR / (1 - self.critic.gamma), self.env.maxR)
+                target_clip = np.clip(target, self.env.minR / (1 - self.critic.gamma), self.env.maxR)
                 targets.append(target_clip)
             else:
                 targets.append(target)
