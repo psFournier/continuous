@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-DIR = '../../log/cluster/0609'
+DIR = '../../log/cluster/last'
 ENV = 'dqn*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
@@ -56,11 +56,13 @@ if 0:
 if 1:
 
     df2 = df
-    # df2 = df2[(df2['--agent'] == 'dqngmi')]
+    df2 = df2[(df2['--agent'] == 'dqngm')]
+    # df2 = df2[(df2['--env'] == 'PlayroomG-v0')]
     # df2 = df2[(df2['--opt_init'] == 0)]
     # df2 = df2[(df2['--shaping'] == 0)]
     # df2 = df2[(df2['--theta'] == 0)]
-    y = ['I_'+i for i in ['agent', 'light', 'sound', 'toy1', 'toy2']]
+    y = ['T_'+i for i in ['agent', 'light', 'sound', 'toy1', 'toy2']]
+    # y = ['T']
     # y = ['R_0']
     def quant_inf(x):
         return x.quantile(0.2)
