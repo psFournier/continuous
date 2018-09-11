@@ -32,7 +32,7 @@ class Taxi2GM(CPBased):
 
     def explor_eps(self):
         step = self.steps[self.object]
-        return 1 + min(float(step) / 1e4, 1) * (0.1 - 1)
+        return 1 + min(float(step) / 2e4, 1) * (0.1 - 1)
 
     def processEp(self, R, S, T):
         self.queues[self.object].append({'R': R, 'S': S, 'T': T})

@@ -33,7 +33,7 @@ class CPBased(Wrapper):
 
     def explor_eps(self):
         step = self.steps[self.goal]
-        return 1 + min(float(step) / 1e4, 1) * (0.1 - 1)
+        return 1 + min(float(step) / 2e4, 1) * (0.1 - 1)
 
     def processEp(self, R, S, T):
         self.queues[self.goal].append({'R': R, 'S': S, 'T': T})
@@ -85,45 +85,55 @@ class CPBased(Wrapper):
         return r
 
     def get_idx(self):
-        CPs = [abs(q.CP) for q in self.queues]
-        Rs = [q.R for q in self.queues]
-        maxR = max(Rs)
-        minR = min(Rs)
-        maxCP = max(CPs)
-        minCP = min(CPs)
+        if all(q.CP for q in self.queues):
+            CPs = [abs(q.CP[-1]) for q in self.queues]
+            Rs = [q.R[-1] for q in self.queues]
+            maxR = max(Rs)
+            minR = min(Rs)
+            maxCP = max(CPs)
+            minCP = min(CPs)
 
-        if maxCP > self.mincp:
-            self.interests = [(cp - minCP) / (maxCP - minCP + 0.001) for cp in CPs]
+            if maxCP > self.mincp:
+                self.interests = [(cp - minCP) / (maxCP - minCP + 0.001) for cp in CPs]
+            else:
+                self.interests = [1 - (r - minR) / (maxR - minR + 0.001) for r in Rs]
+
+            # self.interests = [CP * (1 - (R - minR) / (maxR - minR + 0.001)) for CP, R in zip(CPs, Rs)]
+
+            weighted_interests = [math.pow(I, self.theta) + 0.1 for I in self.interests]
+            sum = np.sum(weighted_interests)
+            mass = np.random.random() * sum
+            idx = 0
+            s = weighted_interests[0]
+            while mass > s:
+                idx += 1
+                s += weighted_interests[idx]
         else:
-            self.interests = [1 - (r - minR) / (maxR - minR + 0.001) for r in Rs]
-
-        # self.interests = [CP * (1 - (R - minR) / (maxR - minR + 0.001)) for CP, R in zip(CPs, Rs)]
-
-        weighted_interests = [math.pow(I, self.theta) + 0.1 for I in self.interests]
-        sum = np.sum(weighted_interests)
-        mass = np.random.random() * sum
-        idx = 0
-        s = weighted_interests[0]
-        while mass > s:
-            idx += 1
-            s += weighted_interests[idx]
+            idx = np.random.choice(len(self.queues))
         return idx
 
     def get_stats(self):
         stats = {}
+
         for i, goal in enumerate(self.goals):
-            stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].R))
-            stats['CP_{}'.format(goal)] = float("{0:.3f}".format(abs(self.queues[i].CP)))
-            stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
-            stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].S))
-            stats['T_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].T))
+            self.queues[i].update()
+            if self.queues[i].R:
+                stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].R[-1]))
+                stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].S[-1]))
+                stats['T_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].T[-1]))
+            if self.queues[i].CP:
+                stats['CP_{}'.format(goal)] = float("{0:.3f}".format(abs(self.queues[i].CP[-1])))
+
             stats['done_{}'.format(goal)] = float("{0:.3f}".format(self.dones[i]))
             stats['step_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
             stats['attempt_{}'.format(goal)] = float("{0:.3f}".format(self.attempts[i]))
-        stats['R'] = float("{0:.3f}".format(self.queue.R))
-        stats['CP'] = float("{0:.3f}".format(abs(self.queue.CP)))
-        stats['S'] = float("{0:.3f}".format(self.queue.S))
-        stats['T'] = float("{0:.3f}".format(self.queue.T))
+            stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
+
+        if self.queue.R:
+            stats['R'] = float("{0:.3f}".format(self.queue.R[-1]))
+            stats['S'] = float("{0:.3f}".format(self.queue.S[-1]))
+            stats['T'] = float("{0:.3f}".format(self.queue.T[-1]))
+
         return stats
 
 

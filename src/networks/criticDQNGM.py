@@ -57,11 +57,32 @@ class CriticDQNGM(CriticDQNG):
         self.target_train()
 
     def create_critic_network(self, S, G=None, M=None):
-        c1 = concatenate(inputs=[S, G, M])
-        l1 = Dense(400, activation="relu")(c1)
-        c2 = concatenate([l1, G, M])
-        l2 = Dense(300, activation="relu")(c2)
-        Q_values = Dense(self.num_actions)(l2)
+        if self.args['--network'] == '1':
+            l1 = concatenate([S, G, M])
+            l2 = Dense(400, activation="relu")(l1)
+            l3 = concatenate([l2, G, M])
+            l4 = Dense(300, activation="relu")(l3)
+            Q_values = Dense(self.num_actions)(l4)
+        elif self.args['--network'] == '2':
+            l1 = multiply([subtract([S, G]), M])
+            l2 = concatenate([l1, S])
+            l3 = Dense(400, activation="relu")(l2)
+            l4 = Dense(300, activation="relu")(l3)
+            Q_values = Dense(self.num_actions)(l4)
+        elif self.args['--network'] == '3':
+            shared_l = Dense(200, activation='relu')
+            l1 = shared_l(S)
+            l2 = shared_l(G)
+            l3 = shared_l(M)
+            l4 = multiply([subtract([l1, l2]), l3])
+            l5 = Dense(200, activation="relu")(l4)
+            l6 = Dense(300, activation="relu")(l5)
+            Q_values = Dense(self.num_actions)(l6)
+        else:
+            l1 = concatenate([S, G, M])
+            l2 = Dense(400, activation="relu")(l1)
+            l3 = Dense(300, activation="relu")(l2)
+            Q_values = Dense(self.num_actions)(l3)
         return Q_values
 
 

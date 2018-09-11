@@ -35,6 +35,7 @@ Options:
   --w2 VAL        Weight for imitaiton loss with imitaiton [default: 1]
   --imit YES_NO            Self imitation [default: 0]
   --explo VAL              Exploration type [default: 0]
+  --network VAL            Network type [default: 0]
 
 """
 

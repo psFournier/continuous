@@ -26,7 +26,7 @@ class PlayroomGF(CPBased):
 
     def explor_eps(self):
         step = self.steps[self.feature]
-        return 1 + min(float(step) / 1e4, 1) * (0.1 - 1)
+        return 1 + min(float(step) / 2e4, 1) * (0.1 - 1)
 
     def processEp(self, episode):
         T = int(episode[-1]['terminal'])

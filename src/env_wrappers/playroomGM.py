@@ -12,7 +12,7 @@ class PlayroomGM(CPBased):
         self.object = None
         self.mask = None
         self.init()
-        self.obj_feat = [[0, 1]] + [[4*j + i + 2 for i in range(4)] for j in range(len(self.env.objects))]
+        self.obj_feat = [[0, 1]] + [[4*j + 4] for j in range(len(self.env.objects))]
         self.state_low = self.env.state_low
         self.state_high = self.env.state_high
         self.init_state = self.env.state_init
@@ -29,7 +29,7 @@ class PlayroomGM(CPBased):
 
     def explor_eps(self):
         step = self.steps[self.object]
-        return 1 + min(float(step) / 1e4, 1) * (0.1 - 1)
+        return 1 + min(float(step) / 2e4, 1) * (0.1 - 1)
 
     def processEp(self, R, S, T):
         self.queues[self.object].append({'R': R, 'S': S, 'T': T})
@@ -70,4 +70,4 @@ class PlayroomGM(CPBased):
 
     @property
     def action_dim(self):
-        return 11
+        return 9

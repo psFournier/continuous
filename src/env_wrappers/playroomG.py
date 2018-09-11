@@ -88,4 +88,4 @@ class PlayroomG(Wrapper):
 
     @property
     def action_dim(self):
-        return 11
+        return 9

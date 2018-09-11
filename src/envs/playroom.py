@@ -18,13 +18,14 @@ class Actions:
     DOWN=1
     RIGHT=2
     LEFT=3
-    TAKE = 4
-    PUT = 5
-    TOUCH = 6
-    TOUCHUP = 7
-    TOUCHDOWN = 8
-    TOUCHLEFT = 9
-    TOUCHRIGHT = 10
+    TOUCH = 4
+    TOUCHUP = 5
+    TOUCHDOWN = 6
+    TOUCHLEFT = 7
+    TOUCHRIGHT = 8
+
+    TAKE = 9
+    PUT = 10
 
 class Obj():
     def __init__(self):
@@ -180,17 +181,17 @@ class Playroom(Env):
             if h >= 0:
                 self.objects[h].x = self.x
 
-        elif a==Actions.TAKE:
-            h = self.get_held()
-            o = self.get_underagent()
-            if o >= 0 and h == -1:
-                self.objects[o].act(a)
-
-        elif a==Actions.PUT:
-            h = self.get_held()
-            o = self.get_underagent()
-            if o == -1 and h >= 0:
-                self.objects[h].act(a)
+        # elif a==Actions.TAKE:
+        #     h = self.get_held()
+        #     o = self.get_underagent()
+        #     if o >= 0 and h == -1:
+        #         self.objects[o].act(a)
+        #
+        # elif a==Actions.PUT:
+        #     h = self.get_held()
+        #     o = self.get_underagent()
+        #     if o == -1 and h >= 0:
+        #         self.objects[h].act(a)
 
         elif a==Actions.TOUCH:
             o = self.get_underagent()
