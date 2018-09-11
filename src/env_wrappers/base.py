@@ -93,12 +93,10 @@ class CPBased(Wrapper):
             maxCP = max(CPs)
             minCP = min(CPs)
 
-            if maxCP > self.mincp:
-                self.interests = [(cp - minCP) / (maxCP - minCP + 0.001) for cp in CPs]
+            if maxCP - minCP > 5:
+                self.interests = [(cp - minCP) / (maxCP - minCP) for cp in CPs]
             else:
                 self.interests = [1 - (r - minR) / (maxR - minR + 0.001) for r in Rs]
-
-            # self.interests = [CP * (1 - (R - minR) / (maxR - minR + 0.001)) for CP, R in zip(CPs, Rs)]
 
             weighted_interests = [math.pow(I, self.theta) + 0.1 for I in self.interests]
             sum = np.sum(weighted_interests)
