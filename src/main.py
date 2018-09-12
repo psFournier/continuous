@@ -36,6 +36,7 @@ Options:
   --imit YES_NO            Self imitation [default: 0]
   --explo VAL              Exploration type [default: 0]
   --network VAL            Network type [default: 0]
+  --clipping VAL           Network type [default: 1]
 
 """
 

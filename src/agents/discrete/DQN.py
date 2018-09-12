@@ -47,11 +47,11 @@ class DQN(Agent):
 
             self.critic.target_train()
 
-    def compute_targets(self, r, t, q, clip=True):
+    def compute_targets(self, r, t, q):
         targets = []
         for k in range(self.batch_size):
             target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
-            if clip:
+            if self.args['--clipping'] == '1':
                 target_clip = np.clip(target, self.env.minR / (1 - self.critic.gamma), self.env.maxR)
                 targets.append(target_clip)
             else:
@@ -99,7 +99,7 @@ class DQN(Agent):
             action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
         else:
             # eps = self.env.explor_eps()
-            eps = 1 + min(float(self.env_step) / 1e4, 1) * (0.1 - 1)
+            eps = 1 + min(float(self.env_step) / 2e4, 1) * (0.1 - 1)
             if np.random.random() < eps:
                 action = np.random.choice(range(self.env.action_dim))
             else:

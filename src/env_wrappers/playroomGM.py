@@ -33,6 +33,7 @@ class PlayroomGM(CPBased):
 
     def processEp(self, R, S, T):
         self.queues[self.object].append({'R': R, 'S': S, 'T': T})
+        self.queue.append({'R': R, 'S': S, 'T': T})
 
     def is_term(self, exp):
         indices = np.where(exp['mask'])

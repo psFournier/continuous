@@ -127,6 +127,7 @@ class CPBased(Wrapper):
             stats['attempt_{}'.format(goal)] = float("{0:.3f}".format(self.attempts[i]))
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
 
+        self.queue.update()
         if self.queue.R:
             stats['R'] = float("{0:.3f}".format(self.queue.R[-1]))
             stats['S'] = float("{0:.3f}".format(self.queue.S[-1]))
