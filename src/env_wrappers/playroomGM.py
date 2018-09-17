@@ -12,7 +12,8 @@ class PlayroomGM(CPBased):
         self.object = None
         self.mask = None
         self.init()
-        self.obj_feat = [[0, 1]] + [[4*j + 4] for j in range(len(self.env.objects))]
+        # self.obj_feat = [[0, 1]] + [o.get_feat() for o in self.env.objects]
+        self.obj_feat = [[0, 1], [5], [8], [12], [16], [20]]
         self.state_low = self.env.state_low
         self.state_high = self.env.state_high
         self.init_state = self.env.state_init
@@ -63,12 +64,12 @@ class PlayroomGM(CPBased):
 
     @property
     def state_dim(self):
-        return 18,
+        return 22,
 
     @property
     def goal_dim(self):
-        return 18,
+        return 22,
 
     @property
     def action_dim(self):
-        return 9
+        return 10

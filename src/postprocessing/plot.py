@@ -34,10 +34,10 @@ print(df.columns)
 x = ['step']
 params = ['--agent', '--batchsize', '--env',
        '--eval_freq', '--gamma', '--her', '--w1',
-       '--w2', '--max_steps', '--per',
-       '--opt_init', '--shaping', '--theta', '--network']
+       '--w2', '--per',
+       '--opt_init', '--shaping', '--theta', '--network', '--clipping', '--explo']
 
-if 1:
+if 0:
     df1 = df
     # df1 = df1[(df1['--agent'] == 'dqng')]
     # df1 = df1[(df1['step'] > 4000)]
@@ -73,28 +73,24 @@ if 1:
         # ax1[i % a, i // a].legend()
         # ax1[i % a, i // a].set_ylim([0, 0.0001])
 
-if 0:
+if 1:
 
     df2 = df
     df2 = df2[(df2['--agent'] == 'dqngm')]
     df2 = df2[(df2['--env'] == 'PlayroomGM-v0')]
-    # df2 = df2[(df2['--opt_init'] == 0)]
-    # df2 = df2[(df2['--network'] == 2)]
-    df2 = df2[(df2['--theta'] == 0)]
-    # df2 = df2[(df2['--theta'] == 0) | (df2['--theta'] == 2)]
+    df2 = df2[(df2['--opt_init'] == 0)]
+    df2 = df2[(df2['--network'] == 2)]
+    df2 = df2[(df2['--clipping'] == 1)]
+    df2 = df2[(df2['--explo'] == 1)]
+    # df2 = df2[(df2['--theta'] == 4)]
+    # df2 = df2[(df2['--theta']     == 0) | (df2['--theta'] == 2)]
     y = ['R'+i for i in ['_agent', '_light', '_sound', '_toy1', '_toy2']]
-    x = ['step' + i for i in ['_agent', '_light', '_sound', '_toy1', '_toy2']]
+    # x = ['step' + i for i in ['_agent', '_light', '_sound', '_toy1', '_toy2']]
     # y = ['R'+i for i in ['_agent', '_passenger', '_taxi']]
     # x = ['step'+i for i in ['_agent', '_passenger', '_taxi']]
     # y = ['R_'+str(i) for i in range(5)]
     # y = ['T']
     # y = ['R_0']
-    def quant_inf(x):
-        return x.quantile(0.2)
-    def quant_sup(x):
-        return x.quantile(0.8)
-    op_dict = {a:[np.median, np.mean, quant_inf, quant_sup] for a in y}
-    # df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
     paramsStudied = []
     for param in params:
@@ -102,24 +98,39 @@ if 0:
         print(param, l)
         if len(l) > 1:
             paramsStudied.append(param)
+    print(df2['num_run'].unique())
 
-    print(params)
+    def quant_inf(x):
+        return x.quantile(0.2)
+    def quant_sup(x):
+        return x.quantile(0.8)
+    op_dict = {a:[np.median, np.mean, quant_inf, quant_sup] for a in y}
+    df2 = df2.groupby(x + params).agg(op_dict).reset_index()
+
+
+
+    print(paramsStudied)
     a, b = 2,3
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
     colors = ['b', 'r']
-    for j, (name, g) in enumerate(df2.groupby(params)):
+
+    for j, (name, g) in enumerate(df2.groupby(paramsStudied)):
         for i, val in enumerate(y):
-            ax2[i % a, i // a].scatter(g[x[i]], g[val], s=1)
+            # ax2[i % a, i // a].scatter(g[x[i]], g[val], s=1)
             # ax2[i % a, i // a].plot(range(1500), range(1500), 'g-')
-            # ax2[i % a, i // a].plot(g['step'], g[val]['median'], label=name)
+            if isinstance(name, tuple):
+                label = ','.join(['{}:{}'.format(paramsStudied[k][2:], name [k]) for k in range(len(paramsStudied))])
+            else:
+                label = '{}:{}'.format(paramsStudied[0][2:], name)
+            ax2[i % a, i // a].plot(g['step'], g[val]['median'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
             #                         label='CP_' + str(i) + "_smooth")
-            # ax2[i % a, i // a].fill_between(g['step'],
-            #                                 g[val]['quant_inf'],
-            #                                 g[val]['quant_sup'], alpha=0.25, linewidth=0)
+            ax2[i % a, i // a].fill_between(g['step'],
+                                            g[val]['quant_inf'],
+                                            g[val]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=val)
             ax2[i % a, i // a].legend()
             # ax2[i % a, i // a].set_ylim([0, 10])
-    fig2.suptitle('theta: 3')
+    fig2.suptitle('network:3')
 
 plt.show()

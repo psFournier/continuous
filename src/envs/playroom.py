@@ -3,13 +3,13 @@ from gym import Env
 
 MAP = [
     "+-------------+",
-    "| : : : : : : |",
-    "| : : : : : : |",
-    "| : : : : : : |",
-    "| : : : : : : |",
-    "| : : : : : : |",
-    "| : : : : : : |",
-    "| : : : : : : |",
+    "| : :_:_| | : |",
+    "| : : : ~ :_: |",
+    "|_:_:_: | : | |",
+    "| :_:_| | : | |",
+    "| : :_:_| : | |",
+    "| : |_: | : | |",
+    "| : : : | : | |",
     "+-------------+",
 ]
 
@@ -23,27 +23,27 @@ class Actions:
     TOUCHDOWN = 6
     TOUCHLEFT = 7
     TOUCHRIGHT = 8
-
     TAKE = 9
-    PUT = 10
+    # PUT = 10
 
 class Obj():
-    def __init__(self):
-        self.initx = 0
-        self.inity = 0
+    def __init__(self, env, x, y):
+        self.x = x
+        self.y = y
         self.s = 0
         self.in_hand = 0
+        self.env = env
 
     def act(self, a):
         pass
 
+    @property
+    def light(self):
+        return self.env.light.s == 1
+
 class Light(Obj):
-    def __init__(self, initx=0, inity=0):
-        super(Light, self).__init__()
-        self.initx = initx
-        self.inity = inity
-        self.x = self.initx
-        self.y = self.inity
+    def __init__(self, env, x, y):
+        super(Light, self).__init__(env, x, y)
         self.name = 'light'
 
     def act(self, a):
@@ -54,85 +54,74 @@ class Light(Obj):
     def smax(self):
         return 1
 
-class Sound(Obj):
-    def __init__(self, light, initx=0, inity=0):
-        super(Sound, self).__init__()
-        self.initx = initx
-        self.inity = inity
-        self.x = self.initx
-        self.y = self.inity
-        self.light = light
-        self.name = 'sound'
+class Key1(Obj):
+    def __init__(self, env, x, y):
+        super(Key1, self).__init__(env, x, y)
+        self.name = 'key1'
 
     def act(self, a):
-        if a==Actions.TOUCH and self.light.s == 1:
-            if self.s == 0:
-                self.s = 1
-            else:
-                self.s = 0
-        elif a==Actions.TOUCHUP and self.light.s == 1 and self.s != 0:
-            if self.s < 3:
-                self.s += 1
-        elif a==Actions.TOUCHDOWN and self.light.s == 1 and self.s != 0:
-            if self.s > 0:
-                self.s -= 1
+        if a == Actions.TAKE:
+            if self.light:
+                self.in_hand = 1
+
+    @property
+    def smax(self):
+        return 0
+
+class Chest1(Obj):
+    def __init__(self, env, x, y):
+        super(Chest1, self).__init__(env, x, y)
+        self.name = 'chest1'
+
+    def act(self, a):
+        if a == Actions.TOUCH:
+            if self.light:
+                self.s = np.random.choice(range(4), p=[0.2, 0.4, 0.2, 0.2])
 
     @property
     def smax(self):
         return 3
 
-class Toy1(Obj):
-    def __init__(self, light, initx=0, inity=0):
-        super(Toy1, self).__init__()
-        self.initx = initx
-        self.inity = inity
-        self.x = self.initx
-        self.y = self.inity
-        self.light = light
-        self.name = 'toy1'
+class Chest2(Obj):
+    def __init__(self, env, x, y):
+        super(Chest2, self).__init__(env, x, y)
+        self.name = 'chest2'
 
     def act(self, a):
-        if a == Actions.TOUCH and self.light.s == 1:
-            self.s = 1 - self.s
-        elif a == Actions.TAKE:
-            self.in_hand = 1
-        elif a == Actions.PUT:
-            self.in_hand = 0
-
-    @property
-    def smax(self):
-        return 1
-
-class Toy2(Toy1):
-    def __init__(self, light, sound, initx=0, inity=0):
-        super(Toy2, self).__init__(light, initx=initx, inity=inity)
-        self.sound = sound
-        self.name = 'toy2'
-
-    def act(self, a):
-        if a == Actions.TAKE:
-            self.in_hand = 1
-        elif a == Actions.PUT:
-            self.in_hand = 0
-        elif a == Actions.TOUCHDOWN and self.light.s == 1:
-            if self.s == 0:
-                self.s = 1
-        elif a == Actions.TOUCHUP and self.light.s == 1:
-            if self.s == 1:
-                self.s = 2
-        elif a == Actions.TOUCHLEFT and self.light.s == 1:
-            if self.s == 2:
-                self.s = 3
-        elif a == Actions.TOUCHRIGHT and self.light.s == 1:
-            if self.s == 3:
-                self.s = 4
-        elif a == Actions.TOUCH and self.light.s == 1:
-            if self.s > 0:
-                self.s = 0
+        if self.light:
+            if a == Actions.TOUCHDOWN:
+                if self.s == 0:
+                    self.s = 1
+            elif a == Actions.TOUCHUP:
+                if self.s == 1:
+                    self.s = 2
+            elif a == Actions.TOUCHLEFT:
+                if self.s == 2:
+                    self.s = 3
+            elif a == Actions.TOUCHRIGHT:
+                if self.s == 3:
+                    self.s = 4
+            elif a == Actions.TOUCH:
+                if self.s > 0:
+                    self.s = 0
 
     @property
     def smax(self):
         return 4
+
+class Chest3(Obj):
+    def __init__(self, env, x, y):
+        super(Chest3, self).__init__(env, x, y)
+        self.name = 'chest3'
+
+    def act(self, a):
+        if a == Actions.TOUCH:
+            if self.light:
+                self.s = 1
+
+    @property
+    def smax(self):
+        return 1
 
 class Playroom(Env):
 
@@ -140,53 +129,63 @@ class Playroom(Env):
 
     def __init__(self):
         self.desc = np.asarray(MAP,dtype='c')
-
-        self.x = 0
-        self.y = 0
-        light = Light(initx=3, inity=4)
-        sound = Sound(light=light, initx=5, inity=1)
-        obj1 = Toy1(light=light, initx=2, inity=2)
-        obj2 = Toy2(light=light, sound=sound, initx=1, inity=5)
-
-        self.objects = [light, sound, obj1, obj2]
-        self.lastaction = None
         self.maxR = 6
         self.maxC = 6
+        self.init()
+
+    def init(self):
+        self.x = 0
+        self.y = 0
+        self.light = Light(self, 2, 3)
+        self.key1 = Key1(self, 0, 3)
+        self.chest1 = Chest1(self, 3, 2)
+        self.chest2 = Chest2(self, 5, 2)
+        self.chest3 = Chest3(self, 4, 6)
+        self.objects = [self.key1, self.chest1, self.chest2, self.chest3, self.light]
+        self.lastaction = None
 
     def step(self, a):
 
         # print(self.get_state(), a)
 
-        if a==Actions.UP:
+        if a==Actions.UP and self.desc[1 + self.x, 1 + 2 * self.y] == b" ":
             self.y = min(self.y + 1, self.maxR)
             h = self.get_held()
             if h >= 0:
                 self.objects[h].y = self.y
 
-        elif a==Actions.DOWN:
+        elif a==Actions.DOWN and self.desc[self.x, 1 + 2 * self.y] == b" ":
             self.y = max(self.y - 1, 0)
             h = self.get_held()
             if h >= 0:
                 self.objects[h].y = self.y
 
         elif a==Actions.LEFT:
-            self.x = max(self.x - 1, 0)
             h = self.get_held()
-            if h >= 0:
+            if self.desc[1 + self.x, 2 * self.y] == b" ":
+                self.x = max(self.x - 1, 0)
+                if h >= 0:
+                    self.objects[h].x = self.x
+            elif self.desc[1 + self.x, 2 * self.y] == b"~" and h==0:
+                self.x = max(self.x - 1, 0)
                 self.objects[h].x = self.x
 
         elif a==Actions.RIGHT:
-            self.x = min(self.x + 1, self.maxC)
             h = self.get_held()
-            if h >= 0:
+            if self.desc[1 + self.x, 2 * self.y + 2] == b" ":
+                self.x = min(self.x + 1, self.maxC)
+                if h >= 0:
+                    self.objects[h].x = self.x
+            elif self.desc[1 + self.x, 2 * self.y + 2] == b"~" and h==0:
+                self.x = min(self.x + 1, self.maxC)
                 self.objects[h].x = self.x
 
-        # elif a==Actions.TAKE:
-        #     h = self.get_held()
-        #     o = self.get_underagent()
-        #     if o >= 0 and h == -1:
-        #         self.objects[o].act(a)
-        #
+        elif a==Actions.TAKE:
+            h = self.get_held()
+            o = self.get_underagent()
+            if o >= 0 and h == -1:
+                self.objects[o].act(a)
+
         # elif a==Actions.PUT:
         #     h = self.get_held()
         #     o = self.get_underagent()
@@ -241,14 +240,7 @@ class Playroom(Env):
         return -1
 
     def reset(self):
-        self.x = 0
-        self.y = 0
-        for obj in self.objects:
-            obj.x = obj.initx
-            obj.y = obj.inity
-            obj.s = 0
-            obj.in_hand = 0
-        self.lastaction = None
+        self.init()
         return np.array(self.get_state())
 
     @property
@@ -260,10 +252,7 @@ class Playroom(Env):
 
     @property
     def state_init(self):
-        sinit = [0, 0]
-        for o in self.objects:
-            sinit += [o.initx, o.inity, 0, 0]
-        return sinit
+        return [0,0,0,3,0,0,3,2,0,0,5,2,0,0,4,6,0,0,2,3,0,0]
 
     @property
     def state_low(self):
