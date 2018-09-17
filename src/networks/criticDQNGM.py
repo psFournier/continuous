@@ -31,7 +31,7 @@ class CriticDQNGM(CriticDQNG):
             val = Lambda(lambda x: K.max(x, axis=1, keepdims=True))(qvals)
             advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
             imit = Lambda(lambda x: -K.log(x[0]) * x[1], name='imit')([actionProb, advantage])
-            self.qvalModel = Model([S, A, G, M, E], [qval, imit, advantage])
+            self.qvalModel = Model([S, A, G, M, T, E], [qval, imit, advantage])
             self.qvalModel.compile(loss=['mse', 'mae', 'mse'],
                                    loss_weights=[1, float(self.args['--w1']), float(self.args['--w2'])],
                                    optimizer=self.optimizer)

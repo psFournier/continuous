@@ -70,11 +70,11 @@ class DQN(Agent):
                 for expe in reversed(self.trajectory):
                     self.buffer.append(expe.copy())
             else:
-                E = 0
-                for expe in reversed(self.trajectory):
+                Es = [0]
+                for i, expe in enumerate(reversed(self.trajectory)):
                     if self.trajectory[-1]['terminal']:
-                        E = E * self.critic.gamma + expe['reward']
-                        expe['expVal'] = E
+                        Es[0] = Es[0] * self.critic.gamma + expe['reward']
+                        expe['expVal'] = Es[0]
                     else:
                         expe['expVal'] = -self.ep_steps
                     self.buffer.append(expe.copy())

@@ -20,7 +20,10 @@ class DQNGM(DQNG):
     def train(self):
         if self.buffer.nb_entries > self.batch_size:
             exp = self.buffer.sample(self.batch_size)
-            s0, a0, s1, r, t, g, m = [exp[name] for name in self.names]
+            if self.args['--imit'] == '0':
+                s0, a0, s1, r, t, g, m = [exp[name] for name in self.names]
+            else:
+                s0, a0, s1, r, t, g, m, e = [exp[name] for name in self.names]
             temp = np.expand_dims([1], axis=0)
             a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, g, m, temp])
             a1 = np.argmax(a1Probs, axis=1)
@@ -30,10 +33,14 @@ class DQNGM(DQNG):
             if self.args['--imit'] == '0':
                 targets = targets_dqn
                 inputs = [s0, a0, g, m]
-            else:
+            elif self.args['--imit'] == '2':
                 e = exp['expVal']
                 targets = [targets_dqn, np.zeros((self.batch_size, 1)), np.zeros((self.batch_size, 1))]
                 inputs = [s0, a0, g, m, e]
+            else:
+                e = exp['expVal']
+                targets = [targets_dqn, np.zeros((self.batch_size, 1)), np.zeros((self.batch_size, 1))]
+                inputs = [s0, a0, g, m, np.repeat(0.5, self.batch_size, axis=0), e]
             loss = self.critic.qvalModel.train_on_batch(inputs, targets)
 
             for i, metric in enumerate(self.critic.qvalModel.metrics_names):
@@ -46,3 +53,49 @@ class DQNGM(DQNG):
         # temp = self.env.explor_temp(t)
         input.append(np.expand_dims([0.5], axis=0))
         return input
+
+    def reset(self):
+
+        if self.trajectory:
+            T = int(self.trajectory[-1]['terminal'])
+            R = np.sum([self.env.unshape(exp['reward'], exp['terminal']) for exp in self.trajectory])
+            S = len(self.trajectory)
+            self.env.processEp(R, S, T)
+            if self.args['--imit'] == '0':
+                for expe in reversed(self.trajectory):
+                    self.buffer.append(expe.copy())
+            else:
+                Es = [0]
+                goals = []
+                masks = []
+                for i, expe in enumerate(reversed(self.trajectory)):
+
+                    if self.trajectory[-1]['terminal']:
+                        Es[0] = Es[0] * self.critic.gamma + expe['reward']
+                        expe['expVal'] = Es[0]
+                    else:
+                        expe['expVal'] = -self.ep_steps
+                    self.buffer.append(expe.copy())
+
+                    if np.random.rand() < 0.1:
+                        goals.append(expe['state1'])
+                        object = np.random.choice(len(self.env.goals))
+                        masks.append(self.env.obj2mask(object))
+                        Es.append(0)
+
+                    for j, (g, m) in enumerate(zip(goals, masks)):
+                        expe['goal'] = g
+                        expe['mask'] = m
+                        expe = self.env.eval_exp(expe)
+                        Es[1 + j] = Es[1 + j] * self.critic.gamma + expe['reward']
+                        expe['expVal'] = Es[1 + j]
+                        self.buffer.append(expe.copy())
+
+
+
+            self.trajectory.clear()
+
+        state = self.env.reset()
+        self.episode_step = 0
+
+        return state
