@@ -1,15 +1,21 @@
 import numpy as np
 from gym import Env
 
+'''self.light = Light(self, 2, 3)
+        self.key1 = Key1(self, 0, 3)
+        self.chest1 = Chest1(self, 3, 2)
+        self.chest2 = Chest2(self, 5, 1)
+        self.chest3 = Chest3(self, 4, 6)'''
+
 MAP = [
     "+-------------+",
-    "| : :_:_| | : |",
-    "| : : : ~ :_: |",
-    "|_:_:_: | : | |",
-    "| :_:_| | : | |",
-    "| : :_:_| : | |",
-    "| : |_: | : | |",
-    "| : : : | : | |",
+    "|    _ _| |   |",
+    "|       :  _  |",
+    "|_ _ _  |   | |",
+    "|    _| |   | |",
+    "|    _ _|   | |",
+    "|       |   | |",
+    "|       |   | |",
     "+-------------+",
 ]
 
@@ -149,36 +155,36 @@ class Playroom(Env):
         # print(self.get_state(), a)
 
         if a==Actions.UP and self.desc[1 + self.x, 1 + 2 * self.y] == b" ":
-            self.y = min(self.y + 1, self.maxR)
+            self.x = min(self.x + 1, self.maxR)
             h = self.get_held()
             if h >= 0:
-                self.objects[h].y = self.y
+                self.objects[h].x = self.x
 
         elif a==Actions.DOWN and self.desc[self.x, 1 + 2 * self.y] == b" ":
-            self.y = max(self.y - 1, 0)
+            self.x = max(self.x - 1, 0)
             h = self.get_held()
             if h >= 0:
-                self.objects[h].y = self.y
+                self.objects[h].x = self.x
 
         elif a==Actions.LEFT:
             h = self.get_held()
             if self.desc[1 + self.x, 2 * self.y] == b" ":
-                self.x = max(self.x - 1, 0)
+                self.y = max(self.y - 1, 0)
                 if h >= 0:
-                    self.objects[h].x = self.x
-            elif self.desc[1 + self.x, 2 * self.y] == b"~" and h==0:
-                self.x = max(self.x - 1, 0)
-                self.objects[h].x = self.x
+                    self.objects[h].y = self.y
+            elif self.desc[1 + self.x, 2 * self.y] == b":" and h==0:
+                self.y = max(self.y - 1, 0)
+                self.objects[h].y = self.y
 
         elif a==Actions.RIGHT:
             h = self.get_held()
             if self.desc[1 + self.x, 2 * self.y + 2] == b" ":
-                self.x = min(self.x + 1, self.maxC)
+                self.y = min(self.y + 1, self.maxC)
                 if h >= 0:
-                    self.objects[h].x = self.x
-            elif self.desc[1 + self.x, 2 * self.y + 2] == b"~" and h==0:
-                self.x = min(self.x + 1, self.maxC)
-                self.objects[h].x = self.x
+                    self.objects[h].y = self.y
+            elif self.desc[1 + self.x, 2 * self.y + 2] == b":" and h==0:
+                self.y = min(self.y + 1, self.maxC)
+                self.objects[h].y = self.y
 
         elif a==Actions.TAKE:
             h = self.get_held()
@@ -219,19 +225,13 @@ class Playroom(Env):
                 
         self.lastaction = a
 
-        return np.array(self.get_state())
+        return np.array(self.state)
 
     def get_underagent(self, x=0, y=0):
         for i, obj in enumerate(self.objects):
             if obj.x == self.x + x and obj.y == self.y + y and obj.in_hand == 0:
                 return i
         return -1
-
-    def get_state(self):
-        res = [self.x, self.y]
-        for obj in self.objects:
-            res += [obj.x, obj.y, obj.s, obj.in_hand]
-        return res
 
     def get_held(self):
         for i, obj in enumerate(self.objects):
@@ -241,7 +241,7 @@ class Playroom(Env):
 
     def reset(self):
         self.init()
-        return np.array(self.get_state())
+        return np.array(self.state)
 
     @property
     def state_high(self):
@@ -249,6 +249,13 @@ class Playroom(Env):
         for o in self.objects:
             smax += [self.maxR, self.maxC, o.smax, 1]
         return smax
+
+    @property
+    def state(self):
+        res = [self.x, self.y]
+        for obj in self.objects:
+            res += [obj.x, obj.y, obj.s, obj.in_hand]
+        return res
 
     @property
     def state_init(self):
@@ -261,7 +268,7 @@ class Playroom(Env):
 if __name__ == '__main__':
     env = Playroom()
     env.reset()
-    for a in [0, 0, 2, 2, 4, 2, 2, 5, 3, 1]:
+    for a in [0, 0, 2, 2, 2, 4, 0, 0, 0,3,3,3,1,2,2,4, 4, 4, 4, 4]:
         # a = np.random.randint(11)
         env.step(a)
 
