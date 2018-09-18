@@ -8,15 +8,14 @@ from .base import CPBased
 class PlayroomGM(CPBased):
     def __init__(self, env, args):
         super(PlayroomGM, self).__init__(env, args)
-        self.goals = ['x', 'y'] + [obj.name for obj in self.env.objects]
+        self.goals = ['xy'] + [obj.name for obj in self.env.objects]
         self.object = None
         self.mask = None
         self.init()
-        # self.obj_feat = [[0, 1]] + [o.get_feat() for o in self.env.objects]
-        self.obj_feat = [[i] for i in range(14)]
+        self.obj_feat = [[0, 1]] + [[i] for i in range(2, 14)]
         self.state_low = self.env.low
         self.state_high = self.env.high
-        self.init_state = self.env.init
+        self.init_state = np.array(self.env.init)
 
     def step(self, exp):
         self.steps[self.object] += 1
@@ -47,7 +46,7 @@ class PlayroomGM(CPBased):
         self.object = self.get_idx()
         self.attempts[self.object] += 1
         features = self.obj_feat[self.object]
-        self.goal = np.array(self.init_state)
+        self.goal = self.init_state.copy()
         self.mask = self.obj2mask(self.object)
         while True:
             for idx in features:

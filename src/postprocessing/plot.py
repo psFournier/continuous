@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-DIR = '../../log/cluster/last'
+DIR = '../../log/cluster/1809'
 ENV = 'dqn*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
-if 11:
+if 0:
     for run in runs:
 
         config = pd.read_json(os.path.join(run, 'config.txt'), lines=True)

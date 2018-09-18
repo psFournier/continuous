@@ -73,10 +73,12 @@ class DQNGM(DQNG):
                     self.bufferImit.append(expe.copy())
 
                     if np.random.rand() < 0.1:
-                        goals.append(expe['state1'])
-                        object = np.random.choice(len(self.env.goals))
-                        masks.append(self.env.obj2mask(object))
-                        Es.append(0)
+                        for obj, name in enumerate(self.env.goals):
+                            m = self.env.obj2mask(obj)
+                            if (expe['state1'][np.where(m)] != self.env.init_state[np.where(m)]).any():
+                                goals.append(expe['state1'])
+                                masks.append(self.env.obj2mask(obj))
+                                Es.append(0)
 
                     for j, (g, m) in enumerate(zip(goals, masks)):
                         expe['goal'] = g

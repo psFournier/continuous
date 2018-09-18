@@ -8,18 +8,16 @@ from gym import Env
         self.chest3 = Chest3(self, 4, 6)'''
 
 MAP = [
-    "+-------------------+",
-    "|         |         |",
-    "|                   |",
-    "|                   |",
-    "|                   |",
-    "|_       _|_       _|",
-    "|         |         |",
-    "|                   |",
-    "|                   |",
-    "|                   |",
-    "|         |         |",
-    "+-------------------+",
+    "+----------------+",
+    "|                |",
+    "|                |",
+    "|                |",
+    "|                |",
+    "|                |",
+    "|                |",
+    "|                |",
+    "|                |",
+    "+----------------+",
 ]
 
 class Actions:
@@ -154,18 +152,18 @@ class Playroom(Env):
         self.x = 0
         self.y = 0
         self.objects = []
-        self.light1 = Light(self, 0, 4, 'light1')
-        self.light2 = Light(self, 0, 9, 'light2')
-        self.light3 = Light(self, 5, 4, 'light3')
-        self.light4 = Light(self, 5, 9, 'light4')
-        self.key1 = Key(self, 4, 0, 'key1', self.light1, [0, 1])
-        self.key2 = Key(self, 4, 5, 'key2', self.light1, [0.2, 0.8])
-        self.key3 = Key(self, 9, 0, 'key3', self.light1, [0.4, 0.6])
-        self.key4 = Key(self, 9, 5, 'key4', self.light1, [0.6, 0.4])
+        self.light1 = Light(self, 0, 3, 'light1')
+        self.light2 = Light(self, 0, 7, 'light2')
+        self.light3 = Light(self, 4, 3, 'light3')
+        self.light4 = Light(self, 4, 7, 'light4')
+        self.key1 = Key(self, 3, 0, 'key1', self.light1, [0, 1])
+        self.key2 = Key(self, 3, 4, 'key2', self.light1, [0.1, 0.9])
+        self.key3 = Key(self, 7, 0, 'key3', self.light1, [0.2, 0.8])
+        self.key4 = Key(self, 7, 4, 'key4', self.light1, [0.3, 0.7])
         self.chest1 = Chest(self, 2, 2, 'chest1', self.light1, self.key1, [0, 1])
-        self.chest2 = Chest(self, 2, 7, 'chest2', self.light2, self.key2, [0.2, 0.8])
-        self.chest3 = Chest(self, 7, 2, 'chest3', self.light3, self.key3, [0.4, 0.6])
-        self.chest3 = Chest(self, 7, 7, 'chest4', self.light4, self.key4, [0.6, 0.4])
+        self.chest2 = Chest(self, 2, 6, 'chest2', self.light2, self.key2, [0.1, 0.9])
+        self.chest3 = Chest(self, 6, 2, 'chest3', self.light3, self.key3, [0.2, 0.8])
+        self.chest3 = Chest(self, 6, 6, 'chest4', self.light4, self.key4, [0.3, 0.7])
         self.lastaction = None
 
     def step(self, a):
