@@ -19,39 +19,33 @@ class DQNGM(DQNG):
         self.critic = CriticDQNGM(args, env)
 
     def train(self):
-
         if self.buffer.nb_entries > self.batch_size:
             exp = self.buffer.sample(self.batch_size)
             s0, a0, s1, r, t, g, m = [exp[name] for name in self.buffer.names]
-            temp = np.expand_dims([1], axis=0)
-            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, g, m, temp])
-            a1 = np.argmax(a1Probs, axis=1)
-            q = self.critic.qvalTModel.predict_on_batch([s1, a1, g, m])
-            targets_dqn = self.compute_targets(r, t, q)
+            targets_dqn = self.critic.get_targets_dqn(r, t, s1, g, m)
             inputs = [s0, a0, g, m]
             loss = self.critic.qvalModel.train_on_batch(inputs, targets_dqn)
             for i, metric in enumerate(self.critic.qvalModel.metrics_names):
                 self.metrics[metric] += loss[i]
 
-            if self.args['--imit'] == '1' and self.bufferImit.nb_entries > self.batch_size:
-                exp = self.bufferImit.sample(self.batch_size)
-                s0, a0, s1, r, t, g, m, e = [exp[name] for name in self.bufferImit.names]
-                temp = np.expand_dims([1], axis=0)
-                a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, g, m, temp])
-                a1 = np.argmax(a1Probs, axis=1)
-                q = self.critic.qvalTModel.predict_on_batch([s1, a1, g, m])
-                targets_dqn = self.compute_targets(r, t, q)
-                targets = [targets_dqn, np.zeros((self.batch_size, 1)), np.zeros((self.batch_size, 1))]
-                inputs = [s0, a0, g, m, np.repeat(0.5, self.batch_size, axis=0), e]
-                loss = self.critic.imitModel.train_on_batch(inputs, targets)
-                for i, metric in enumerate(self.critic.imitModel.metrics_names):
-                    self.imitMetrics[metric] += loss[i]
+            if self.args['--imit'] == '1':
+                self.trainImit()
 
             self.critic.target_train()
 
+    def trainImit(self):
+        if self.bufferImit.nb_entries > self.batch_size:
+            exp = self.bufferImit.sample(self.batch_size)
+            s0, a0, s1, r, t, g, m, e = [exp[name] for name in self.bufferImit.names]
+            targets_dqn = self.critic.get_targets_dqn(r, t, s1, g, m)
+            targets = [targets_dqn, np.zeros((self.batch_size, 1)), np.zeros((self.batch_size, 1))]
+            inputs = [s0, a0, g, m, np.repeat(0.5, self.batch_size, axis=0), e]
+            loss = self.critic.imitModel.train_on_batch(inputs, targets)
+            for i, metric in enumerate(self.critic.imitModel.metrics_names):
+                self.imitMetrics[metric] += loss[i]
+
     def make_input(self, state, t):
         input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, self.env.mask]]
-        # temp = self.env.explor_temp(t)
         input.append(np.expand_dims([0.5], axis=0))
         return input
 

@@ -2,9 +2,11 @@ from keras.models import Model
 from keras.layers import Dense, Input, Lambda
 from keras.optimizers import Adam
 import keras.backend as K
+import numpy as np
 
 class CriticDQN(object):
     def __init__(self, args, env):
+        self.env = env
         self.tau = 0.001
         self.s_dim = env.state_dim
         self.a_dim = (1,)
@@ -68,6 +70,20 @@ class CriticDQN(object):
         targetQval = Lambda(self.actionFilterFn, output_shape=(1,))([A, targetQvals])
         self.qvalTModel = Model([S, A], targetQval)
         self.target_train()
+
+    def get_targets_dqn(self, r, t, s):
+        temp = np.expand_dims([1], axis=0)
+        a1Probs = self.actionProbsModel.predict_on_batch([s, temp])
+        a1 = np.argmax(a1Probs, axis=1)
+        q = self.qvalTModel.predict_on_batch([s, a1])
+        targets_dqn = self.compute_targets(r, t, q)
+        return targets_dqn
+
+    def compute_targets(self, r, t, q):
+        targets = r + (1 - t) * self.gamma * np.squeeze(q)
+        if self.args['--clipping'] == '1':
+            targets = np.clip(targets, self.env.minR / (1 - self.gamma), self.env.maxR)
+        return targets
 
     def create_critic_network(self, S):
         l1 = Dense(400, activation="relu")(S)

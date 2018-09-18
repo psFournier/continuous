@@ -30,11 +30,7 @@ class DQN(Agent):
         if self.buffer.nb_entries > self.batch_size:
             exp = self.buffer.sample(self.batch_size)
             s0, a0, s1, r, t = [exp[name] for name in self.buffer.names]
-            temp = np.expand_dims([1], axis=0)
-            a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, temp])
-            a1 = np.argmax(a1Probs, axis=1)
-            q = self.critic.qvalTModel.predict_on_batch([s1, a1])
-            targets_dqn = self.compute_targets(r, t, q)
+            targets_dqn = self.critic.get_targets_dqn(r, t, s1)
             inputs = [s0, a0]
             loss = self.critic.qvalModel.train_on_batch(inputs, targets_dqn)
             for i, metric in enumerate(self.critic.qvalModel.metrics_names):
@@ -43,11 +39,7 @@ class DQN(Agent):
             if self.args['--imit'] != '0' and self.bufferImit.nb_entries > self.batch_size:
                 exp = self.bufferImit.sample(self.batch_size)
                 s0, a0, s1, r, t, e = [exp[name] for name in self.bufferImit.names]
-                temp = np.expand_dims([1], axis=0)
-                a1Probs = self.critic.actionProbsModel.predict_on_batch([s1, temp])
-                a1 = np.argmax(a1Probs, axis=1)
-                q = self.critic.qvalTModel.predict_on_batch([s1, a1])
-                targets_dqn = self.compute_targets(r, t, q)
+                targets_dqn = self.critic.get_targets_dqn(r, t, s1)
                 targets = [targets_dqn, np.zeros((self.batch_size, 1)), np.zeros((self.batch_size, 1))]
                 inputs = [s0, a0, e]
                 loss = self.critic.imitModel.train_on_batch(inputs, targets)

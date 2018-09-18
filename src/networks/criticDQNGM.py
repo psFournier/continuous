@@ -4,6 +4,7 @@ from keras.optimizers import Adam
 import keras.backend as K
 from keras.layers.merge import concatenate, multiply, add, subtract, maximum
 from .criticDQNG import CriticDQNG
+import numpy as np
 
 class CriticDQNGM(CriticDQNG):
     def __init__(self, args, env):
@@ -53,6 +54,14 @@ class CriticDQNGM(CriticDQNG):
         targetQval = Lambda(self.actionFilterFn, output_shape=(1,))([A, targetQvals])
         self.qvalTModel = Model([S, A, G, M], targetQval)
         self.target_train()
+
+    def get_targets_dqn(self, r, t, s, g=None, m=None):
+        temp = np.expand_dims([0.5], axis=0)
+        a1Probs = self.actionProbsModel.predict_on_batch([s, g, m, temp])
+        a1 = np.argmax(a1Probs, axis=1)
+        q = self.qvalTModel.predict_on_batch([s, a1, g, m])
+        targets_dqn = self.compute_targets(r, t, q)
+        return targets_dqn
 
     def create_critic_network(self, S, G=None, M=None):
         if self.args['--network'] == '1':
