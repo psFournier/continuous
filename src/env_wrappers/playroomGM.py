@@ -8,15 +8,15 @@ from .base import CPBased
 class PlayroomGM(CPBased):
     def __init__(self, env, args):
         super(PlayroomGM, self).__init__(env, args)
-        self.goals = ['agent'] + [obj.name for obj in self.env.objects]
+        self.goals = ['x', 'y'] + [obj.name for obj in self.env.objects]
         self.object = None
         self.mask = None
         self.init()
         # self.obj_feat = [[0, 1]] + [o.get_feat() for o in self.env.objects]
-        self.obj_feat = [[0, 1], [5], [8], [12], [16], [20]]
-        self.state_low = self.env.state_low
-        self.state_high = self.env.state_high
-        self.init_state = self.env.state_init
+        self.obj_feat = [[i] for i in range(14)]
+        self.state_low = self.env.low
+        self.state_high = self.env.high
+        self.init_state = self.env.init
 
     def step(self, exp):
         self.steps[self.object] += 1
@@ -64,11 +64,11 @@ class PlayroomGM(CPBased):
 
     @property
     def state_dim(self):
-        return 22,
+        return 14,
 
     @property
     def goal_dim(self):
-        return 22,
+        return 14,
 
     @property
     def action_dim(self):
