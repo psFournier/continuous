@@ -9,7 +9,7 @@ ENV = 'dqn*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
-if 0:
+if 11:
     for run in runs:
 
         config = pd.read_json(os.path.join(run, 'config.txt'), lines=True)
@@ -78,7 +78,7 @@ if 1:
     df2 = df
     df2 = df2[(df2['--agent'] == 'dqngm')]
     df2 = df2[(df2['--env'] == 'PlayroomGM-v0')]
-    df2 = df2[(df2['--w2'] == 0)]
+    # df2 = df2[(df2['--w2'] == 0)]
     # df2 = df2[(df2['--opt_init'] == 1)]
     # df2 = df2[(df2['--network'] == 2)]
     # df2 = df2[(df2['--clipping'] == 1)]
@@ -127,9 +127,9 @@ if 1:
             ax2[i % a, i // a].plot(g['step'], g[val]['median'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
             #                         label='CP_' + str(i) + "_smooth")
-            ax2[i % a, i // a].fill_between(g['step'],
-                                            g[val]['quant_inf'],
-                                            g[val]['quant_sup'], alpha=0.25, linewidth=0)
+            # ax2[i % a, i // a].fill_between(g['step'],
+            #                                 g[val]['quant_inf'],
+            #                                 g[val]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=val)
             ax2[i % a, i // a].legend()
             # ax2[i % a, i // a].set_ylim([0, 10])
