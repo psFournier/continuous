@@ -25,6 +25,7 @@ class Agent():
         self.stats = {}
         self.exp = {}
         self.metrics = {}
+        self.imitMetrics = {}
         self.trajectory = []
 
     def run(self):

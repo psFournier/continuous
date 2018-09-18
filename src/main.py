@@ -21,7 +21,7 @@ Options:
   --seed SEED              Random seed
   --theta THETA            CP importance for goal selection [default: 0]
   --shaping YES_NO         Reward shaping [default: 0]
-  --opt_init YES_NO        Positive initialisation [default: 0]
+  --opt_init YES_NO        Positive initialisation [default: 1]
   --max_steps VAL          Maximum total steps [default: 200000]
   --ep_steps VAL           Maximum episode steps [default: 200]
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
@@ -31,11 +31,12 @@ Options:
   --margin VAL             Large margin loss margin [default: 1]
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]
+  --w0 VAL        Weight for imitaiton loss with imitaiton [default: 1]
   --w1 VAL        Weight for imitaiton loss with imitaiton [default: 1]
   --w2 VAL        Weight for imitaiton loss with imitaiton [default: 1]
   --imit YES_NO            Self imitation [default: 0]
-  --explo VAL              Exploration type [default: 0]
-  --network VAL            Network type [default: 0]
+  --explo VAL              Exploration type [default: 1]
+  --network VAL            Network type [default: 2]
   --clipping VAL           Network type [default: 1]
 
 """

@@ -11,6 +11,7 @@ def array_min2d(x):
 
 class ReplayBuffer(object):
     def __init__(self, limit, names):
+        self.names = names
         self.contents = {}
         self.limit = limit
         self._next_idx = 0

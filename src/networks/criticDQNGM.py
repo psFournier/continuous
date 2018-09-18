@@ -19,11 +19,9 @@ class CriticDQNGM(CriticDQNG):
         actionProbs = Lambda(lambda x: K.softmax(x[0] / x[1]))([qvals, T])
         self.actionProbsModel = Model([S, G, M, T], actionProbs)
         qval = Lambda(self.actionFilterFn, output_shape=(1,))([A, qvals])
-
-        if self.args['--imit'] == '0':
-            self.qvalModel = Model([S, A, G, M], qval)
-            self.qvalModel.compile(loss='mse', optimizer=self.optimizer)
-            self.qvalModel.metrics_tensors = [qval]
+        self.qvalModel = Model([S, A, G, M], qval)
+        self.qvalModel.compile(loss='mse', optimizer=self.optimizer)
+        self.qvalModel.metrics_tensors = [qval]
 
         if self.args['--imit'] == '1':
             E = Input(shape=(1,), dtype='float32')
@@ -31,8 +29,8 @@ class CriticDQNGM(CriticDQNG):
             val = Lambda(lambda x: K.max(x, axis=1, keepdims=True))(qvals)
             advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
             imit = Lambda(lambda x: -K.log(x[0]) * x[1], name='imit')([actionProb, advantage])
-            self.qvalModel = Model([S, A, G, M, T, E], [qval, imit, advantage])
-            self.qvalModel.compile(loss=['mse', 'mae', 'mse'],
+            self.imitModel = Model([S, A, G, M, T, E], [qval, imit, advantage])
+            self.imitModel.compile(loss=['mse', 'mse', 'mse'],
                                    loss_weights=[1, float(self.args['--w1']), float(self.args['--w2'])],
                                    optimizer=self.optimizer)
 
@@ -41,8 +39,8 @@ class CriticDQNGM(CriticDQNG):
             val = Lambda(lambda x: K.max(x, axis=1, keepdims=True))(qvals)
             advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
             imit = Lambda(self.marginFn, output_shape=(1,), name='imit')([A, qvals, qval, advantage])
-            self.qvalModel = Model([S, A, G, M, E], [qval, imit, advantage])
-            self.qvalModel.compile(loss=['mse', 'mae', 'mse'],
+            self.imitModel = Model([S, A, G, M, E], [qval, imit, advantage])
+            self.imitModel.compile(loss=['mse', 'mse', 'mse'],
                                    loss_weights=[1, float(self.args['--w1']), float(self.args['--w2'])],
                                    optimizer=self.optimizer)
 
