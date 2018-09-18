@@ -31,7 +31,7 @@ class CriticDQNGM(CriticDQNG):
             advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
             imit = Lambda(lambda x: -K.log(x[0]) * x[1], name='imit')([actionProb, advantage])
             self.imitModel = Model([S, A, G, M, T, E], [qval, imit, advantage])
-            self.imitModel.compile(loss=['mse', 'mse', 'mse'],
+            self.imitModel.compile(loss=['mse', 'mae', 'mse'],
                                    loss_weights=[1, float(self.args['--w1']), float(self.args['--w2'])],
                                    optimizer=self.optimizer)
 
@@ -41,7 +41,7 @@ class CriticDQNGM(CriticDQNG):
             advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
             imit = Lambda(self.marginFn, output_shape=(1,), name='imit')([A, qvals, qval, advantage])
             self.imitModel = Model([S, A, G, M, E], [qval, imit, advantage])
-            self.imitModel.compile(loss=['mse', 'mse', 'mse'],
+            self.imitModel.compile(loss=['mse', 'mae', 'mse'],
                                    loss_weights=[1, float(self.args['--w1']), float(self.args['--w2'])],
                                    optimizer=self.optimizer)
 
@@ -64,32 +64,11 @@ class CriticDQNGM(CriticDQNG):
         return targets_dqn
 
     def create_critic_network(self, S, G=None, M=None):
-        if self.args['--network'] == '1':
-            l1 = concatenate([S, G, M])
-            l2 = Dense(400, activation="relu")(l1)
-            l3 = concatenate([l2, G, M])
-            l4 = Dense(300, activation="relu")(l3)
-            Q_values = Dense(self.num_actions)(l4)
-        elif self.args['--network'] == '2':
-            l1 = multiply([subtract([S, G]), M])
-            l2 = concatenate([l1, S])
-            l3 = Dense(400, activation="relu")(l2)
-            l4 = Dense(300, activation="relu")(l3)
-            Q_values = Dense(self.num_actions)(l4)
-        elif self.args['--network'] == '3':
-            shared_l = Dense(200, activation='relu')
-            l1 = shared_l(S)
-            l2 = shared_l(G)
-            l3 = shared_l(M)
-            l4 = multiply([subtract([l1, l2]), l3])
-            l5 = Dense(200, activation="relu")(l4)
-            l6 = Dense(300, activation="relu")(l5)
-            Q_values = Dense(self.num_actions)(l6)
-        else:
-            l1 = concatenate([S, G, M])
-            l2 = Dense(400, activation="relu")(l1)
-            l3 = Dense(300, activation="relu")(l2)
-            Q_values = Dense(self.num_actions)(l3)
+        l1 = multiply([subtract([S, G]), M])
+        l2 = concatenate([l1, S])
+        l3 = Dense(400, activation="relu")(l2)
+        l4 = Dense(300, activation="relu")(l3)
+        Q_values = Dense(self.num_actions)(l4)
         return Q_values
 
 
