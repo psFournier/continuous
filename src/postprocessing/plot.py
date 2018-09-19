@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-DIR = '../../log/cluster/1809'
+DIR = '../../log/cluster/last'
 ENV = 'dqn*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
@@ -32,10 +32,22 @@ else:
 print(df.columns)
 # y = ['imitloss']
 x = ['step']
-params = ['--agent', '--batchsize', '--env',
-       '--eval_freq', '--gamma', '--her', '--w1',
-       '--w2', '--per',
-       '--opt_init', '--shaping', '--theta', '--network', '--clipping', '--explo']
+params = ['--agent',
+          '--batchsize',
+          '--env',
+          '--eval_freq',
+          '--gamma',
+          '--her',
+          '--w0',
+          '--w1',
+          '--w2',
+          '--per',
+          '--imit',
+          '--opt_init',
+          '--shaping',
+          '--theta',
+          '--clipping',
+          '--explo']
 
 if 0:
     df1 = df
@@ -78,14 +90,15 @@ if 1:
     df2 = df
     df2 = df2[(df2['--agent'] == 'dqngm')]
     df2 = df2[(df2['--env'] == 'PlayroomGM-v0')]
-    # df2 = df2[(df2['--w2'] == 0)]
+    # df2 = df2[(df2['--w1'] == 0)]
     # df2 = df2[(df2['--opt_init'] == 1)]
     # df2 = df2[(df2['--network'] == 2)]
     # df2 = df2[(df2['--clipping'] == 1)]
     # df2 = df2[(df2['--explo'] == 1)]
     # df2 = df2[(df2['--theta'] == 4)]
     # df2 = df2[(df2['--theta']     == 0) | (df2['--theta'] == 2)]
-    y = ['R'+i for i in ['_agent', '_light', '_key1', '_chest1', '_chest2', '_chest3']]
+    y = ['R_xy']+['R'+s+str(i) for s in ['_light'] for i in range(1, 5)]
+    # y = ['R' + i for i in ['_agent', '_light', '_key1', '_chest1', '_chest2', '_chest3']]
     # y = ['imit_loss', 'lambda_2_loss', 'loss', 'advantage_loss']
     # x = ['step' + i for i in ['_agent', '_light', '_sound', '_toy1', '_toy2']]
     # y = ['R'+i for i in ['_agent', '_passenger', '_taxi']]
@@ -127,9 +140,9 @@ if 1:
             ax2[i % a, i // a].plot(g['step'], g[val]['median'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
             #                         label='CP_' + str(i) + "_smooth")
-            # ax2[i % a, i // a].fill_between(g['step'],
-            #                                 g[val]['quant_inf'],
-            #                                 g[val]['quant_sup'], alpha=0.25, linewidth=0)
+            ax2[i % a, i // a].fill_between(g['step'],
+                                            g[val]['quant_inf'],
+                                            g[val]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=val)
             ax2[i % a, i // a].legend()
             # ax2[i % a, i // a].set_ylim([0, 10])

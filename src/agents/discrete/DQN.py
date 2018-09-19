@@ -13,7 +13,7 @@ class DQN(Agent):
         self.init(args, env)
         for metric in self.critic.qvalModel.metrics_names:
             self.metrics[metric] = 0
-        if args['--imit'] != 0:
+        if args['--imit'] != '0':
             for metric in self.critic.imitModel.metrics_names:
                 self.imitMetrics[metric] = 0
 

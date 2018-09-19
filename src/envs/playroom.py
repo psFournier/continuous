@@ -8,16 +8,15 @@ from gym import Env
         self.chest3 = Chest3(self, 4, 6)'''
 
 MAP = [
-    "+----------------+",
-    "|                |",
-    "|                |",
-    "|                |",
-    "|                |",
-    "|                |",
-    "|                |",
-    "|                |",
-    "|                |",
-    "+----------------+",
+    " _ _ _ _ _ _ _ _ ",
+    "|               |",
+    "|               |",
+    "|               |",
+    "|               |",
+    "|               |",
+    "|               |",
+    "|               |",
+    "|_ _ _ _ _ _ _ _|",
 ]
 
 class Actions:
@@ -144,9 +143,9 @@ class Playroom(Env):
 
     def __init__(self):
         self.desc = np.asarray(MAP,dtype='c')
-        self.maxR = 6
-        self.maxC = 6
         self.initialize()
+        self.maxR = self.desc.shape[0] - 2
+        self.maxC = (self.desc.shape[1] - 1) // 2 - 1
 
     def initialize(self):
         self.x = 0
@@ -157,25 +156,25 @@ class Playroom(Env):
         self.light3 = Light(self, 4, 3, 'light3')
         self.light4 = Light(self, 4, 7, 'light4')
         self.key1 = Key(self, 3, 0, 'key1', self.light1, [0, 1])
-        self.key2 = Key(self, 3, 4, 'key2', self.light1, [0.1, 0.9])
-        self.key3 = Key(self, 7, 0, 'key3', self.light1, [0.2, 0.8])
-        self.key4 = Key(self, 7, 4, 'key4', self.light1, [0.3, 0.7])
+        self.key2 = Key(self, 3, 4, 'key2', self.light2, [0.1, 0.9])
+        self.key3 = Key(self, 7, 0, 'key3', self.light3, [0.2, 0.8])
+        self.key4 = Key(self, 7, 4, 'key4', self.light4, [0.3, 0.7])
         self.chest1 = Chest(self, 2, 2, 'chest1', self.light1, self.key1, [0, 1])
         self.chest2 = Chest(self, 2, 6, 'chest2', self.light2, self.key2, [0.1, 0.9])
         self.chest3 = Chest(self, 6, 2, 'chest3', self.light3, self.key3, [0.2, 0.8])
-        self.chest3 = Chest(self, 6, 6, 'chest4', self.light4, self.key4, [0.3, 0.7])
+        self.chest4 = Chest(self, 6, 6, 'chest4', self.light4, self.key4, [0.3, 0.7])
         self.lastaction = None
 
     def step(self, a):
 
         if a==Actions.UP and self.desc[1 + self.x, 1 + 2 * self.y] == b" ":
-            self.x = min(self.x + 1, self.maxR)
+            self.x += 1
             h = self.get_held()
             if h >= 0:
                 self.objects[h].x = self.x
 
         elif a==Actions.DOWN and self.desc[self.x, 1 + 2 * self.y] == b" ":
-            self.x = max(self.x - 1, 0)
+            self.x -= 1
             h = self.get_held()
             if h >= 0:
                 self.objects[h].x = self.x
@@ -183,22 +182,16 @@ class Playroom(Env):
         elif a==Actions.LEFT:
             h = self.get_held()
             if self.desc[1 + self.x, 2 * self.y] == b" ":
-                self.y = max(self.y - 1, 0)
+                self.y -= 1
                 if h >= 0:
                     self.objects[h].y = self.y
-            elif self.desc[1 + self.x, 2 * self.y] == b":" and h==0:
-                self.y = max(self.y - 1, 0)
-                self.objects[h].y = self.y
 
         elif a==Actions.RIGHT:
             h = self.get_held()
             if self.desc[1 + self.x, 2 * self.y + 2] == b" ":
-                self.y = min(self.y + 1, self.maxC)
+                self.y += 1
                 if h >= 0:
                     self.objects[h].y = self.y
-            elif self.desc[1 + self.x, 2 * self.y + 2] == b":" and h==0:
-                self.y = min(self.y + 1, self.maxC)
-                self.objects[h].y = self.y
 
         elif a==Actions.TAKE:
             h = self.get_held()
@@ -259,7 +252,7 @@ class Playroom(Env):
 
     @property
     def high(self):
-        res = [9, 9]
+        res = [self.maxR, self.maxC]
         for obj in self.objects:
             res += obj.high
         return res

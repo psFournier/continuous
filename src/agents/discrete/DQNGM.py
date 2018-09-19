@@ -60,33 +60,31 @@ class DQNGM(DQNG):
                 self.buffer.append(expe.copy())
 
             if self.args['--imit'] == '1':
-                Es = [0]
+                Es = []
                 goals = []
                 masks = []
+                counts = []
                 for i, expe in enumerate(reversed(self.trajectory)):
 
-                    if self.trajectory[-1]['terminal']:
-                        Es[0] = Es[0] * self.critic.gamma + expe['reward']
-                        expe['expVal'] = Es[0]
-                    else:
-                        expe['expVal'] = -self.ep_steps
-                    self.bufferImit.append(expe.copy())
-
-                    if np.random.rand() < 0.1:
+                    if np.random.rand() < 0.01 or expe['terminal']:
                         for obj, name in enumerate(self.env.goals):
                             m = self.env.obj2mask(obj)
                             if (expe['state1'][np.where(m)] != self.env.init_state[np.where(m)]).any():
-                                goals.append(expe['state1'])
-                                masks.append(self.env.obj2mask(obj))
+                                goals.append(expe['state1'].copy())
+                                masks.append(self.env.obj2mask(obj).copy())
                                 Es.append(0)
+                                counts.append(0)
 
                     for j, (g, m) in enumerate(zip(goals, masks)):
-                        expe['goal'] = g
-                        expe['mask'] = m
-                        expe = self.env.eval_exp(expe)
-                        Es[1 + j] = Es[1 + j] * self.critic.gamma + expe['reward']
-                        expe['expVal'] = Es[1 + j]
-                        self.bufferImit.append(expe.copy())
+                        # if counts[j] <=
+                        altExp = expe.copy()
+                        altExp['goal'] = g
+                        altExp['mask'] = m
+                        altExp = self.env.eval_exp(altExp)
+                        Es[j] = Es[j] * self.critic.gamma + altExp['reward']
+                        counts[j] += 1
+                        altExp['expVal'] = Es[j]
+                        self.bufferImit.append(altExp.copy())
 
             self.trajectory.clear()
 
