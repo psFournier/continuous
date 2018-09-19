@@ -32,7 +32,7 @@ class CriticDQNGM(CriticDQNG):
             imit = Lambda(lambda x: -K.log(x[0]) * x[1], name='imit')([actionProb, advantage])
             self.imitModel = Model([S, A, G, M, T, E], [qval, imit, advantage])
             self.imitModel.compile(loss=['mse', 'mae', 'mse'],
-                                   loss_weights=[1, float(self.args['--w1']), float(self.args['--w2'])],
+                                   loss_weights=[float(self.args['--w0']), float(self.args['--w1']), float(self.args['--w2'])],
                                    optimizer=self.optimizer)
 
         if self.args['--imit'] == '2':
@@ -42,7 +42,8 @@ class CriticDQNGM(CriticDQNG):
             imit = Lambda(self.marginFn, output_shape=(1,), name='imit')([A, qvals, qval, advantage])
             self.imitModel = Model([S, A, G, M, E], [qval, imit, advantage])
             self.imitModel.compile(loss=['mse', 'mae', 'mse'],
-                                   loss_weights=[1, float(self.args['--w1']), float(self.args['--w2'])],
+                                   loss_weights=[float(self.args['--w0']), float(self.args['--w1']),
+                                                 float(self.args['--w2'])],
                                    optimizer=self.optimizer)
 
     def initTargetModels(self):

@@ -87,6 +87,9 @@ class Agent():
             for metric, val in self.metrics.items():
                 self.stats[metric] = val / self.eval_freq
                 self.metrics[metric] = 0
+            for metric, val in self.imitMetrics.items():
+                self.stats[metric] = val / self.eval_freq
+                self.imitMetrics[metric] = 0
 
             for key, val in wrapper_stats.items():
                 self.stats[key] = val

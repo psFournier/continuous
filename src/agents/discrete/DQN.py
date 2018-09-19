@@ -12,10 +12,10 @@ class DQN(Agent):
         self.args = args
         self.init(args, env)
         for metric in self.critic.qvalModel.metrics_names:
-            self.metrics[metric] = 0
+            self.metrics[self.critic.qvalModel.name + '_' + metric] = 0
         if args['--imit'] != '0':
             for metric in self.critic.imitModel.metrics_names:
-                self.imitMetrics[metric] = 0
+                self.imitMetrics[self.critic.imitModel.name + '_' + metric] = 0
 
     def init(self, args ,env):
         names = ['state0', 'action', 'state1', 'reward', 'terminal']

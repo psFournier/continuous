@@ -26,7 +26,7 @@ class DQNGM(DQNG):
             inputs = [s0, a0, g, m]
             loss = self.critic.qvalModel.train_on_batch(inputs, targets_dqn)
             for i, metric in enumerate(self.critic.qvalModel.metrics_names):
-                self.metrics[metric] += loss[i]
+                self.metrics[self.critic.qvalModel.name + '_' + metric] += loss[i]
 
             if self.args['--imit'] == '1':
                 self.trainImit()
@@ -42,7 +42,7 @@ class DQNGM(DQNG):
             inputs = [s0, a0, g, m, np.repeat(0.5, self.batch_size, axis=0), e]
             loss = self.critic.imitModel.train_on_batch(inputs, targets)
             for i, metric in enumerate(self.critic.imitModel.metrics_names):
-                self.imitMetrics[metric] += loss[i]
+                self.imitMetrics[self.critic.imitModel.name + '_' + metric] += loss[i]
 
     def make_input(self, state, t):
         input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, self.env.mask, [0.5]]]
