@@ -45,8 +45,7 @@ class DQNGM(DQNG):
                 self.imitMetrics[metric] += loss[i]
 
     def make_input(self, state, t):
-        input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, self.env.mask]]
-        input.append(np.expand_dims([0.5], axis=0))
+        input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, self.env.mask, [0.5]]]
         return input
 
     def reset(self):

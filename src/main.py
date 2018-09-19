@@ -27,7 +27,6 @@ Options:
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
   --eval_freq VAL          Logging frequency [default: 2000]
   --per YES_NO             Prioritized Experience Replay [default: 0]
-  --her YES_NO             Hindsight Experience Replay [default: 0]
   --margin VAL             Large margin loss margin [default: 1]
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]
@@ -35,9 +34,6 @@ Options:
   --w1 VAL        Weight for imitaiton loss with imitaiton [default: 1]
   --w2 VAL        Weight for imitaiton loss with imitaiton [default: 1]
   --imit YES_NO            Self imitation [default: 0]
-  --explo VAL              Exploration type [default: 1]
-  --clipping VAL           Network type [default: 1]
-
 """
 
 def build_logger(args):

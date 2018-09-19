@@ -27,14 +27,6 @@ class CPBased(Wrapper):
         self.attempts = [0 for _ in self.goals]
         self.mincp = min([q.mincp for q in self.queues])
 
-    # def explor_temp(self, t):
-    #     T = self.queues[self.goal].T
-    #     return self.explorations[self.goal].value(t, T)
-
-    def explor_eps(self):
-        step = self.steps[self.goal]
-        return 1 + min(float(step) / 2e4, 1) * (0.1 - 1)
-
     def processEp(self, R, S, T):
         self.queues[self.goal].append({'R': R, 'S': S, 'T': T})
         self.queue.append({'R': R, 'S': S, 'T': T})

@@ -81,8 +81,7 @@ class CriticDQN(object):
 
     def compute_targets(self, r, t, q):
         targets = r + (1 - t) * self.gamma * np.squeeze(q)
-        if self.args['--clipping'] == '1':
-            targets = np.clip(targets, self.env.minR / (1 - self.gamma), self.env.maxR)
+        targets = np.clip(targets, self.env.minR / (1 - self.gamma), self.env.maxR)
         return targets
 
     def create_critic_network(self, S):

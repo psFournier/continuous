@@ -48,18 +48,6 @@ class DQN(Agent):
 
             self.critic.target_train()
 
-    def compute_targets(self, r, t, q):
-        targets = []
-        for k in range(self.batch_size):
-            target = r[k] + (1 - t[k]) * self.critic.gamma * q[k]
-            if self.args['--clipping'] == '1':
-                target_clip = np.clip(target, self.env.minR / (1 - self.critic.gamma), self.env.maxR)
-                targets.append(target_clip)
-            else:
-                targets.append(target)
-        targets = np.array(targets)
-        return targets
-
     def reset(self):
 
         if self.trajectory:
@@ -89,22 +77,13 @@ class DQN(Agent):
 
     def make_input(self, state, t):
         input = [np.reshape(state, (1, self.critic.s_dim[0]))]
-        # temp = self.env.explor_temp(t)
         input.append(np.expand_dims([0.5], axis=0))
         return input
 
     def act(self, state):
         input = self.make_input(state, self.env_step)
         actionProbs = self.critic.actionProbsModel.predict(input, batch_size=1)
-        if self.args['--explo'] == '1':
-            action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
-        else:
-            # eps = self.env.explor_eps()
-            eps = 1 + min(float(self.env_step) / 2e4, 1) * (0.1 - 1)
-            if np.random.random() < eps:
-                action = np.random.choice(range(self.env.action_dim))
-            else:
-                action = np.argmax(actionProbs[0], axis=0)
+        action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
         return action
 
 
