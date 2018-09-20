@@ -23,10 +23,11 @@ class DQNGM(DQNG):
             exp = self.buffer.sample(self.batch_size)
             s0, a0, s1, r, t, g, m = [exp[name] for name in self.buffer.names]
             targets_dqn = self.critic.get_targets_dqn(r, t, s1, g, m)
-            inputs = [s0, a0, g, m]
-            loss = self.critic.qvalModel.train_on_batch(inputs, targets_dqn)
-            for i, metric in enumerate(self.critic.qvalModel.metrics_names):
-                self.metrics[self.critic.qvalModel.name + '_' + metric] += loss[i]
+            inputs = [s0, a0, g, m, targets_dqn]
+            loss_dqn, val, qval = self.critic.trainCritic(inputs)
+            self.metrics['loss_dqn'] += np.squeeze(loss_dqn)
+            self.metrics['val'] += np.mean(val)
+            self.metrics['qval'] += np.mean(qval)
 
             if self.args['--imit'] == '1':
                 self.trainImit()
@@ -38,11 +39,11 @@ class DQNGM(DQNG):
             exp = self.bufferImit.sample(self.batch_size)
             s0, a0, s1, r, t, g, m, e = [exp[name] for name in self.bufferImit.names]
             targets_dqn = self.critic.get_targets_dqn(r, t, s1, g, m)
-            targets = [targets_dqn, np.zeros((self.batch_size, 1)), np.zeros((self.batch_size, 1))]
-            inputs = [s0, a0, g, m, np.repeat(0.5, self.batch_size, axis=0), e]
-            loss = self.critic.imitModel.train_on_batch(inputs, targets)
-            for i, metric in enumerate(self.critic.imitModel.metrics_names):
-                self.imitMetrics[self.critic.imitModel.name + '_' + metric] += loss[i]
+            inputs = [s0, a0, g, m, 0.5 * np.ones(shape=(self.batch_size,1)), e, targets_dqn]
+            loss_dqn2, loss_imit, loss_adv = self.critic.trainImit(inputs)
+            self.metrics['loss_dqn2'] += np.squeeze(loss_dqn2)
+            self.metrics['loss_imit'] += np.mean(loss_imit)
+            self.metrics['loss_adv'] += np.mean(loss_adv)
 
     def make_input(self, state, t):
         input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, self.env.mask, [0.5]]]
@@ -82,7 +83,7 @@ class DQNGM(DQNG):
                         altExp = self.env.eval_exp(altExp)
                         Es[j] = Es[j] * self.critic.gamma + altExp['reward']
                         counts[j] += 1
-                        altExp['expVal'] = Es[j]
+                        altExp['expVal'] = np.expand_dims(Es[j], axis=1)
                         self.bufferImit.append(altExp.copy())
 
             self.trajectory.clear()

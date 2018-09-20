@@ -37,7 +37,6 @@ params = ['--agent',
           '--env',
           '--eval_freq',
           '--gamma',
-          '--her',
           '--w0',
           '--w1',
           '--w2',
@@ -45,25 +44,25 @@ params = ['--agent',
           '--imit',
           '--opt_init',
           '--shaping',
-          '--theta',
-          '--clipping',
-          '--explo']
+          '--theta']
 
 if 0:
     df1 = df
     # df1 = df1[(df1['--agent'] == 'dqng')]
     # df1 = df1[(df1['step'] > 4000)]
     # df1 = df1[(df1['--opt_init'] == 0)]
-    df1 = df1[(df1['--theta'] == 3)]
+    df1 = df1[(df1['--w1'] == 0) & (df1['--w2'] == 0)]
+    df1 = df1[(df1['--w0'] == 1)]
+    y = ['R_xy'] + ['R' + s + str(i) for s in ['_light'] for i in range(1, 5)]
+    y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
+    params += ['num_run']
     for param in params:
         print(df1[param].unique())
-    a, b = 3,4
+    a, b = 2,3
     fig1, ax1 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
-    y = 'R_2'
-    for j, (name, g) in enumerate(df1.groupby(params)):
-        for i, (num_run, g2) in enumerate(g.groupby('num_run')):
-            ax1[i % a, i // a].scatter(g2['step_toy2'], g2['R_toy2'], s=1, c='b')
-            print(g2['R_toy2'])
+    for j, (num_run, g) in enumerate(df1.groupby('num_run')):
+        for i, val in enumerate(y):
+            ax1[i % a, i // a].plot(g['step'], g[val], label=num_run)
             # ax1[i % a, i // a].plot(g2['step'], g2['CP_toy2'])
             # ax1[i % a, i // a].plot(g2['step'], g2['R_toy2'])
             # ax1[i % a, i // a].plot(g2['step'], g2['attempt_toy2'])
@@ -77,8 +76,7 @@ if 0:
             # ax1[i % a, i // a].plot(g2['step'], g2['attempt_2'], label='attempt_2')
             # ax1[i % a, i // a].plot(g2['step'], g2['done_2'], label='done_2')
             # ax1[i % a, i // a].plot(g2['step'], g2[y].ewm(10).mean().diff(20), label=y+"'")
-            break
-        break
+            # ax1[i % a, i // a].set_ylim([0, 1])
 
     fig1.suptitle('theta: 3')
 
@@ -90,15 +88,16 @@ if 1:
     df2 = df
     df2 = df2[(df2['--agent'] == 'dqngm')]
     df2 = df2[(df2['--env'] == 'PlayroomGM-v0')]
-    df2 = df2[(df2['--w1'] == 1) & (df2['--w2'] != 0)]
-    # df2 = df2[(df2['--w2'] == 0)]
+    # df2 = df2[(df2['--w1'] == 1) & (df2['--w2'] == 1)]
+    df2 = df2[(df2['--w0'] == 1)]
     # df2 = df2[(df2['--opt_init'] == 1)]
     # df2 = df2[(df2['--network'] == 2)]
     # df2 = df2[(df2['--clipping'] == 1)]
     # df2 = df2[(df2['--explo'] == 1)]
     # df2 = df2[(df2['--theta'] == 4)]
     # df2 = df2[(df2['--theta']     == 0) | (df2['--theta'] == 2)]
-    y = ['R_xy']+['R'+s+str(i) for s in ['_key'] for i in range(1, 5)]
+    # y = ['R_xy']+['R'+s+str(i) for s in ['_key'] for i in range(1, 5)]
+    y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
     # y = ['R' + i for i in ['_agent', '_light', '_key1', '_chest1', '_chest2', '_chest3']]
     # y = ['loss', 'advantage_loss']
     # x = ['step' + i for i in ['_agent', '_light', '_sound', '_toy1', '_toy2']]
@@ -138,12 +137,12 @@ if 1:
                 label = ','.join(['{}:{}'.format(paramsStudied[k][2:], name [k]) for k in range(len(paramsStudied))])
             else:
                 label = '{}:{}'.format(paramsStudied[0][2:], name)
-            ax2[i % a, i // a].plot(g['step'], g[val]['median'], label=label)
+            ax2[i % a, i // a].plot(g['step'], g[val]['mean'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
             #                         label='CP_' + str(i) + "_smooth")
-            ax2[i % a, i // a].fill_between(g['step'],
-                                            g[val]['quant_inf'],
-                                            g[val]['quant_sup'], alpha=0.25, linewidth=0)
+            # ax2[i % a, i // a].fill_between(g['step'],
+            #                                 g[val]['quant_inf'],
+            #                                 g[val]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=val)
             ax2[i % a, i // a].legend()
             # ax2[i % a, i // a].set_ylim([0, 10])

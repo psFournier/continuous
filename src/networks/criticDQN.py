@@ -38,9 +38,9 @@ class CriticDQN(object):
         actionProbs = Lambda(lambda x: K.softmax(x[0]/x[1]))([qvals, T])
         self.actionProbsModel = Model([S, T], actionProbs)
         qval = Lambda(self.actionFilterFn, output_shape=(1,), name='qval')([A, qvals])
-        self.qvalModel = Model([S, A], qval)
-        self.qvalModel.compile(loss='mse', optimizer=self.optimizer)
-        self.qvalModel.metrics_tensors = [qval]
+        self.criticModel = Model([S, A], qval)
+        self.criticModel.compile(loss='mse', optimizer=self.optimizer)
+        self.criticModel.metrics_tensors = [qval]
 
         if self.args['--imit'] == '1':
             E = Input(shape=(1,), dtype='float32')
@@ -68,14 +68,14 @@ class CriticDQN(object):
         A = Input(shape=(1,), dtype='uint8')
         targetQvals = self.create_critic_network(S)
         targetQval = Lambda(self.actionFilterFn, output_shape=(1,))([A, targetQvals])
-        self.qvalTModel = Model([S, A], targetQval)
+        self.criticTmodel = Model([S, A], targetQval)
         self.target_train()
 
     def get_targets_dqn(self, r, t, s):
         temp = np.expand_dims([1], axis=0)
         a1Probs = self.actionProbsModel.predict_on_batch([s, temp])
         a1 = np.argmax(a1Probs, axis=1)
-        q = self.qvalTModel.predict_on_batch([s, a1])
+        q = self.criticTmodel.predict_on_batch([s, a1])
         targets_dqn = self.compute_targets(r, t, q)
         return targets_dqn
 
@@ -91,8 +91,8 @@ class CriticDQN(object):
         return Q_values
 
     def target_train(self):
-        weights = self.qvalModel.get_weights()
-        target_weights = self.qvalTModel.get_weights()
+        weights = self.criticModel.get_weights()
+        target_weights = self.criticTmodel.get_weights()
         for i in range(len(weights)):
             target_weights[i] = self.tau * weights[i] + (1 - self.tau)* target_weights[i]
-        self.qvalTModel.set_weights(target_weights)
+        self.criticTmodel.set_weights(target_weights)

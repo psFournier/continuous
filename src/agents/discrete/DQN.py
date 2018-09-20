@@ -11,11 +11,15 @@ class DQN(Agent):
         super(DQN, self).__init__(args, env, env_test, logger)
         self.args = args
         self.init(args, env)
-        for metric in self.critic.qvalModel.metrics_names:
-            self.metrics[self.critic.qvalModel.name + '_' + metric] = 0
+        self.metrics['loss_dqn'] = 0
+        self.metrics['qval'] = 0
+        self.metrics['val'] = 0
+        # for metric in self.critic.criticModel.metrics_names:
+        #     self.metrics[self.critic.criticModel.name + '_' + metric] = 0
         if args['--imit'] != '0':
-            for metric in self.critic.imitModel.metrics_names:
-                self.imitMetrics[self.critic.imitModel.name + '_' + metric] = 0
+            self.metrics['loss_dqn2'] = 0
+            self.metrics['loss_imit'] = 0
+            self.metrics['loss_adv'] = 0
 
     def init(self, args ,env):
         names = ['state0', 'action', 'state1', 'reward', 'terminal']
@@ -32,8 +36,8 @@ class DQN(Agent):
             s0, a0, s1, r, t = [exp[name] for name in self.buffer.names]
             targets_dqn = self.critic.get_targets_dqn(r, t, s1)
             inputs = [s0, a0]
-            loss = self.critic.qvalModel.train_on_batch(inputs, targets_dqn)
-            for i, metric in enumerate(self.critic.qvalModel.metrics_names):
+            loss = self.critic.criticModel.train_on_batch(inputs, targets_dqn)
+            for i, metric in enumerate(self.critic.criticModel.metrics_names):
                 self.metrics[metric] += loss[i]
 
             if self.args['--imit'] != '0' and self.bufferImit.nb_entries > self.batch_size:
@@ -84,6 +88,6 @@ class DQN(Agent):
         input = self.make_input(state, self.env_step)
         actionProbs = self.critic.actionProbsModel.predict(input, batch_size=1)
         action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
-        return action
+        return np.expand_dims(action, axis=1)
 
 
