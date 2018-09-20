@@ -6,6 +6,41 @@ from utils.linearSchedule import LinearSchedule
 from abc import ABCMeta, abstractmethod
 # Wrappers override step, reset functions, as well as the defintion of action, observation and goal spaces.
 
+class Base(Wrapper):
+    def __init__(self, env, args):
+        super(Base, self).__init__(env)
+        self.args = args
+        self.minR = -1
+        self.maxR = 0
+        self.init()
+
+    def init(self):
+        self.queue = CompetenceQueue()
+
+    def step(self, exp):
+        exp['state1'], exp['reward'], exp['terminal'], _ = self.env.step(exp['action'])
+        return exp
+
+    def processEp(self, R, S, T):
+        self.queue.append({'R': R, 'S': S, 'T': T})
+
+    def get_stats(self):
+        stats = {}
+        self.queue.update()
+        if self.queue.R:
+            stats['R'] = float("{0:.3f}".format(self.queue.R[-1]))
+            stats['S'] = float("{0:.3f}".format(self.queue.S[-1]))
+            stats['T'] = float("{0:.3f}".format(self.queue.T[-1]))
+        return stats
+
+    @property
+    def state_dim(self):
+        return self.env.observation_space.shape
+
+    @property
+    def action_dim(self):
+        return self.env.action_space.shape
+
 class CPBased(Wrapper):
     def __init__(self, env, args):
         super(CPBased, self).__init__(env)

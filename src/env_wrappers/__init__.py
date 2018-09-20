@@ -1,5 +1,5 @@
+from .base import CPBased, Base
 from env_wrappers.registration import registry, register, make, spec
-from .base import CPBased
 
 # register(
 #     id='Reacher_xy-v0',
@@ -13,11 +13,11 @@ from .base import CPBased
 #     wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
 # )
 #
-# register(
-#     id='Reacher-v0',
-#     entry_point='envs.reacher:ReacherEnv',
-#     wrapper_entry_point=None
-# )
+register(
+    id='Reacher-v0',
+    entry_point='envs.reacher:ReacherEnv',
+    wrapper_entry_point=None
+)
 #
 # register(
 #     id='HalfCheetah-v2',

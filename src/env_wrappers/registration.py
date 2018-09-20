@@ -2,6 +2,7 @@
 
 import re
 from gym import error, logger
+from env_wrappers import Base
 
 # This format is true tpip  oday, but it's *not* an official spec.
 # [username/](envs-name)-v(version)    envs-name is group 1, version is group 2

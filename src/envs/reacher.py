@@ -14,7 +14,7 @@ class ReacherEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         ob = self._get_obs()
         vec = self.get_body_com("fingertip")-self.get_body_com("target")
         d = np.linalg.norm(vec)
-        term = d < 0.02
+        term = d < 0.05
         r = -1
         if term:
             r = 0
@@ -44,5 +44,6 @@ class ReacherEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             np.cos(theta),
             np.sin(theta),
             self.sim.data.qvel.flat[:2],
-            self.get_body_com("fingertip")[:2]
+            # self.get_body_com("fingertip")[:2]
+            self.get_body_com("fingertip")[:2] - self.get_body_com("target")[:2]
         ])
