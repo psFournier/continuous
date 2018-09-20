@@ -32,6 +32,7 @@ class CriticDQNGM(CriticDQNG):
             E = Input(shape=(1,), dtype='float32')
             actionProb = Lambda(self.actionFilterFn, output_shape=(1,))([A, actionProbs])
             advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
+            good_exp = K.mean(K.cast(K.greater(E, val), dtype='float32'))
             imit = Lambda(lambda x: -K.log(x[0]) * x[1], name='imit')([actionProb, advantage])
             self.imitModel = Model([S, A, G, M, T, E], [qval, imit, advantage])
             loss_imit = K.mean(imit, axis=0)
@@ -39,8 +40,9 @@ class CriticDQNGM(CriticDQNG):
             w0, w1, w2 = float(self.args['--w0']), float(self.args['--w1']), float(self.args['--w2'])
             loss = w0 * loss_dqn + w1 * loss_imit + w2 * loss_adv
             self.updatesImit = self.optimizer.get_updates(params=self.criticModel.trainable_weights, loss=loss)
-            self.trainImit = K.function(inputs=[S, A, G, M, T, E, TARGETS], outputs=[loss_dqn, loss_imit, loss_adv],
-                                          updates=self.updatesImit)
+            self.trainImit = K.function(inputs=[S, A, G, M, T, E, TARGETS],
+                                        outputs=[loss_dqn, loss_imit, loss_adv, good_exp],
+                                        updates=self.updatesImit)
 
         if self.args['--imit'] == '2':
             E = Input(shape=(1,), dtype='float32')

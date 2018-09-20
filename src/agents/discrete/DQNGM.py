@@ -40,10 +40,11 @@ class DQNGM(DQNG):
             s0, a0, s1, r, t, g, m, e = [exp[name] for name in self.bufferImit.names]
             targets_dqn = self.critic.get_targets_dqn(r, t, s1, g, m)
             inputs = [s0, a0, g, m, 0.5 * np.ones(shape=(self.batch_size,1)), e, targets_dqn]
-            loss_dqn2, loss_imit, loss_adv = self.critic.trainImit(inputs)
+            loss_dqn2, loss_imit, loss_adv, good_exp = self.critic.trainImit(inputs)
             self.metrics['loss_dqn2'] += np.squeeze(loss_dqn2)
-            self.metrics['loss_imit'] += np.mean(loss_imit)
-            self.metrics['loss_adv'] += np.mean(loss_adv)
+            self.metrics['loss_imit'] += np.squeeze(loss_imit)
+            self.metrics['loss_adv'] += np.squeeze(loss_adv)
+            self.metrics['good_exp'] += np.squeeze(good_exp)
 
     def make_input(self, state, t):
         input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, self.env.mask, [0.5]]]
@@ -66,7 +67,7 @@ class DQNGM(DQNG):
                 counts = []
                 for i, expe in enumerate(reversed(self.trajectory)):
 
-                    if np.random.rand() < 0.01 or expe['terminal']:
+                    if expe['terminal'] or i==0:
                         for obj, name in enumerate(self.env.goals):
                             m = self.env.obj2mask(obj)
                             if (expe['state1'][np.where(m)] != self.env.init_state[np.where(m)]).any():
@@ -76,15 +77,15 @@ class DQNGM(DQNG):
                                 counts.append(0)
 
                     for j, (g, m) in enumerate(zip(goals, masks)):
-                        # if counts[j] <=
-                        altExp = expe.copy()
-                        altExp['goal'] = g
-                        altExp['mask'] = m
-                        altExp = self.env.eval_exp(altExp)
-                        Es[j] = Es[j] * self.critic.gamma + altExp['reward']
-                        counts[j] += 1
-                        altExp['expVal'] = np.expand_dims(Es[j], axis=1)
-                        self.bufferImit.append(altExp.copy())
+                        if counts[j] <= 20:
+                            altExp = expe.copy()
+                            altExp['goal'] = g
+                            altExp['mask'] = m
+                            altExp = self.env.eval_exp(altExp)
+                            Es[j] = Es[j] * self.critic.gamma + altExp['reward']
+                            counts[j] += 1
+                            altExp['expVal'] = np.expand_dims(Es[j], axis=1)
+                            self.bufferImit.append(altExp.copy())
 
             self.trajectory.clear()
 

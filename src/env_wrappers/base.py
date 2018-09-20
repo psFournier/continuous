@@ -144,21 +144,21 @@ class CPBased(Wrapper):
             self.queues[i].update()
             if self.queues[i].R:
                 stats['R_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].R[-1]))
-                stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].S[-1]))
-                stats['T_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].T[-1]))
+                # stats['S_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].S[-1]))
+                # stats['T_{}'.format(goal)] = float("{0:.3f}".format(self.queues[i].T[-1]))
             if self.queues[i].CP:
                 stats['CP_{}'.format(goal)] = float("{0:.3f}".format(abs(self.queues[i].CP[-1])))
 
-            stats['done_{}'.format(goal)] = float("{0:.3f}".format(self.dones[i]))
+            # stats['done_{}'.format(goal)] = float("{0:.3f}".format(self.dones[i]))
             stats['step_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
-            stats['attempt_{}'.format(goal)] = float("{0:.3f}".format(self.attempts[i]))
+            # stats['attempt_{}'.format(goal)] = float("{0:.3f}".format(self.attempts[i]))
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
 
         self.queue.update()
         if self.queue.R:
             stats['R'] = float("{0:.3f}".format(self.queue.R[-1]))
-            stats['S'] = float("{0:.3f}".format(self.queue.S[-1]))
-            stats['T'] = float("{0:.3f}".format(self.queue.T[-1]))
+            # stats['S'] = float("{0:.3f}".format(self.queue.S[-1]))
+            # stats['T'] = float("{0:.3f}".format(self.queue.T[-1]))
 
         return stats
 

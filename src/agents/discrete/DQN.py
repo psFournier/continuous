@@ -20,6 +20,8 @@ class DQN(Agent):
             self.metrics['loss_dqn2'] = 0
             self.metrics['loss_imit'] = 0
             self.metrics['loss_adv'] = 0
+            self.metrics['good_exp'] = 0
+            self.batch_size = int(self.batch_size / 2)
 
     def init(self, args ,env):
         names = ['state0', 'action', 'state1', 'reward', 'terminal']
