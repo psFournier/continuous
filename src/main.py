@@ -27,12 +27,12 @@ Options:
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
   --eval_freq VAL          Logging frequency [default: 2000]
   --per YES_NO             Prioritized Experience Replay [default: 0]
-  --margin VAL             Large margin loss margin [default: 1]
+  --margin VAL             Large margin loss margin [default: 0.1]
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]
-  --w0 VAL        Weight for imitaiton loss with imitaiton [default: 1]
-  --w1 VAL        Weight for imitaiton loss with imitaiton [default: 1]
-  --w2 VAL        Weight for imitaiton loss with imitaiton [default: 1]
+  --w0 VAL        Weight for imitaiton loss with imitaiton [default: 0]
+  --w1 VAL        Weight for imitaiton loss with imitaiton [default: 0]
+  --w2 VAL        Weight for imitaiton loss with imitaiton [default: 0]
   --imit YES_NO            Self imitation [default: 0]
 """
 

@@ -27,7 +27,8 @@ class CriticDQN(object):
         v = inputs[1]
         q = inputs[2]
         adv = inputs[3]
-        margin = self.args['--margin'] * 0.14 * (1 - K.one_hot(a, self.num_actions))
+        width = K.max(v) - K.min(v)
+        margin = float(self.args['--margin']) * width * (1 - K.one_hot(a, self.num_actions))
         return (K.max(v + margin) - q) * adv
 
     def initModels(self):

@@ -47,7 +47,7 @@ class CPBased(Wrapper):
         self.theta = float(args['--theta'])
         self.gamma = float(args['--gamma'])
         self.shaping = args['--shaping'] != '0'
-        self.opt_init = int(args['--opt_init'])
+        self.opt_init = float(args['--opt_init'])
         self.goals = []
         self.goal = None
         self.minR = self.shape(-1, False)
@@ -58,8 +58,9 @@ class CPBased(Wrapper):
         self.queues = [CompetenceQueue() for _ in self.goals]
         self.steps = [0 for _ in self.goals]
         self.interests = [0 for _ in self.goals]
-        self.dones = [0 for _ in self.goals]
-        self.attempts = [0 for _ in self.goals]
+        self.replays = [0 for _ in self.goals]
+        # self.dones = [0 for _ in self.goals]
+        # self.attempts = [0 for _ in self.goals]
         self.mincp = min([q.mincp for q in self.queues])
 
     def processEp(self, R, S, T):
@@ -71,8 +72,8 @@ class CPBased(Wrapper):
         exp['state1'] = self.env.step(exp['action'])
         exp['goal'] = self.goal
         exp = self.eval_exp(exp)
-        if exp['terminal']:
-            self.dones[self.goal] += 1
+        # if exp['terminal']:
+        #     self.dones[self.goal] += 1
         return exp
 
     def is_term(self, exp):
@@ -90,25 +91,36 @@ class CPBased(Wrapper):
         return exp
 
     def shape(self, r, term):
-        if self.opt_init == 1:
-            r += (self.gamma - 1)
-            if term:
-                r -= self.gamma
-        elif self.opt_init == 2:
-            r += (self.gamma - 1)
-        elif self.opt_init == 3:
-            r -= 1
+        b = (self.gamma - 1) * self.opt_init
+        r += b
+        if term:
+            c = -self.gamma * self.opt_init
+            r += c
         return r
+        # if self.opt_init == 1:
+        #     r += (self.gamma - 1)
+        #     if term:
+        #         r -= self.gamma
+        # elif self.opt_init == 2:
+        #     r += (self.gamma - 1)
+        # elif self.opt_init == 3:
+        #     r -= 1
+        # return r
 
     def unshape(self, r, term):
-        if self.opt_init == 1:
-            r -= (self.gamma - 1)
-            if term:
-                r += self.gamma
-        elif self.opt_init == 2:
-            r -= (self.gamma - 1)
-        elif self.opt_init == 3:
-            r += 1
+        b = (self.gamma - 1) * self.opt_init
+        r -= b
+        if term:
+            c = -self.gamma * self.opt_init
+            r -= c
+        # if self.opt_init == 1:
+        #     r -= (self.gamma - 1)
+        #     if term:
+        #         r += self.gamma
+        # elif self.opt_init == 2:
+        #     r -= (self.gamma - 1)
+        # elif self.opt_init == 3:
+        #     r += 1
         return r
 
     def get_idx(self):
@@ -151,6 +163,7 @@ class CPBased(Wrapper):
 
             # stats['done_{}'.format(goal)] = float("{0:.3f}".format(self.dones[i]))
             stats['step_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
+            stats['replay_{}'.format(goal)] = float("{0:.3f}".format(self.replays[i]))
             # stats['attempt_{}'.format(goal)] = float("{0:.3f}".format(self.attempts[i]))
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
 

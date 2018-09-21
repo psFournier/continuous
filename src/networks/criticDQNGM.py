@@ -12,11 +12,13 @@ class CriticDQNGM(CriticDQNG):
         super(CriticDQNGM, self).__init__(args, env)
 
     def initModels(self):
+        w0, w1, w2 = float(self.args['--w0']), float(self.args['--w1']), float(self.args['--w2'])
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
         T = Input(shape=(1,), dtype='float32')
         G = Input(shape=self.g_dim)
         M = Input(shape=self.g_dim)
+        E = Input(shape=(1,), dtype='float32')
         TARGETS = Input(shape=(1,))
         qvals = self.create_critic_network(S, G, M)
         actionProbs = Lambda(lambda x: K.softmax(x[0] / x[1]))([qvals, T])
@@ -28,31 +30,26 @@ class CriticDQNGM(CriticDQNG):
         self.updatesCritic = self.optimizer.get_updates(params=self.criticModel.trainable_weights, loss=loss_dqn)
         self.trainCritic = K.function(inputs=[S, A, G, M, TARGETS], outputs=[loss_dqn, val, qval], updates=self.updatesCritic)
 
-        if self.args['--imit'] == '1':
-            E = Input(shape=(1,), dtype='float32')
-            actionProb = Lambda(self.actionFilterFn, output_shape=(1,))([A, actionProbs])
-            advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
-            good_exp = K.mean(K.cast(K.greater(E, val), dtype='float32'))
-            imit = Lambda(lambda x: -K.log(x[0]) * x[1], name='imit')([actionProb, advantage])
-            self.imitModel = Model([S, A, G, M, T, E], [qval, imit, advantage])
-            loss_imit = K.mean(imit, axis=0)
-            loss_adv = K.mean(0.5*K.square(advantage), axis=0)
-            w0, w1, w2 = float(self.args['--w0']), float(self.args['--w1']), float(self.args['--w2'])
-            loss = w0 * loss_dqn + w1 * loss_imit + w2 * loss_adv
+        if self.args['--imit'] != '0':
+            adv = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
+            adv1 = K.cast(K.greater(E, val), dtype='float32')
+            good_exp = K.sum(adv1)
+            loss = w0 * loss_dqn
+
+            if self.args['--imit'] == '1':
+                actionProb = Lambda(self.actionFilterFn, output_shape=(1,))([A, actionProbs])
+                imit = Lambda(lambda x: -K.log(x[0]) * x[1], name='imit')([actionProb, adv1])
+            elif self.args['--imit'] == '2':
+                imit = Lambda(self.marginFn, output_shape=(1,), name='imit')([A, qvals, qval, adv1])
+            else:
+                raise RuntimeError
+
+            loss_imit = w1 * K.mean(imit, axis=0)
+            loss += loss_imit
             self.updatesImit = self.optimizer.get_updates(params=self.criticModel.trainable_weights, loss=loss)
             self.trainImit = K.function(inputs=[S, A, G, M, T, E, TARGETS],
-                                        outputs=[loss_dqn, loss_imit, loss_adv, good_exp],
+                                        outputs=[loss_dqn, loss_imit, good_exp, val],
                                         updates=self.updatesImit)
-
-        if self.args['--imit'] == '2':
-            E = Input(shape=(1,), dtype='float32')
-            advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
-            imit = Lambda(self.marginFn, output_shape=(1,), name='imit')([A, qvals, qval, advantage])
-            self.imitModel = Model([S, A, G, M, E], [qval, imit, advantage])
-            self.imitModel.compile(loss=['mse', 'mae', 'mse'],
-                                   loss_weights=[float(self.args['--w0']), float(self.args['--w1']),
-                                                 float(self.args['--w2'])],
-                                   optimizer=self.optimizer)
 
     def initTargetModels(self):
         S = Input(shape=self.s_dim)

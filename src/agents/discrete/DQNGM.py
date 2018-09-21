@@ -29,7 +29,7 @@ class DQNGM(DQNG):
             self.metrics['val'] += np.mean(val)
             self.metrics['qval'] += np.mean(qval)
 
-            if self.args['--imit'] == '1':
+            if self.args['--imit'] != '0':
                 self.trainImit()
 
             self.critic.target_train()
@@ -40,10 +40,9 @@ class DQNGM(DQNG):
             s0, a0, s1, r, t, g, m, e = [exp[name] for name in self.bufferImit.names]
             targets_dqn = self.critic.get_targets_dqn(r, t, s1, g, m)
             inputs = [s0, a0, g, m, 0.5 * np.ones(shape=(self.batch_size,1)), e, targets_dqn]
-            loss_dqn2, loss_imit, loss_adv, good_exp = self.critic.trainImit(inputs)
+            loss_dqn2, loss_imit, good_exp, val = self.critic.trainImit(inputs)
             self.metrics['loss_dqn2'] += np.squeeze(loss_dqn2)
             self.metrics['loss_imit'] += np.squeeze(loss_imit)
-            self.metrics['loss_adv'] += np.squeeze(loss_adv)
             self.metrics['good_exp'] += np.squeeze(good_exp)
 
     def make_input(self, state, t):
@@ -60,17 +59,32 @@ class DQNGM(DQNG):
             for expe in reversed(self.trajectory):
                 self.buffer.append(expe.copy())
 
-            if self.args['--imit'] == '1':
+            if self.args['--imit'] != '0':
                 Es = []
+                objs = []
                 goals = []
                 masks = []
                 counts = []
                 for i, expe in enumerate(reversed(self.trajectory)):
 
-                    if expe['terminal'] or i==0:
+                    # for obj, name in enumerate(self.env.goals):
+                    #     m = self.env.obj2mask(obj)
+                    #     if (expe['state1'][np.where(m)] != expe['state0'][np.where(m)]).any():
+                    #         altExp = expe.copy()
+                    #         altExp['goal'] = expe['state1'].copy()
+                    #         altExp['mask'] = m
+                    #         altExp = self.env.eval_exp(altExp)
+                    #         altExp['expVal'] = np.expand_dims(altExp['reward'], axis=1)
+                    #         self.bufferImit.append(altExp.copy())
+
+                    if expe['terminal'] or i==0 or np.random.rand() < 0.1:
                         for obj, name in enumerate(self.env.goals):
                             m = self.env.obj2mask(obj)
-                            if (expe['state1'][np.where(m)] != self.env.init_state[np.where(m)]).any():
+                            diff = (expe['state1'][np.where(m)] != self.env.init_state[np.where(m)]).any()
+                            T = self.env.queues[obj].T
+                            mastered = T and T[-1] > 0.8
+                            if diff and not mastered:
+                                objs.append(obj)
                                 goals.append(expe['state1'].copy())
                                 masks.append(self.env.obj2mask(obj).copy())
                                 Es.append(0)
@@ -86,6 +100,9 @@ class DQNGM(DQNG):
                             counts[j] += 1
                             altExp['expVal'] = np.expand_dims(Es[j], axis=1)
                             self.bufferImit.append(altExp.copy())
+
+                for obj, count in zip(objs, counts):
+                    self.env.replays[obj] += count
 
             self.trajectory.clear()
 

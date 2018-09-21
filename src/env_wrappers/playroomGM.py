@@ -23,8 +23,8 @@ class PlayroomGM(CPBased):
         exp['mask'] = self.mask
         exp['state1'] = self.env.step(exp['action'])
         exp = self.eval_exp(exp)
-        if exp['terminal']:
-            self.dones[self.object] += 1
+        # if exp['terminal']:
+            # self.dones[self.object] += 1
         return exp
 
     def processEp(self, R, S, T):
@@ -40,7 +40,7 @@ class PlayroomGM(CPBased):
 
     def reset(self):
         self.object = self.get_idx()
-        self.attempts[self.object] += 1
+        # self.attempts[self.object] += 1
         features = self.obj_feat[self.object]
         self.goal = self.init_state.copy()
         self.mask = self.obj2mask(self.object)
