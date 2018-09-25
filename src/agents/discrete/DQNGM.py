@@ -45,8 +45,11 @@ class DQNGM(DQNG):
             self.metrics['loss_imit'] += np.squeeze(loss_imit)
             self.metrics['good_exp'] += np.squeeze(good_exp)
 
-    def make_input(self, state, t):
-        input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, self.env.mask, [0.5]]]
+    def make_input(self, state, mode):
+        if mode == 'train':
+            input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, self.env.mask, [0.5]]]
+        else:
+            input = [np.expand_dims(i, axis=0) for i in [state, self.env_test.goal, self.env_test.mask, [0.5]]]
         return input
 
     def reset(self):

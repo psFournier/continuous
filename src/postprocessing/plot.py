@@ -88,22 +88,22 @@ if 1:
     df2 = df
     df2 = df2[(df2['--agent'] == 'dqngm')]
     df2 = df2[(df2['--env'] == 'PlayroomGM-v0')]
-    df2 = df2[(df2['--imit'] == 2)]
+    df2 = df2[(df2['--imit'] == 1)]
     # df2 = df2[(df2['--w1'] == 1) & (df2['--w2'] == 1)]
-    # df2 = df2[(df2['--w0'] == 1)]
-    # df2 = df2[(df2['--opt_init'] == 1)]
+    df2 = df2[(df2['--w1'] == 0)]
+    df2 = df2[(df2['--opt_init'] == 0)]
     # df2 = df2[(df2['--network'] == 2)]
     # df2 = df2[(df2['--clipping'] == 1)]
     # df2 = df2[(df2['--explo'] == 1)]
-    # df2 = df2[(df2['--theta'] == 4)]
-    # df2 = df2[(df2['--theta']     == 0) | (df2['--theta'] == 2)]
-    y = ['R', 'R_xy']
-    # y = ['R'+s+str(i) for s in ['_chest'] for i in range(1, 5)]
-    y = ['good_exp', 'loss_dqn', 'loss_dqn2', 'loss_imit', 'val', 'qval']
+    # df2 = df2[(df2['--theta'] == 0)]
+    df2 = df2[(df2['--theta'] == 0) | (df2['--theta'] == 4)]
+    # y = ['R']
+    y = ['I'+s+str(i) for s in ['_light', '_key','_chest'] for i in range(1, 5)]
+    # y = ['good_exp', 'loss_dqn', 'loss_dqn2', 'loss_imit', 'qval']
     # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
     # y = ['R' + i for i in ['_agent', '_light', '_key1', '_chest1', '_chest2', '_chest3']]
     # y = ['loss', 'advantage_loss']
-    # x = ['step' + i for i in ['_agent', '_light', '_sound', '_toy1', '_toy2']]
+    # x = ['step'+s+str(i) for s in ['_light', '_key','_chest'] for i in range(1, 5)]
     # y = ['R'+i for i in ['_agent', '_passenger', '_taxi']]
     # x = ['step'+i for i in ['_agent', '_passenger', '_taxi']]
     # y = ['R_'+str(i) for i in range(5)]
@@ -125,28 +125,26 @@ if 1:
     op_dict = {a:[np.median, np.mean, quant_inf, quant_sup] for a in y}
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
-
-
     print(paramsStudied)
-    a, b = 2,3
+    a, b = 3,4
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
     colors = ['b', 'r']
 
-    for j, (name, g) in enumerate(df2.groupby(params)):
-        for i, val in enumerate(y):
-            # ax2[i % a, i // a].scatter(g[x[i]], g[val], s=1)
+    for j, (name, g) in enumerate(df2.groupby(paramsStudied)):
+        for i, valy in enumerate(y):
             # ax2[i % a, i // a].plot(range(1500), range(1500), 'g-')
             if isinstance(name, tuple):
                 label = ','.join(['{}:{}'.format(paramsStudied[k][2:], name [k]) for k in range(len(paramsStudied))])
             else:
                 label = '{}:{}'.format(paramsStudied[0][2:], name)
-            ax2[i % a, i // a].plot(g['step'], g[val]['mean'], label=label)
+            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
+            # ax2[i % a, i // a].scatter(g[x[i], g[valy], s=1, c=colors[j], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
             #                         label='CP_' + str(i) + "_smooth")
             # ax2[i % a, i // a].fill_between(g['step'],
             #                                 g[val]['quant_inf'],
             #                                 g[val]['quant_sup'], alpha=0.25, linewidth=0)
-            ax2[i % a, i // a].set_title(label=val)
+            ax2[i % a, i // a].set_title(label=valy)
             ax2[i % a, i // a].legend()
             # ax2[i % a, i // a].set_ylim([0, 10])
     fig2.suptitle('network:3')

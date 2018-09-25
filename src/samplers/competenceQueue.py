@@ -15,6 +15,7 @@ class CompetenceQueue():
     def append(self, point):
         for key, val in point.items():
             self.points[key].append(val)
+        self.update()
 
     def update(self):
         if self.size >= 4:
@@ -25,12 +26,8 @@ class CompetenceQueue():
             self.R.append(np.mean(Rs[-mid:]))
             self.S.append(np.mean(Ss[-mid:]))
             self.T.append(np.mean(Ts[-mid:]))
-        if len(self.R) >= 8:
-            self.CP.append(self.R[-1] - self.R[-8])
-
-    @property
-    def mincp(self):
-        return 1/self.window
+        if len(self.R) >= 10:
+            self.CP.append(self.R[-1] - self.R[-10])
 
     @property
     def size(self):

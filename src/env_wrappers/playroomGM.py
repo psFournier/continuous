@@ -12,7 +12,7 @@ class PlayroomGM(CPBased):
         self.object = None
         self.mask = None
         self.init()
-        self.obj_feat = [[0, 1]] + [[i] for i in range(2, 14)]
+        self.obj_feat = [[0, 1]] + [[i] for i in range(2, 9)]
         self.state_low = self.env.low
         self.state_high = self.env.high
         self.init_state = np.array(self.env.init)
@@ -29,7 +29,6 @@ class PlayroomGM(CPBased):
 
     def processEp(self, R, S, T):
         self.queues[self.object].append({'R': R, 'S': S, 'T': T})
-        self.queue.append({'R': R, 'S': S, 'T': T})
 
     def is_term(self, exp):
         indices = np.where(exp['mask'])
@@ -38,17 +37,23 @@ class PlayroomGM(CPBased):
         s0_proj = exp['state0'][indices]
         return ((s1_proj == goal).all() and (s0_proj != goal).any())
 
-    def reset(self):
-        self.object = self.get_idx()
-        # self.attempts[self.object] += 1
+    def reset(self, goal=None):
+
+        if goal is None:
+            self.object = self.get_idx()
+        else:
+            self.object = goal
+
         features = self.obj_feat[self.object]
         self.goal = self.init_state.copy()
         self.mask = self.obj2mask(self.object)
+
         while True:
             for idx in features:
                 self.goal[idx] = np.random.randint(self.state_low[idx], self.state_high[idx] + 1)
             if (self.goal != self.init_state).any():
                 break
+
         state = self.env.reset()
         return state
 
@@ -59,11 +64,11 @@ class PlayroomGM(CPBased):
 
     @property
     def state_dim(self):
-        return 14,
+        return 9,
 
     @property
     def goal_dim(self):
-        return 14,
+        return 9,
 
     @property
     def action_dim(self):

@@ -80,15 +80,18 @@ class DQN(Agent):
 
         return state
 
-    def make_input(self, state, t):
+    def make_input(self, state, mode):
         input = [np.reshape(state, (1, self.critic.s_dim[0]))]
         input.append(np.expand_dims([0.5], axis=0))
         return input
 
-    def act(self, state):
-        input = self.make_input(state, self.env_step)
+    def act(self, state, mode='train'):
+        input = self.make_input(state, mode)
         actionProbs = self.critic.actionProbsModel.predict(input, batch_size=1)
-        action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
+        if mode=='train':
+            action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
+        else:
+            action = np.argmax(actionProbs[0])
         return np.expand_dims(action, axis=1)
 
 

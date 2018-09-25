@@ -61,28 +61,33 @@ class Agent():
     def train(self):
         pass
 
-    def act(self, state):
+    def act(self, state, mode='train'):
         pass
 
     def log(self):
 
         if self.env_step % self.eval_freq == 0:
-            # for i, goal in enumerate(self.env_test.test_goals):
-            #     obs = self.env_test.env.reset()
-            #     state0 = np.array(self.env_test.decode(obs))
-            #     mask = self.env_test.obj2mask(goal[1])
-            #     R = 0
-            #     for _ in range(200):
-            #         input = [np.expand_dims(i, axis=0) for i in [state0, goal[0], mask]]
-            #         action = self.critic.bestAction_model.predict(input, batch_size=1)[0, 0]
-            #         state1 = self.env_test.step(action)
-            #         reward, terminal = self.env_test.eval_exp(state0, action, state1, goal[0], goal[1])
-            #         R += reward
-            #         if terminal:
-            #             break
-            #         state0 = state1
-            #     self.stats['testR_{}'.format(i)] = R
+            R_mean = []
+            for g, goal in enumerate(self.env_test.goals):
+                exp = {}
+                exp['state0'] = self.env_test.reset(goal=g)
+                exp['terminal'] = False
+                i = 0
+                R = 0
+                while not exp['terminal'] and i < self.ep_steps:
+                    exp['action'] = self.act(self.exp['state0'], mode='test')
+                    exp = self.env_test.step(self.exp)
+                    self.exp['state0'] = self.exp['state1']
+                    i += 1
+                    R += exp['reward']
+                R_mean.append(R)
+                self.stats['R_{}'.format(goal)] = float("{0:.3f}".format(R))
+            self.stats['R'] = float("{0:.3f}".format(np.mean(R_mean)))
+
             wrapper_stats = self.env.get_stats()
+            for key, val in wrapper_stats.items():
+                self.stats[key] = val
+
             self.stats['step'] = self.env_step
             for metric, val in self.metrics.items():
                 self.stats[metric] = val / self.eval_freq
@@ -90,9 +95,6 @@ class Agent():
             for metric, val in self.imitMetrics.items():
                 self.stats[metric] = val / self.eval_freq
                 self.imitMetrics[metric] = 0
-
-            for key, val in wrapper_stats.items():
-                self.stats[key] = val
 
             for key in sorted(self.stats.keys()):
                 self.logger.logkv(key, self.stats[key])
