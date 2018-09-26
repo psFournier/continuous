@@ -33,7 +33,8 @@ Options:
   --w0 VAL        Weight for imitaiton loss with imitaiton [default: 0]
   --w1 VAL        Weight for imitaiton loss with imitaiton [default: 0]
   --w2 VAL        Weight for imitaiton loss with imitaiton [default: 0]
-  --imit YES_NO            Self imitation [default: 0]
+  --imit VAL        Self imitation [default: 1]
+  --filter VAL            Type of filter [default: 1]
 """
 
 def build_logger(args):

@@ -42,7 +42,7 @@ class Agent():
                 self.episode_step += 1
                 self.exp['state0'] = self.exp['state1']
 
-                if (self.exp['terminal'] or self.episode_step >= self.ep_steps):
+                if self.episode_step >= self.ep_steps:
                     self.exp['state0'] = self.reset()
 
                 self.log()
@@ -72,13 +72,11 @@ class Agent():
                 exp = {}
                 exp['state0'] = self.env_test.reset(goal=g)
                 exp['terminal'] = False
-                i = 0
                 R = 0
-                while not exp['terminal'] and i < self.ep_steps:
+                for i in range(self.ep_steps):
                     exp['action'] = self.act(self.exp['state0'], mode='test')
                     exp = self.env_test.step(self.exp)
                     self.exp['state0'] = self.exp['state1']
-                    i += 1
                     R += exp['reward']
                 R_mean.append(R)
                 self.stats['R_{}'.format(goal)] = float("{0:.3f}".format(R))

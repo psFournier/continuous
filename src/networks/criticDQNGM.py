@@ -13,6 +13,7 @@ class CriticDQNGM(CriticDQNG):
 
     def initModels(self):
         w0, w1, w2 = float(self.args['--w0']), float(self.args['--w1']), float(self.args['--w2'])
+
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
         T = Input(shape=(1,), dtype='float32')
@@ -20,36 +21,56 @@ class CriticDQNGM(CriticDQNG):
         M = Input(shape=self.g_dim)
         E = Input(shape=(1,), dtype='float32')
         TARGETS = Input(shape=(1,))
+
         qvals = self.create_critic_network(S, G, M)
-        actionProbs = Lambda(lambda x: K.softmax(x[0] / x[1]))([qvals, T])
+        actionFilter = Lambda(lambda x: K.squeeze(K.one_hot(x, self.num_actions), axis=1), (self.num_actions,))(A)
+
+        actionProbs = Lambda(lambda x: K.softmax(x[0] / x[1]), (self.num_actions,))([qvals, T])
         self.actionProbsModel = Model([S, G, M, T], actionProbs)
-        qval = Lambda(self.actionFilterFn, output_shape=(1,), name='qval')([A, qvals])
-        val = Lambda(lambda x: K.max(x, axis=1, keepdims=True), name='val')(qvals)
-        self.criticModel = Model([S, A, G, M], [qval])
+
+        qval = Lambda(lambda x: K.sum(x[0] * x[1], axis=1, keepdims=True), (1,))([actionFilter, qvals])
+        self.criticModel = Model([S, A, G, M], qval)
+
+        if self.args['--imit'] == '1':
+            actionProb = K.sum(actionFilter * actionProbs, axis=1, keepdims=True)
+            imit = -K.log(actionProb)
+        elif self.args['--imit'] == '2':
+            width = float(self.args['--margin']) * (
+            K.max(qvals, axis=1, keepdims=True) - K.min(qvals, axis=1, keepdims=True))
+            one_hot = 1 - K.squeeze(K.one_hot(A, self.num_actions), axis=1)
+            width = K.repeat_elements(width, self.num_actions, axis=1)
+            margin = width * one_hot
+            imit = (K.max(qvals + margin, axis=1, keepdims=True) - qval)
+        else:
+            raise RuntimeError
+
+        val = K.max(qvals, axis=1, keepdims=True)
+        adv0 = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
+        adv1 = K.cast(K.greater(E, val), dtype='float32')
+        good_exp = K.sum(adv1)
+
+        if self.args['--filter'] == '1':
+            imit *= adv0
+        elif self.args['--filter'] == '2':
+            imit *= adv1
+        else:
+            raise RuntimeError
+
+        loss = 0
         loss_dqn = K.mean(K.square(qval - TARGETS), axis=0)
-        self.updatesCritic = self.optimizer.get_updates(params=self.criticModel.trainable_weights, loss=loss_dqn)
-        self.trainCritic = K.function(inputs=[S, A, G, M, TARGETS], outputs=[loss_dqn, val, qval], updates=self.updatesCritic)
+        loss += w0 * loss_dqn
+        loss_imit = K.mean(imit, axis=0)
+        loss += w1 * loss_imit
 
-        if self.args['--imit'] != '0':
-            adv = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
-            adv1 = K.cast(K.greater(E, val), dtype='float32')
-            good_exp = K.sum(adv1)
-            loss = w0 * loss_dqn
+        self.updatesDqn = self.optimizer.get_updates(params=self.criticModel.trainable_weights, loss=loss_dqn)
+        self.trainDqn = K.function(inputs=[S, A, G, M, TARGETS],
+                                outputs=[loss_dqn, val, qval],
+                                updates=self.updatesDqn)
 
-            if self.args['--imit'] == '1':
-                actionProb = Lambda(self.actionFilterFn, output_shape=(1,))([A, actionProbs])
-                imit = Lambda(lambda x: -K.log(x[0]) * x[1], name='imit')([actionProb, adv1])
-            elif self.args['--imit'] == '2':
-                imit = Lambda(self.marginFn, output_shape=(1,), name='imit')([A, qvals, qval, adv1])
-            else:
-                raise RuntimeError
-
-            loss_imit = w1 * K.mean(imit, axis=0)
-            loss += loss_imit
-            self.updatesImit = self.optimizer.get_updates(params=self.criticModel.trainable_weights, loss=loss)
-            self.trainImit = K.function(inputs=[S, A, G, M, T, E, TARGETS],
-                                        outputs=[loss_dqn, loss_imit, good_exp, val],
-                                        updates=self.updatesImit)
+        self.updatesAll = self.optimizer.get_updates(params=self.criticModel.trainable_weights, loss=loss)
+        self.trainAll = K.function(inputs=[S, A, G, M, T, E, TARGETS],
+                                   outputs=[loss_dqn, loss_imit, good_exp, val, qval],
+                                   updates=self.updatesAll)
 
     def initTargetModels(self):
         S = Input(shape=self.s_dim)
@@ -75,6 +96,3 @@ class CriticDQNGM(CriticDQNG):
         l3 = Dense(200, activation="relu")(l2)
         Q_values = Dense(self.num_actions)(l3)
         return Q_values
-
-
-

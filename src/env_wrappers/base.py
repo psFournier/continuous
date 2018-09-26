@@ -53,9 +53,6 @@ class CPBased(Wrapper):
         self.steps = [0 for _ in self.goals]
         self.replays = [0 for _ in self.goals]
 
-    def processEp(self, R, S, T):
-        self.queues[self.goal].append({'R': R, 'S': S, 'T': T})
-
     def step(self, exp):
         self.steps[self.goal] += 1
         exp['state1'] = self.env.step(exp['action'])
@@ -73,7 +70,7 @@ class CPBased(Wrapper):
         else:
             r = self.minR
         exp['reward'] = r
-        exp['terminal'] = term
+        exp['terminal'] = False
         return exp
 
     def shape(self, r, term):
@@ -111,23 +108,29 @@ class CPBased(Wrapper):
             stats['step_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
             stats['replay_{}'.format(goal)] = float("{0:.3f}".format(self.replays[i]))
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
-
+            stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.CPs[i]))
+            stats['agentR_{}'.format(goal)] = float("{0:.3f}".format(self.Rs[i]))
         return stats
 
     @property
     def interests(self):
 
-        CPs = [abs(q.CP[-1]) if q.CP else 0 for q in self.queues]
-        Ts = [q.T[-1] if q.T else 0 for q in self.queues]
-        # interests = [cp * (1 - t) for cp, t in zip(CPs, Ts)]
-        maxT = max(Ts)
-        minT = min(Ts)
-        maxCP = max(CPs)
-        minCP = min(CPs)
-
+        maxCP = max(self.CPs)
+        minCP = min(self.CPs)
+        maxR = max(self.Rs)
+        minR = min(self.Rs)
         if maxCP - minCP > 5:
-            interests = [(cp - minCP) / (maxCP - minCP) for cp in CPs]
+            interests = [(cp - minCP) / (maxCP - minCP)  for cp in self.CPs]
         else:
-            interests = [1 - t for t in Ts]
+            interests = [1 - (r - minR) / (maxR - minR + 0.0001)  for r in self.Rs]
 
         return interests
+
+    @property
+    def CPs(self):
+        return [abs(q.CP[-1]) if q.CP else 0 for q in self.queues]
+
+    @property
+    def Rs(self):
+        return [q.R[-1] for q in self.queues]
+

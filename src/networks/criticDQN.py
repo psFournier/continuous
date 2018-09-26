@@ -27,9 +27,12 @@ class CriticDQN(object):
         v = inputs[1]
         q = inputs[2]
         adv = inputs[3]
-        width = K.max(v) - K.min(v)
-        margin = float(self.args['--margin']) * width * (1 - K.one_hot(a, self.num_actions))
-        return (K.max(v + margin) - q) * adv
+        width = float(self.args['--margin']) * (K.max(v, axis=1, keepdims=True) - K.min(v, axis=1, keepdims=True))
+        one_hot = 1 - K.squeeze(K.one_hot(a, self.num_actions), axis=1)
+        width =  K.repeat_elements(width, self.num_actions, axis=1)
+        margin = width * one_hot
+        res = (K.max(v + margin, axis=1, keepdims=True) - q) * adv
+        return res
 
     def initModels(self):
         S = Input(shape=self.s_dim)

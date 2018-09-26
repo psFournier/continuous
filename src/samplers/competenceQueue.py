@@ -6,32 +6,22 @@ import numpy as np
 class CompetenceQueue():
     def __init__(self, window = 20, maxlen=200):
         self.window = window
-        self.points = {key: deque(maxlen=maxlen) for key in ['R', 'S', 'T']}
+        self.points = deque(maxlen=maxlen)
         self.CP = []
-        self.R = []
-        self.S = []
-        self.T = []
+        self.R = [-200]
 
-    def append(self, point):
-        for key, val in point.items():
-            self.points[key].append(val)
+    def append(self, val):
+        self.points.append(val)
         self.update()
 
     def update(self):
-        if self.size >= 4:
-            Rs = list(self.points['R'])
-            Ss = list(self.points['S'])
-            Ts = list(self.points['T'])
-            mid = min(self.size // 2, self.window)
-            self.R.append(np.mean(Rs[-mid:]))
-            self.S.append(np.mean(Ss[-mid:]))
-            self.T.append(np.mean(Ts[-mid:]))
-        if len(self.R) >= 10:
-            self.CP.append(self.R[-1] - self.R[-10])
+        Rs = list(self.points)
+        self.R.append(np.mean(Rs[-(min(self.size, self.window)):]))
+        self.CP.append(self.R[-1] - self.R[-(min(self.size, 10))])
 
     @property
     def size(self):
-        return len(self.points['R'])
+        return len(self.points)
 
     @property
     def full(self):

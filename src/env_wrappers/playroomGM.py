@@ -23,19 +23,13 @@ class PlayroomGM(CPBased):
         exp['mask'] = self.mask
         exp['state1'] = self.env.step(exp['action'])
         exp = self.eval_exp(exp)
-        # if exp['terminal']:
-            # self.dones[self.object] += 1
         return exp
-
-    def processEp(self, R, S, T):
-        self.queues[self.object].append({'R': R, 'S': S, 'T': T})
 
     def is_term(self, exp):
         indices = np.where(exp['mask'])
         goal = exp['goal'][indices]
         s1_proj = exp['state1'][indices]
-        s0_proj = exp['state0'][indices]
-        return ((s1_proj == goal).all() and (s0_proj != goal).any())
+        return (s1_proj == goal).all()
 
     def reset(self, goal=None):
 
@@ -72,4 +66,4 @@ class PlayroomGM(CPBased):
 
     @property
     def action_dim(self):
-        return 10
+        return 11

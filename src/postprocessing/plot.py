@@ -88,18 +88,19 @@ if 1:
     df2 = df
     df2 = df2[(df2['--agent'] == 'dqngm')]
     df2 = df2[(df2['--env'] == 'PlayroomGM-v0')]
-    df2 = df2[(df2['--imit'] == 1)]
-    # df2 = df2[(df2['--w1'] == 1) & (df2['--w2'] == 1)]
-    df2 = df2[(df2['--w1'] == 0)]
+    # df2 = df2[(df2['--imit'] == 1)]
+    # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
+    # df2 = df2[(df2['--w1'] == 0)]
     df2 = df2[(df2['--opt_init'] == 0)]
     # df2 = df2[(df2['--network'] == 2)]
     # df2 = df2[(df2['--clipping'] == 1)]
     # df2 = df2[(df2['--explo'] == 1)]
     # df2 = df2[(df2['--theta'] == 0)]
-    df2 = df2[(df2['--theta'] == 0) | (df2['--theta'] == 4)]
-    # y = ['R']
-    y = ['I'+s+str(i) for s in ['_light', '_key','_chest'] for i in range(1, 5)]
-    # y = ['good_exp', 'loss_dqn', 'loss_dqn2', 'loss_imit', 'qval']
+    # df2 = df2[(df2['--theta'] == 0)]
+    y = ['R']
+    y = ['R'+s for s in ['_xy', '_light','_key1', '_key2', '_chest1', '_chest2', '_chest3', '_chest4']]
+    # y = ['good_exp', 'loss_dqn', 'loss_dqn2', 'qval']
+    # y = ['loss_imit']
     # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
     # y = ['R' + i for i in ['_agent', '_light', '_key1', '_chest1', '_chest2', '_chest3']]
     # y = ['loss', 'advantage_loss']
@@ -126,7 +127,7 @@ if 1:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
     print(paramsStudied)
-    a, b = 3,4
+    a, b = 3,3
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
     colors = ['b', 'r']
 

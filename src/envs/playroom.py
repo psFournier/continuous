@@ -30,6 +30,7 @@ class Actions:
     TOUCHLEFT = 7
     TOUCHRIGHT = 8
     TAKE = 9
+    NOOP = 10
     # PUT = 10
 
 class Obj():
@@ -112,8 +113,8 @@ class Chest(Obj):
                 if self.s == 1:
                     self.s = np.random.choice([1, 2], p=self.prop)
             elif a == Actions.TOUCHLEFT:
-                if self.s == 2:
-                    self.s = np.random.choice([2, 3], p=self.prop)
+                if self.s == 0:
+                    self.s = np.random.choice([0, 3], p=self.prop)
             elif a == Actions.TOUCHRIGHT:
                 if self.s == 3:
                     self.s = np.random.choice([3, 4], p=self.prop)
@@ -224,6 +225,9 @@ class Playroom(Env):
             o = self.get_underagent(x = 1)
             if o >= 0:
                 self.objects[o].act(a)
+
+        elif a==Actions.NOOP:
+            pass
                 
         self.lastaction = a
 

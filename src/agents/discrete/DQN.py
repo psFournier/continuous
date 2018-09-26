@@ -11,24 +11,13 @@ class DQN(Agent):
         super(DQN, self).__init__(args, env, env_test, logger)
         self.args = args
         self.init(args, env)
-        self.metrics['loss_dqn'] = 0
-        self.metrics['qval'] = 0
-        self.metrics['val'] = 0
-        # for metric in self.critic.criticModel.metrics_names:
-        #     self.metrics[self.critic.criticModel.name + '_' + metric] = 0
-        if args['--imit'] != '0':
-            self.metrics['loss_dqn2'] = 0
-            self.metrics['loss_imit'] = 0
-            self.metrics['good_exp'] = 0
-            self.batch_size = int(self.batch_size / 2)
 
     def init(self, args ,env):
         names = ['state0', 'action', 'state1', 'reward', 'terminal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=names.copy())
-        if args['--imit'] != '0':
-            names.append('expVal')
-            self.bufferImit = ReplayBuffer(limit=int(1e6), names=names.copy())
         self.critic = CriticDQN(args, env)
+        for metric_name in ['loss_dqn', 'qval', 'val']:
+            self.metrics[metric_name] = 0
 
     def train(self):
 
@@ -41,25 +30,13 @@ class DQN(Agent):
             for i, metric in enumerate(self.critic.criticModel.metrics_names):
                 self.metrics[metric] += loss[i]
 
-            if self.args['--imit'] != '0' and self.bufferImit.nb_entries > self.batch_size:
-                exp = self.bufferImit.sample(self.batch_size)
-                s0, a0, s1, r, t, e = [exp[name] for name in self.bufferImit.names]
-                targets_dqn = self.critic.get_targets_dqn(r, t, s1)
-                targets = [targets_dqn, np.zeros((self.batch_size, 1)), np.zeros((self.batch_size, 1))]
-                inputs = [s0, a0, e]
-                loss = self.critic.imitModel.train_on_batch(inputs, targets)
-                for i, metric in enumerate(self.critic.imitModel.metrics_names):
-                    self.imitMetrics[metric] += loss[i]
-
             self.critic.target_train()
 
     def reset(self):
 
         if self.trajectory:
-            T = int(self.trajectory[-1]['terminal'])
             R = np.sum([self.env.unshape(exp['reward'], exp['terminal']) for exp in self.trajectory])
-            S = len(self.trajectory)
-            self.env.processEp(R, S, T)
+            self.env.processEp(R)
             for expe in reversed(self.trajectory):
                 self.buffer.append(expe.copy())
 
