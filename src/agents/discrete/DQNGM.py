@@ -13,10 +13,10 @@ class DQNGM(DQNG):
 
     def init(self, args ,env):
         names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal', 'mask']
-        self.buffer = ReplayBuffer(limit=int(1e4), names=names.copy(), args=args)
+        self.buffer = ReplayBuffer(limit=int(1e5), names=names.copy(), args=args)
         names.append('expVal')
         # self.bufferOff = PrioritizedReplayBuffer(limit=int(1e4), names=names.copy(), args=args)
-        self.bufferOff = ReplayBuffer(limit=int(1e4), names=names.copy(), args=args)
+        self.bufferOff = ReplayBuffer(limit=int(1e5), names=names.copy(), args=args)
         self.critic = CriticDQNGM(args, env)
         for metric_name in ['loss_dqn', 'qval', 'val', 'loss_dqn_off', 'loss_imit_off','good_exp_off', 'val_off','qval_off']:
             self.metrics[metric_name] = 0
@@ -67,6 +67,7 @@ class DQNGM(DQNG):
             imagined_goals = []
             imagined_masks = []
             imagined_expe = []
+            imagined_obj = []
 
             filtering = 1
             if filtering:
@@ -86,12 +87,14 @@ class DQNGM(DQNG):
                     s1m = expe['state1'][np.where(mask)]
                     s0m = expe['state0'][np.where(mask)]
                     sIm = self.env.init_state[np.where(mask)]
-                    found = (s1m!=sIm).any() and (s0m==sIm).all()
+                    # found = (s1m!=sIm).any() and (s0m==sIm).all()
+                    found = obj not in imagined_obj and (s1m != sIm).any()
                     mastered = self.env.queues[obj].T[-1]
                     if found and np.random.rand() < (1.1 - mastered):
                         imagined_goals.append(expe['state1'].copy())
                         imagined_masks.append(mask.copy())
                         imagined_Es.append(0)
+                        imagined_obj.append(obj)
 
                 for j, (g, m) in enumerate(zip(imagined_goals, imagined_masks)):
                     expe['goal'] = g
@@ -126,8 +129,6 @@ class DQNGM(DQNG):
                         self.bufferOff.append(exp)
 
             self.trajectory.clear()
-            print(self.bufferOff.nb_entries)
-            print(self.buffer.nb_entries)
 
         state = self.env.reset()
         self.episode_step = 0

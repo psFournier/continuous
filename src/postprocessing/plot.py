@@ -99,7 +99,7 @@ if 1:
     # df2 = df2[(df2['--theta'] == 0)]
     # df2 = df2[(df2['--theta'] == 4)]
     y = ['R']
-    y = ['agentR'+s for s in ['_xy', '_light','_key1', '_key2', '_chest1', '_chest2', '_chest3', '_chest4']]
+    y = ['I'+s for s in ['_xy', '_light','_key1', '_key2', '_chest1', '_chest2', '_chest3', '_chest4']]
     # y = ['good_exp', 'loss_dqn', 'loss_dqn2', 'qval']
     # y = ['loss_imit']
     # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']

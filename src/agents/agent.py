@@ -45,7 +45,7 @@ class Agent():
 
                 if self.episode_step >= self.ep_steps:
                     t1 = time.time()
-                    print(t1 - t0)
+                    # print(t1 - t0)
                     t0 = t1
                     self.exp['state0'] = self.reset()
 
