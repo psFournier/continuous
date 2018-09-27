@@ -46,7 +46,7 @@ class CPBased(Wrapper):
         self.goals = []
         self.goal = None
         self.minR = self.shape(-1, False)
-        self.maxR = self.shape(0, True)
+        self.maxR = self.shape(0, False)
 
     def init(self):
         self.queues = [CompetenceQueue() for _ in self.goals]
@@ -110,6 +110,7 @@ class CPBased(Wrapper):
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
             stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.CPs[i]))
             stats['agentR_{}'.format(goal)] = float("{0:.3f}".format(self.Rs[i]))
+            stats['agentT_{}'.format(goal)] = float("{0:.3f}".format(self.Ts[i]))
         return stats
 
     @property

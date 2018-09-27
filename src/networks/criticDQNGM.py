@@ -49,7 +49,7 @@ class CriticDQNGM(CriticDQNG):
         else:
             raise RuntimeError
 
-        adv0 = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
+        adv0 = K.maximum(E - val, 0)
         adv1 = K.cast(K.greater(E, val), dtype='float32')
         good_exp = K.sum(adv1)
 

@@ -13,10 +13,10 @@ class DQNGM(DQNG):
 
     def init(self, args ,env):
         names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal', 'mask']
-        self.buffer = ReplayBuffer(limit=int(1e5), names=names.copy(), args=args)
+        self.buffer = ReplayBuffer(limit=int(1e4), names=names.copy(), args=args)
         names.append('expVal')
         # self.bufferOff = PrioritizedReplayBuffer(limit=int(1e4), names=names.copy(), args=args)
-        self.bufferOff = ReplayBuffer(limit=int(1e5), names=names.copy(), args=args)
+        self.bufferOff = ReplayBuffer(limit=int(1e4), names=names.copy(), args=args)
         self.critic = CriticDQNGM(args, env)
         for metric_name in ['loss_dqn', 'qval', 'val', 'loss_dqn_off', 'loss_imit_off','good_exp_off', 'val_off','qval_off']:
             self.metrics[metric_name] = 0
@@ -47,8 +47,6 @@ class DQNGM(DQNG):
             self.metrics['qval_off'] += np.mean(qval_off)
             # self.bufferOff.update_priorities(i, adv)
 
-
-
         if self.buffer.nb_entries > self.batch_size or self.bufferOff.nb_entries > self.batch_size:
             self.critic.target_train()
 
@@ -65,10 +63,10 @@ class DQNGM(DQNG):
             R = np.sum([self.env.unshape(exp['reward'], exp['terminal']) for exp in self.trajectory])
             self.env.queues[self.env.object].append(R)
 
-            new_Es = []
-            new_goals = []
-            new_masks = []
-            new_expe = []
+            imagined_Es = []
+            imagined_goals = []
+            imagined_masks = []
+            imagined_expe = []
 
             filtering = 1
             if filtering:
@@ -79,7 +77,10 @@ class DQNGM(DQNG):
 
             for i, expe in enumerate(reversed(self.trajectory)):
 
-                self.buffer.append(expe.copy())
+                FLAG = self.buffer.append(expe.copy())
+                if FLAG:
+                    self.bufferOff._next_idx = 0
+
                 for obj, name in enumerate(self.env.goals):
                     mask = self.env.obj2mask(obj)
                     s1m = expe['state1'][np.where(mask)]
@@ -88,17 +89,17 @@ class DQNGM(DQNG):
                     found = (s1m!=sIm).any() and (s0m==sIm).all()
                     mastered = self.env.queues[obj].T[-1]
                     if found and np.random.rand() < (1.1 - mastered):
-                        new_goals.append(expe['state1'].copy())
-                        new_masks.append(mask.copy())
-                        new_Es.append(0)
+                        imagined_goals.append(expe['state1'].copy())
+                        imagined_masks.append(mask.copy())
+                        imagined_Es.append(0)
 
-                for j, (g, m) in enumerate(zip(new_goals, new_masks)):
+                for j, (g, m) in enumerate(zip(imagined_goals, imagined_masks)):
                     expe['goal'] = g
                     expe['mask'] = m
                     expe = self.env.eval_exp(expe)
-                    new_Es[j] = new_Es[j] * self.critic.gamma + expe['reward']
-                    expe['expVal'] = np.expand_dims(new_Es[j], axis=1)
-                    new_expe.append(expe.copy())
+                    imagined_Es[j] = imagined_Es[j] * self.critic.gamma + expe['reward']
+                    expe['expVal'] = np.expand_dims(imagined_Es[j], axis=1)
+                    imagined_expe.append(expe.copy())
 
                     if filtering:
                         s0List.append(expe['state0'])
@@ -114,17 +115,19 @@ class DQNGM(DQNG):
                     #     filter = Es[j] > val[0].squeeze()
                     #     if filter:
                     #         self.bufferOff.append(altExp.copy())
-            if new_expe:
+            if imagined_expe:
                 if filtering:
                     e = np.array(eList)
                     val = self.critic.val([np.array(l) for l in [s0List, gList, mList]])[0]
                     for idx in np.where(e > val)[0]:
-                        self.bufferOff.append(new_expe[idx])
+                        self.bufferOff.append(imagined_expe[idx])
                 else:
-                    for exp in new_expe:
+                    for exp in imagined_expe:
                         self.bufferOff.append(exp)
 
             self.trajectory.clear()
+            print(self.bufferOff.nb_entries)
+            print(self.buffer.nb_entries)
 
         state = self.env.reset()
         self.episode_step = 0
