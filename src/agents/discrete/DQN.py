@@ -4,6 +4,7 @@ INVERTED_GRADIENTS = True
 from networks import CriticDQN
 from agents.agent import Agent
 from buffers import ReplayBuffer
+import keras.backend as K
 
 class DQN(Agent):
 
@@ -64,9 +65,9 @@ class DQN(Agent):
 
     def act(self, state, mode='train'):
         input = self.make_input(state, mode)
-        actionProbs = self.critic.actionProbsModel.predict(input, batch_size=1)
+        actionProbs = self.critic.actionProbs(input)
         if mode=='train':
-            action = np.random.choice(range(self.env.action_dim), p=actionProbs[0])
+            action = np.random.choice(range(self.env.action_dim), p=actionProbs[0].squeeze())
         else:
             action = np.argmax(actionProbs[0])
         return np.expand_dims(action, axis=1)

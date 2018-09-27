@@ -23,13 +23,18 @@ class CriticDQNGM(CriticDQNG):
         TARGETS = Input(shape=(1,))
 
         qvals = self.create_critic_network(S, G, M)
-        actionFilter = Lambda(lambda x: K.squeeze(K.one_hot(x, self.num_actions), axis=1), (self.num_actions,))(A)
+        self.model = Model([S, G, M], qvals)
+        self.qvals = K.function(inputs=[S, G, M], outputs=[qvals], updates=None)
 
-        actionProbs = Lambda(lambda x: K.softmax(x[0] / x[1]), (self.num_actions,))([qvals, T])
-        self.actionProbsModel = Model([S, G, M, T], actionProbs)
+        actionProbs = K.softmax(qvals / T)
+        self.actionProbs = K.function(inputs=[S, G, M, T], outputs=[actionProbs], updates=None)
 
-        qval = Lambda(lambda x: K.sum(x[0] * x[1], axis=1, keepdims=True), (1,))([actionFilter, qvals])
-        self.criticModel = Model([S, A, G, M], qval)
+        actionFilter = K.squeeze(K.one_hot(A, self.num_actions), axis=1)
+        qval = K.sum(actionFilter * qvals, axis=1, keepdims=True)
+        self.qval = K.function(inputs=[S, G, M, A], outputs=[qval], updates=None)
+
+        val = K.max(qvals, axis=1, keepdims=True)
+        self.val = K.function(inputs=[S, G, M], outputs=[val], updates=None)
 
         if self.args['--imit'] == '1':
             actionProb = K.sum(actionFilter * actionProbs, axis=1, keepdims=True)
@@ -44,7 +49,6 @@ class CriticDQNGM(CriticDQNG):
         else:
             raise RuntimeError
 
-        val = K.max(qvals, axis=1, keepdims=True)
         adv0 = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
         adv1 = K.cast(K.greater(E, val), dtype='float32')
         good_exp = K.sum(adv1)
@@ -62,31 +66,34 @@ class CriticDQNGM(CriticDQNG):
         loss_imit = K.mean(imit, axis=0)
         loss += w1 * loss_imit
 
-        self.updatesDqn = self.optimizer.get_updates(params=self.criticModel.trainable_weights, loss=loss_dqn)
+        self.updatesDqn = self.optimizer.get_updates(params=self.model.trainable_weights, loss=loss_dqn)
         self.trainDqn = K.function(inputs=[S, A, G, M, TARGETS],
                                 outputs=[loss_dqn, val, qval],
                                 updates=self.updatesDqn)
 
-        self.updatesAll = self.optimizer.get_updates(params=self.criticModel.trainable_weights, loss=loss)
+        self.updatesAll = self.optimizer.get_updates(params=self.model.trainable_weights, loss=loss)
         self.trainAll = K.function(inputs=[S, A, G, M, T, E, TARGETS],
-                                   outputs=[loss_dqn, loss_imit, good_exp, val, qval],
+                                   outputs=[loss_dqn, loss_imit, good_exp, val, qval, adv0],
                                    updates=self.updatesAll)
 
     def initTargetModels(self):
         S = Input(shape=self.s_dim)
-        A = Input(shape=(1,), dtype='uint8')
         G = Input(shape=self.g_dim)
         M = Input(shape=self.g_dim)
-        targetQvals = self.create_critic_network(S, G, M)
-        targetQval = Lambda(self.actionFilterFn, output_shape=(1,))([A, targetQvals])
-        self.criticTmodel = Model([S, A, G, M], targetQval)
+        A = Input(shape=(1,), dtype='uint8')
+        Tqvals = self.create_critic_network(S, G, M)
+        self.Tmodel = Model([S, G, M], Tqvals)
+
+        actionFilter = K.squeeze(K.one_hot(A, self.num_actions), axis=1)
+        Tqval = K.sum(actionFilter * Tqvals, axis=1, keepdims=True)
+        self.Tqval = K.function(inputs=[S, G, M, A], outputs=[Tqval], updates=None)
+
         self.target_train()
 
     def get_targets_dqn(self, r, t, s, g=None, m=None):
-        temp = np.expand_dims([0.5], axis=0)
-        a1Probs = self.actionProbsModel.predict_on_batch([s, g, m, temp])
-        a1 = np.argmax(a1Probs, axis=1)
-        q = self.criticTmodel.predict_on_batch([s, a1, g, m])
+        qvals = self.qvals([s, g, m])[0]
+        a1 = np.expand_dims(np.argmax(qvals, axis=1), axis=1)
+        q = self.Tqval([s, g, m, a1])[0]
         targets_dqn = self.compute_targets(r, t, q)
         return np.expand_dims(targets_dqn, axis=1)
 

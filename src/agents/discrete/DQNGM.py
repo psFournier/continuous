@@ -5,6 +5,7 @@ INVERTED_GRADIENTS = True
 from networks import CriticDQNGM
 from agents import DQNG
 from buffers import ReplayBuffer, PrioritizedReplayBuffer
+import time
 
 class DQNGM(DQNG):
     def __init__(self, args, env, env_test, logger):
@@ -12,9 +13,10 @@ class DQNGM(DQNG):
 
     def init(self, args ,env):
         names = ['state0', 'action', 'state1', 'reward', 'terminal', 'goal', 'mask']
-        self.buffer = ReplayBuffer(limit=int(1e5), names=names.copy())
+        self.buffer = ReplayBuffer(limit=int(1e5), names=names.copy(), args=args)
         names.append('expVal')
-        self.bufferOff = ReplayBuffer(limit=int(1e5), names=names.copy())
+        # self.bufferOff = PrioritizedReplayBuffer(limit=int(1e4), names=names.copy(), args=args)
+        self.bufferOff = ReplayBuffer(limit=int(1e5), names=names.copy(), args=args)
         self.critic = CriticDQNGM(args, env)
         for metric_name in ['loss_dqn', 'qval', 'val', 'loss_dqn_off', 'loss_imit_off','good_exp_off', 'val_off','qval_off']:
             self.metrics[metric_name] = 0
@@ -31,19 +33,23 @@ class DQNGM(DQNG):
             self.metrics['val'] += np.mean(val)
             self.metrics['qval'] += np.mean(qval)
 
-        if self.bufferOff.nb_entries > 512:
-            exp = self.bufferOff.sample(512)
+        if self.bufferOff.nb_entries > self.batch_size:
+            exp = self.bufferOff.sample(self.batch_size)
             s0, a0, s1, r, t, g, m, e = [exp[name] for name in self.bufferOff.names]
+            i = exp['indices']
             targets_dqn = self.critic.get_targets_dqn(r, t, s1, g, m)
-            inputs = [s0, a0, g, m, 0.5 * np.ones(shape=(512, 1)), e, targets_dqn]
-            loss_dqn_off, loss_imit_off, good_exp_off, val_off, qval_off = self.critic.trainAll(inputs)
+            inputs = [s0, a0, g, m, 0.5 * np.ones(shape=(self.batch_size, 1)), e, targets_dqn]
+            loss_dqn_off, loss_imit_off, good_exp_off, val_off, qval_off, adv = self.critic.trainAll(inputs)
             self.metrics['loss_dqn_off'] += np.squeeze(loss_dqn_off)
             self.metrics['loss_imit_off'] += np.squeeze(loss_imit_off)
             self.metrics['good_exp_off'] += np.squeeze(good_exp_off)
             self.metrics['val_off'] += np.mean(val_off)
             self.metrics['qval_off'] += np.mean(qval_off)
+            # self.bufferOff.update_priorities(i, adv)
 
-        if self.buffer.nb_entries > self.batch_size or self.bufferOff.nb_entries > 512:
+
+
+        if self.buffer.nb_entries > self.batch_size or self.bufferOff.nb_entries > self.batch_size:
             self.critic.target_train()
 
     def make_input(self, state, mode):
@@ -64,6 +70,7 @@ class DQNGM(DQNG):
             goals = []
             masks = []
             counts = []
+            exp_batch = []
 
             for i, expe in enumerate(reversed(self.trajectory)):
 
@@ -87,7 +94,29 @@ class DQNGM(DQNG):
                     altExp = self.env.eval_exp(altExp)
                     Es[j] = Es[j] * self.critic.gamma + altExp['reward']
                     altExp['expVal'] = np.expand_dims(Es[j], axis=1)
-                    self.bufferOff.append(altExp.copy())
+
+                    exp_batch.append(altExp)
+                    # s_batch.append(s0)
+                    # g_batch.append(g)
+                    # m_batch.append(m)
+                    # e_batch.append(Es[j])
+
+                    # if 0:
+                    #     self.bufferOff.append(altExp.copy())
+                    # else:
+                    #     input = [np.expand_dims(i, axis=0) for i in [s0, g, m]]
+                    #     val = self.critic.val(input)
+                    #     filter = Es[j] > val[0].squeeze()
+                    #     if filter:
+                    #         self.bufferOff.append(altExp.copy())
+            if exp_batch:
+                s0 = np.stack([exp['state0'] for exp in exp_batch])
+                g = np.stack([exp['goal'] for exp in exp_batch])
+                m = np.stack([exp['mask'] for exp in exp_batch])
+                e = np.stack([exp['expVal'] for exp in exp_batch])
+                val = self.critic.val([s0, g, m])[0]
+                for idx in np.where(e > val)[0]:
+                    self.bufferOff.append(exp_batch[idx])
 
             self.trajectory.clear()
 

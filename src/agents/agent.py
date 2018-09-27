@@ -29,6 +29,7 @@ class Agent():
         self.trajectory = []
 
     def run(self):
+        t0 = time.time()
         self.exp['state0'] = self.reset()
         try:
             while self.env_step < self.max_steps:
@@ -43,6 +44,9 @@ class Agent():
                 self.exp['state0'] = self.exp['state1']
 
                 if self.episode_step >= self.ep_steps:
+                    t1 = time.time()
+                    print(t1 - t0)
+                    t0 = t1
                     self.exp['state0'] = self.reset()
 
                 self.log()
@@ -67,6 +71,7 @@ class Agent():
     def log(self):
 
         if self.env_step % self.eval_freq == 0:
+
             R_mean = []
             for g, goal in enumerate(self.env_test.goals):
                 exp = {}

@@ -18,68 +18,47 @@ class CriticDQN(object):
         self.initModels()
         self.initTargetModels()
 
-    def actionFilterFn(self, inputs):
-        filter = K.squeeze(K.one_hot(inputs[0], self.num_actions), axis=1)
-        return K.sum(filter * inputs[1], axis=1, keepdims=True)
-
-    def marginFn(self, inputs):
-        a = inputs[0]
-        v = inputs[1]
-        q = inputs[2]
-        adv = inputs[3]
-        width = float(self.args['--margin']) * (K.max(v, axis=1, keepdims=True) - K.min(v, axis=1, keepdims=True))
-        one_hot = 1 - K.squeeze(K.one_hot(a, self.num_actions), axis=1)
-        width =  K.repeat_elements(width, self.num_actions, axis=1)
-        margin = width * one_hot
-        res = (K.max(v + margin, axis=1, keepdims=True) - q) * adv
-        return res
-
     def initModels(self):
+
+        w0, w1, w2 = float(self.args['--w0']), float(self.args['--w1']), float(self.args['--w2'])
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
         T = Input(shape=(1,), dtype='float32')
+        TARGETS = Input(shape=(1,))
+
         qvals = self.create_critic_network(S)
-        actionProbs = Lambda(lambda x: K.softmax(x[0]/x[1]))([qvals, T])
-        self.actionProbsModel = Model([S, T], actionProbs)
-        qval = Lambda(self.actionFilterFn, output_shape=(1,), name='qval')([A, qvals])
-        self.criticModel = Model([S, A], qval)
-        self.criticModel.compile(loss='mse', optimizer=self.optimizer)
-        self.criticModel.metrics_tensors = [qval]
+        self.model = Model([S], qvals)
+        self.qvals = K.function(inputs=[S], outputs=[qvals], updates=None)
 
-        if self.args['--imit'] == '1':
-            E = Input(shape=(1,), dtype='float32')
-            actionProb = Lambda(self.actionFilterFn, output_shape=(1,))([A, actionProbs])
-            val = Lambda(lambda x: K.max(x, axis=1, keepdims=True))(qvals)
-            advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
-            imit = Lambda(lambda x: -K.log(x[0]) * x[1], name='imit')([actionProb, advantage])
-            self.imitModel = Model([S, A, E], [qval, imit, advantage])
-            self.imitModel.compile(loss=['mse', 'mae', 'mse'],
-                                   loss_weights=[float(self.args['--w0']), float(self.args['--w1']), float(self.args['--w2'])],
-                                   optimizer=self.optimizer)
+        actionProbs = K.softmax(qvals / T)
+        self.actionProbs = K.function(inputs=[S, T], outputs=[actionProbs], updates=None)
 
-        if self.args['--imit'] == '2':
-            E = Input(shape=(1,), dtype='float32')
-            val = Lambda(lambda x: K.max(x, axis=1, keepdims=True))(qvals)
-            advantage = Lambda(lambda x: K.maximum(x[0] - x[1], 0), name='advantage')([E, val])
-            imit = Lambda(self.marginFn, output_shape=(1,), name='imit')([A, qvals, qval, advantage])
-            self.imitModel = Model([S, A, E], [qval, imit, advantage])
-            self.imitModel.compile(loss=['mse', 'mae', 'mse'],
-                                   loss_weights=[float(self.args['--w0']), float(self.args['--w1']), float(self.args['--w2'])],
-                                   optimizer=self.optimizer)
+        actionFilter = K.squeeze(K.one_hot(A, self.num_actions), axis=1)
+        qval = K.sum(actionFilter * qvals, axis=1, keepdims=True)
+        self.qval = K.function(inputs=[S, A], outputs=[qval], updates=None)
+
+        val = K.max(qvals, axis=1, keepdims=True)
+        self.val = K.function(inputs=[S], outputs=[val], updates=None)
+
+        loss = 0
+        loss_dqn = K.mean(K.square(qval - TARGETS), axis=0)
+        loss += w0 * loss_dqn
+        self.updatesDqn = self.optimizer.get_updates(params=self.model.trainable_weights, loss=loss_dqn)
+        self.trainDqn = K.function(inputs=[S, A, TARGETS],
+                                   outputs=[loss_dqn, qval],
+                                   updates=self.updatesDqn)
 
     def initTargetModels(self):
         S = Input(shape=self.s_dim)
-        A = Input(shape=(1,), dtype='uint8')
-        targetQvals = self.create_critic_network(S)
-        targetQval = Lambda(self.actionFilterFn, output_shape=(1,))([A, targetQvals])
-        self.criticTmodel = Model([S, A], targetQval)
+        Tqvals = self.create_critic_network(S)
+        self.Tmodel = Model([S], Tqvals)
         self.target_train()
 
     def get_targets_dqn(self, r, t, s):
-        temp = np.expand_dims([1], axis=0)
-        a1Probs = self.actionProbsModel.predict_on_batch([s, temp])
-        a1 = np.argmax(a1Probs, axis=1)
-        q = self.criticTmodel.predict_on_batch([s, a1])
+        qvals = self.model.predict_on_batch([s])
+        a1 = np.argmax(qvals, axis=1)
+        Tqvals = self.Tmodel.predict_on_batch([s])
+        q = Tqvals[a1]
         targets_dqn = self.compute_targets(r, t, q)
         return targets_dqn
 
@@ -95,8 +74,8 @@ class CriticDQN(object):
         return Q_values
 
     def target_train(self):
-        weights = self.criticModel.get_weights()
-        target_weights = self.criticTmodel.get_weights()
+        weights = self.model.get_weights()
+        target_weights = self.Tmodel.get_weights()
         for i in range(len(weights)):
             target_weights[i] = self.tau * weights[i] + (1 - self.tau)* target_weights[i]
-        self.criticTmodel.set_weights(target_weights)
+        self.Tmodel.set_weights(target_weights)

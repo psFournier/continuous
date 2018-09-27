@@ -117,12 +117,7 @@ class CPBased(Wrapper):
 
         maxCP = max(self.CPs)
         minCP = min(self.CPs)
-        maxR = max(self.Rs)
-        minR = min(self.Rs)
-        if maxCP - minCP > 5:
-            interests = [(cp - minCP) / (maxCP - minCP)  for cp in self.CPs]
-        else:
-            interests = [1 - (r - minR) / (maxR - minR + 0.0001)  for r in self.Rs]
+        interests = [(t < 0.9) * (cp - minCP) / (maxCP - minCP + 0.0001) for t, cp in zip(self.Ts, self.CPs)]
 
         return interests
 
@@ -133,4 +128,8 @@ class CPBased(Wrapper):
     @property
     def Rs(self):
         return [q.R[-1] for q in self.queues]
+
+    @property
+    def Ts(self):
+        return [q.T[-1] for q in self.queues]
 

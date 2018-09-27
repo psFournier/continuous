@@ -20,39 +20,43 @@ MAP = [
 ]
 
 class Actions:
-    UP=0
-    DOWN=1
-    RIGHT=2
-    LEFT=3
-    TOUCH = 4
-    TOUCHUP = 5
-    TOUCHDOWN = 6
-    TOUCHLEFT = 7
-    TOUCHRIGHT = 8
-    TAKE = 9
-    NOOP = 10
+    NOOP = 0
+    UP=1
+    DOWN=2
+    RIGHT=3
+    LEFT=4
+    TOUCH = 5
+    TAKE = 6
+    # TOUCHUP = 7
+    # TOUCHDOWN = 8
+    # TOUCHLEFT = 9
+    # TOUCHRIGHT = 10
+
+
     # PUT = 10
 
 class Obj():
-    def __init__(self, env, x, y, name):
+    def __init__(self, env, x, y, name, prop):
         self.x = x
         self.y = y
         self.s = 0
         self.in_hand = 0
         self.env = env
         self.name = name
+        self.prop = prop
         self.env.objects.append(self)
 
     def act(self, a):
         pass
 
 class Light(Obj):
-    def __init__(self, env, x, y, name):
-        super(Light, self).__init__(env, x, y, name)
+    def __init__(self, env, x, y, name, prop):
+        super(Light, self).__init__(env, x, y, name, prop)
 
     def act(self, a):
         if a==Actions.TOUCH:
-            self.s = 1 - self.s
+            if self.s == 0:
+                self.s = np.random.choice([0, 1], p=self.prop)
 
     @property
     def high(self):
@@ -64,17 +68,17 @@ class Light(Obj):
 
     @property
     def state(self):
-        return [self.s]
+        return self.s
 
     @property
     def init(self):
         return [0]
 
 class Key(Obj):
-    def __init__(self, env, x, y, name, light, prop):
-        super(Key, self).__init__(env, x, y, name)
+    def __init__(self, env, x, y, name, prop, light):
+        super(Key, self).__init__(env, x, y, name, prop)
         self.light = light
-        self.prop = prop
+
 
     def act(self, a):
         if a == Actions.TAKE:
@@ -83,7 +87,7 @@ class Key(Obj):
 
     @property
     def state(self):
-        return [self.in_hand]
+        return self.in_hand
 
     @property
     def high(self):
@@ -98,33 +102,31 @@ class Key(Obj):
         return [0]
 
 class Chest(Obj):
-    def __init__(self, env, x, y, name, light, key, prop):
-        super(Chest, self).__init__(env, x, y, name)
-        self.light = light
-        self.prop = prop
-        self.key = key
+    def __init__(self, env, x, y, name, prop, dep):
+        super(Chest, self).__init__(env, x, y, name, prop)
+        self.dep = dep
 
     def act(self, a):
-        if self.light.s == 1 and self.key.in_hand == 1:
-            if a == Actions.TOUCHDOWN:
-                if self.s == 0:
-                    self.s = np.random.choice([0, 1], p=self.prop)
-            elif a == Actions.TOUCHUP:
-                if self.s == 1:
-                    self.s = np.random.choice([1, 2], p=self.prop)
-            elif a == Actions.TOUCHLEFT:
-                if self.s == 0:
-                    self.s = np.random.choice([0, 3], p=self.prop)
-            elif a == Actions.TOUCHRIGHT:
-                if self.s == 3:
-                    self.s = np.random.choice([3, 4], p=self.prop)
-            elif a == Actions.TOUCH:
-                if self.s > 0:
-                    self.s = 0
+        cond = all([d.state == 1 for d in self.dep])
+        if cond:
+            # if a == Actions.TOUCHDOWN:
+            #     if self.s == 0:
+            #         self.s = np.random.choice([0, 1], p=self.prop)
+            # elif a == Actions.TOUCHUP:
+            #     if self.s == 1:
+            #         self.s = np.random.choice([1, 2], p=self.prop)
+            # elif a == Actions.TOUCHLEFT:
+            #     if self.s == 0:
+            #         self.s = np.random.choice([0, 3], p=self.prop)
+            # elif a == Actions.TOUCHRIGHT:
+            #     if self.s == 3:
+            #         self.s = np.random.choice([3, 4], p=self.prop)
+            if a == Actions.TOUCH:
+                self.s = np.random.choice([0, 1], p=self.prop)
 
     @property
     def high(self):
-        return [4]
+        return [1]
 
     @property
     def low(self):
@@ -132,7 +134,7 @@ class Chest(Obj):
 
     @property
     def state(self):
-        return [self.s]
+        return self.s
 
     @property
     def init(self):
@@ -152,47 +154,42 @@ class Playroom(Env):
         self.x = 0
         self.y = 0
         self.objects = []
-        self.light = Light(self, 0, 3, 'light')
-        self.key1 = Key(self, 3, 0, 'key1', self.light, [0, 1])
-        self.key2 = Key(self, 7, 0, 'key2', self.light, [0.3, 0.7])
-        self.chest1 = Chest(self, 2, 2, 'chest1', self.light, self.key1, [0, 1])
-        self.chest2 = Chest(self, 2, 6, 'chest2', self.light, self.key1, [0.1, 0.9])
-        self.chest3 = Chest(self, 6, 2, 'chest3', self.light, self.key2, [0.2, 0.8])
-        self.chest4 = Chest(self, 6, 6, 'chest4', self.light, self.key2, [0.3, 0.7])
+        self.light = Light(self, 0, 3, 'light', [0.2, 0.8])
+        self.key1 = Key(self, 3, 0, 'key1', [0, 1], self.light)
+        self.key2 = Key(self, 7, 0, 'key2', [0.1, 0.9], self.light)
+        self.key3 = Key(self, 3, 4, 'key3', [0.3, 0.7], self.light)
+        self.key4 = Key(self, 7, 4, 'key4', [0.5, 0.5], self.light)
+        self.chest1 = Chest(self, 2, 2, 'chest1', [0, 1], dep=[self.light, self.key1])
+        self.chest2 = Chest(self, 2, 6, 'chest2', [0.1, 0.9], dep=[self.light, self.key1, self.key2])
+        self.chest3 = Chest(self, 6, 2, 'chest3', [0.3, 0.7], dep=[self.light, self.key1, self.key2, self.key3])
+        self.chest4 = Chest(self, 6, 6, 'chest4', [0.5, 0.5], dep=[self.light, self.key1, self.key2, self.key3, self.key4])
         self.lastaction = None
 
     def step(self, a):
 
         if a==Actions.UP and self.desc[1 + self.x, 1 + 2 * self.y] == b" ":
             self.x += 1
-            h = self.get_held()
-            if h >= 0:
+            for h in self.get_held():
                 self.objects[h].x = self.x
 
         elif a==Actions.DOWN and self.desc[self.x, 1 + 2 * self.y] == b" ":
             self.x -= 1
-            h = self.get_held()
-            if h >= 0:
+            for h in self.get_held():
                 self.objects[h].x = self.x
 
-        elif a==Actions.LEFT:
-            h = self.get_held()
-            if self.desc[1 + self.x, 2 * self.y] == b" ":
-                self.y -= 1
-                if h >= 0:
-                    self.objects[h].y = self.y
+        elif a==Actions.LEFT and self.desc[1 + self.x, 2 * self.y] == b" ":
+            self.y -= 1
+            for h in self.get_held():
+                self.objects[h].y = self.y
 
-        elif a==Actions.RIGHT:
-            h = self.get_held()
-            if self.desc[1 + self.x, 2 * self.y + 2] == b" ":
-                self.y += 1
-                if h >= 0:
-                    self.objects[h].y = self.y
+        elif a==Actions.RIGHT and self.desc[1 + self.x, 2 * self.y + 2] == b" ":
+            self.y += 1
+            for h in self.get_held():
+                self.objects[h].y = self.y
 
         elif a==Actions.TAKE:
-            h = self.get_held()
             o = self.get_underagent()
-            if o >= 0 and h == -1:
+            if o >= 0:
                 self.objects[o].act(a)
 
         # elif a==Actions.PUT:
@@ -206,25 +203,25 @@ class Playroom(Env):
             if o >= 0:
                 self.objects[o].act(a)
                 
-        elif a==Actions.TOUCHUP:
-            o = self.get_underagent(y = 1)
-            if o >= 0:
-                self.objects[o].act(a)
-                
-        elif a==Actions.TOUCHDOWN:
-            o = self.get_underagent(y = -1)
-            if o >= 0:
-                self.objects[o].act(a)
-                
-        elif a==Actions.TOUCHLEFT:
-            o = self.get_underagent(x = -1)
-            if o >= 0:
-                self.objects[o].act(a)
-                
-        elif a==Actions.TOUCHRIGHT:
-            o = self.get_underagent(x = 1)
-            if o >= 0:
-                self.objects[o].act(a)
+        # elif a==Actions.TOUCHUP:
+        #     o = self.get_underagent(y = 1)
+        #     if o >= 0:
+        #         self.objects[o].act(a)
+        #
+        # elif a==Actions.TOUCHDOWN:
+        #     o = self.get_underagent(y = -1)
+        #     if o >= 0:
+        #         self.objects[o].act(a)
+        #
+        # elif a==Actions.TOUCHLEFT:
+        #     o = self.get_underagent(x = -1)
+        #     if o >= 0:
+        #         self.objects[o].act(a)
+        #
+        # elif a==Actions.TOUCHRIGHT:
+        #     o = self.get_underagent(x = 1)
+        #     if o >= 0:
+        #         self.objects[o].act(a)
 
         elif a==Actions.NOOP:
             pass
@@ -240,10 +237,11 @@ class Playroom(Env):
         return -1
 
     def get_held(self):
+        res = []
         for i, obj in enumerate(self.objects):
             if obj.in_hand:
-                return i
-        return -1
+                res.append(i)
+        return res
 
     def reset(self):
         self.initialize()
@@ -260,7 +258,7 @@ class Playroom(Env):
     def state(self):
         res = [self.x, self.y]
         for obj in self.objects:
-            res += obj.state
+            res += [obj.state]
         return res
 
     @property

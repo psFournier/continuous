@@ -26,8 +26,8 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         --------
         ReplayBuffer.__init__
         """
-        super(PrioritizedReplayBuffer, self).__init__(limit=limit, names=names)
-        self.alpha = float(args['--alpha'])
+        super(PrioritizedReplayBuffer, self).__init__(limit=limit, names=names, args=args)
+        self.alpha = 0.6
         assert self.alpha > 0
 
         # self.beta_schedule = LinearSchedule(int(args['--max_steps']),
@@ -47,11 +47,14 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         # self._it_min = MinSegmentTree(it_capacity)
         self.max_priority = 1.
 
-    def append(self, buffer_item):
+    def append(self, buffer_item, priority=None):
         """See ReplayBuffer.store_effect"""
         idx = self._next_idx
         super().append(buffer_item)
-        self._it_sum[idx] = self.max_priority ** self.alpha
+        if priority is None:
+            self._it_sum[idx] = self.max_priority ** self.alpha
+        else:
+            self._it_sum[idx] = priority ** self.alpha
         # self._it_min[idx] = self.max_priority ** self.alpha
 
     def _sample_proportional(self, batch_size):
@@ -92,8 +95,8 @@ class PrioritizedReplayBuffer(ReplayBuffer):
 
         result = {}
         for name, value in self.contents.items():
-            result[name] = array_min2d(value.get_batch(idxes))
-        result['indices'] = array_min2d(idxes)
+            result[name] = np.array(value.get_batch(idxes))
+        result['indices'] = np.array(idxes)
         # result['weights'] = array_min2d(weights)
         return result
 

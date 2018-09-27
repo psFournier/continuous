@@ -88,17 +88,18 @@ if 1:
     df2 = df
     df2 = df2[(df2['--agent'] == 'dqngm')]
     df2 = df2[(df2['--env'] == 'PlayroomGM-v0')]
-    # df2 = df2[(df2['--imit'] == 1)]
+    df2 = df2[(df2['--imit'] == 1)]
     # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
-    # df2 = df2[(df2['--w1'] == 0)]
+    df2 = df2[(df2['--w1'] == 0)]
+    df2 = df2[(df2['--w0'] == 0)]
     df2 = df2[(df2['--opt_init'] == 0)]
     # df2 = df2[(df2['--network'] == 2)]
     # df2 = df2[(df2['--clipping'] == 1)]
     # df2 = df2[(df2['--explo'] == 1)]
     # df2 = df2[(df2['--theta'] == 0)]
-    # df2 = df2[(df2['--theta'] == 0)]
+    # df2 = df2[(df2['--theta'] == 4)]
     y = ['R']
-    y = ['R'+s for s in ['_xy', '_light','_key1', '_key2', '_chest1', '_chest2', '_chest3', '_chest4']]
+    y = ['agentR'+s for s in ['_xy', '_light','_key1', '_key2', '_chest1', '_chest2', '_chest3', '_chest4']]
     # y = ['good_exp', 'loss_dqn', 'loss_dqn2', 'qval']
     # y = ['loss_imit']
     # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
@@ -128,10 +129,11 @@ if 1:
 
     print(paramsStudied)
     a, b = 3,3
-    fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False)
+    fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
     colors = ['b', 'r']
-
-    for j, (name, g) in enumerate(df2.groupby(paramsStudied)):
+    p = 'num_run'
+    p= paramsStudied
+    for j, (name, g) in enumerate(df2.groupby(p)):
         for i, valy in enumerate(y):
             # ax2[i % a, i // a].plot(range(1500), range(1500), 'g-')
             if isinstance(name, tuple):
@@ -139,15 +141,15 @@ if 1:
             else:
                 label = '{}:{}'.format(paramsStudied[0][2:], name)
             ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
+            # ax2[i % a, i // a].plot(g['step'], abs(g[valy].diff(1).ewm(com=5).mean()))
             # ax2[i % a, i // a].scatter(g[x[i], g[valy], s=1, c=colors[j], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
             #                         label='CP_' + str(i) + "_smooth")
-            # ax2[i % a, i // a].fill_between(g['step'],
-            #                                 g[val]['quant_inf'],
-            #                                 g[val]['quant_sup'], alpha=0.25, linewidth=0)
+            ax2[i % a, i // a].fill_between(g['step'],
+                                            g[valy]['quant_inf'],
+                                            g[valy]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=valy)
             ax2[i % a, i // a].legend()
             # ax2[i % a, i // a].set_ylim([0, 10])
-    fig2.suptitle('network:3')
 
 plt.show()
