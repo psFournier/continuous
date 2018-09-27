@@ -65,41 +65,46 @@ class DQNGM(DQNG):
             R = np.sum([self.env.unshape(exp['reward'], exp['terminal']) for exp in self.trajectory])
             self.env.queues[self.env.object].append(R)
 
-            Es = []
-            objs = []
-            goals = []
-            masks = []
-            counts = []
-            exp_batch = []
+            new_Es = []
+            new_goals = []
+            new_masks = []
+            new_expe = []
+
+            filtering = 1
+            if filtering:
+                s0List = []
+                gList = []
+                mList = []
+                eList = []
 
             for i, expe in enumerate(reversed(self.trajectory)):
 
                 self.buffer.append(expe.copy())
+                for obj, name in enumerate(self.env.goals):
+                    mask = self.env.obj2mask(obj)
+                    s1m = expe['state1'][np.where(mask)]
+                    s0m = expe['state0'][np.where(mask)]
+                    sIm = self.env.init_state[np.where(mask)]
+                    found = (s1m!=sIm).any() and (s0m==sIm).all()
+                    mastered = self.env.queues[obj].T[-1]
+                    if found and np.random.rand() < (1.1 - mastered):
+                        new_goals.append(expe['state1'].copy())
+                        new_masks.append(mask.copy())
+                        new_Es.append(0)
 
-                if np.random.rand() < 0.05:
-                    for obj, name in enumerate(self.env.goals):
-                        m = self.env.obj2mask(obj)
-                        s1m = expe['state1'][np.where(m)]
-                        sIm = self.env.init_state[np.where(m)]
-                        max = np.max(self.env.Rs)
-                        if (s1m!=sIm).any() and self.env.Rs[obj] < 0.9 * max:
-                            goals.append(expe['state1'].copy())
-                            masks.append(m.copy())
-                            Es.append(0)
+                for j, (g, m) in enumerate(zip(new_goals, new_masks)):
+                    expe['goal'] = g
+                    expe['mask'] = m
+                    expe = self.env.eval_exp(expe)
+                    new_Es[j] = new_Es[j] * self.critic.gamma + expe['reward']
+                    expe['expVal'] = np.expand_dims(new_Es[j], axis=1)
+                    new_expe.append(expe.copy())
 
-                for j, (g, m) in enumerate(zip(goals, masks)):
-                    altExp = expe.copy()
-                    altExp['goal'] = g
-                    altExp['mask'] = m
-                    altExp = self.env.eval_exp(altExp)
-                    Es[j] = Es[j] * self.critic.gamma + altExp['reward']
-                    altExp['expVal'] = np.expand_dims(Es[j], axis=1)
-
-                    exp_batch.append(altExp)
-                    # s_batch.append(s0)
-                    # g_batch.append(g)
-                    # m_batch.append(m)
-                    # e_batch.append(Es[j])
+                    if filtering:
+                        s0List.append(expe['state0'])
+                        gList.append(g)
+                        mList.append(m)
+                        eList.append(expe['expVal'])
 
                     # if 0:
                     #     self.bufferOff.append(altExp.copy())
@@ -109,14 +114,15 @@ class DQNGM(DQNG):
                     #     filter = Es[j] > val[0].squeeze()
                     #     if filter:
                     #         self.bufferOff.append(altExp.copy())
-            if exp_batch:
-                s0 = np.stack([exp['state0'] for exp in exp_batch])
-                g = np.stack([exp['goal'] for exp in exp_batch])
-                m = np.stack([exp['mask'] for exp in exp_batch])
-                e = np.stack([exp['expVal'] for exp in exp_batch])
-                val = self.critic.val([s0, g, m])[0]
-                for idx in np.where(e > val)[0]:
-                    self.bufferOff.append(exp_batch[idx])
+            if new_expe:
+                if filtering:
+                    e = np.array(eList)
+                    val = self.critic.val([np.array(l) for l in [s0List, gList, mList]])[0]
+                    for idx in np.where(e > val)[0]:
+                        self.bufferOff.append(new_expe[idx])
+                else:
+                    for exp in new_expe:
+                        self.bufferOff.append(exp)
 
             self.trajectory.clear()
 

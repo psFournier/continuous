@@ -36,7 +36,7 @@ class Actions:
     # PUT = 10
 
 class Obj():
-    def __init__(self, env, x, y, name, prop):
+    def __init__(self, env, x, y, name, prop, dep=None):
         self.x = x
         self.y = y
         self.s = 0
@@ -44,52 +44,17 @@ class Obj():
         self.env = env
         self.name = name
         self.prop = prop
+        self.dep = dep
         self.env.objects.append(self)
 
     def act(self, a):
         pass
-
-class Light(Obj):
-    def __init__(self, env, x, y, name, prop):
-        super(Light, self).__init__(env, x, y, name, prop)
-
-    def act(self, a):
-        if a==Actions.TOUCH:
-            if self.s == 0:
-                self.s = np.random.choice([0, 1], p=self.prop)
-
-    @property
-    def high(self):
-        return [1]
-
-    @property
-    def low(self):
-        return [0]
 
     @property
     def state(self):
         return self.s
 
     @property
-    def init(self):
-        return [0]
-
-class Key(Obj):
-    def __init__(self, env, x, y, name, prop, light):
-        super(Key, self).__init__(env, x, y, name, prop)
-        self.light = light
-
-
-    def act(self, a):
-        if a == Actions.TAKE:
-            if self.light.s == 1:
-                self.in_hand = np.random.choice([0, 1], p=self.prop)
-
-    @property
-    def state(self):
-        return self.in_hand
-
-    @property
     def high(self):
         return [1]
 
@@ -101,14 +66,38 @@ class Key(Obj):
     def init(self):
         return [0]
 
-class Chest(Obj):
+class Light(Obj):
+
+    def __init__(self, env, x, y, name, prop):
+        super(Light, self).__init__(env, x, y, name, prop)
+
+    def act(self, a):
+        if a==Actions.TOUCH and self.state == 0:
+                self.s = np.random.choice([0, 1], p=self.prop)
+
+class Key(Obj):
+
     def __init__(self, env, x, y, name, prop, dep):
-        super(Chest, self).__init__(env, x, y, name, prop)
-        self.dep = dep
+        super(Key, self).__init__(env, x, y, name, prop, dep)
 
     def act(self, a):
         cond = all([d.state == 1 for d in self.dep])
-        if cond:
+        if cond and self.state == 0 and a == Actions.TAKE:
+            self.in_hand = np.random.choice([0, 1], p=self.prop)
+
+    @property
+    def state(self):
+        return self.in_hand
+
+class Chest(Obj):
+
+    def __init__(self, env, x, y, name, prop, dep):
+        super(Chest, self).__init__(env, x, y, name, prop, dep)
+
+    def act(self, a):
+        cond = all([d.state == 1 for d in self.dep])
+        if cond and a == Actions.TOUCH and self.state == 0:
+            self.s = np.random.choice([0, 1], p=self.prop)
             # if a == Actions.TOUCHDOWN:
             #     if self.s == 0:
             #         self.s = np.random.choice([0, 1], p=self.prop)
@@ -121,24 +110,6 @@ class Chest(Obj):
             # elif a == Actions.TOUCHRIGHT:
             #     if self.s == 3:
             #         self.s = np.random.choice([3, 4], p=self.prop)
-            if a == Actions.TOUCH:
-                self.s = np.random.choice([0, 1], p=self.prop)
-
-    @property
-    def high(self):
-        return [1]
-
-    @property
-    def low(self):
-        return [0]
-
-    @property
-    def state(self):
-        return self.s
-
-    @property
-    def init(self):
-        return [0]
 
 class Playroom(Env):
 
@@ -155,10 +126,10 @@ class Playroom(Env):
         self.y = 0
         self.objects = []
         self.light = Light(self, 0, 3, 'light', [0.2, 0.8])
-        self.key1 = Key(self, 3, 0, 'key1', [0, 1], self.light)
-        self.key2 = Key(self, 7, 0, 'key2', [0.1, 0.9], self.light)
-        self.key3 = Key(self, 3, 4, 'key3', [0.3, 0.7], self.light)
-        self.key4 = Key(self, 7, 4, 'key4', [0.5, 0.5], self.light)
+        self.key1 = Key(self, 3, 0, 'key1', [0, 1], dep=[self.light])
+        self.key2 = Key(self, 7, 0, 'key2', [0.1, 0.9], dep=[self.light])
+        self.key3 = Key(self, 3, 4, 'key3', [0.3, 0.7], dep=[self.light])
+        self.key4 = Key(self, 7, 4, 'key4', [0.5, 0.5], dep=[self.light])
         self.chest1 = Chest(self, 2, 2, 'chest1', [0, 1], dep=[self.light, self.key1])
         self.chest2 = Chest(self, 2, 6, 'chest2', [0.1, 0.9], dep=[self.light, self.key1, self.key2])
         self.chest3 = Chest(self, 6, 2, 'chest3', [0.3, 0.7], dep=[self.light, self.key1, self.key2, self.key3])
