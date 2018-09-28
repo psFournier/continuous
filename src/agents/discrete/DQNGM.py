@@ -90,6 +90,7 @@ class DQNGM(DQNG):
                     # found = (s1m!=sIm).any() and (s0m==sIm).all()
                     found = obj not in imagined_obj and (s1m != sIm).any()
                     mastered = self.env.queues[obj].T[-1]
+                    # mastered = 0
                     if found and np.random.rand() < (1.1 - mastered):
                         imagined_goals.append(expe['state1'].copy())
                         imagined_masks.append(mask.copy())
