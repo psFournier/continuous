@@ -97,9 +97,9 @@ if 1:
     # df2 = df2[(df2['--clipping'] == 1)]
     # df2 = df2[(df2['--explo'] == 1)]
     # df2 = df2[(df2['--theta'] == 0)]
-    # df2 = df2[(df2['--theta'] == 4)]
+    df2 = df2[(df2['--theta'] == 4)]
     y = ['R']
-    y = ['I'+s for s in ['_xy', '_light','_key1', '_key2', '_chest1', '_chest2', '_chest3', '_chest4']]
+    y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
     # y = ['good_exp', 'loss_dqn', 'loss_dqn2', 'qval']
     # y = ['loss_imit']
     # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
@@ -125,29 +125,31 @@ if 1:
     def quant_sup(x):
         return x.quantile(0.8)
     op_dict = {a:[np.median, np.mean, quant_inf, quant_sup] for a in y}
-    df2 = df2.groupby(x + params).agg(op_dict).reset_index()
+    # df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
     print(paramsStudied)
     a, b = 3,3
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
     colors = ['b', 'r']
     p = 'num_run'
-    p= paramsStudied
+    # p= paramsStudied
     for j, (name, g) in enumerate(df2.groupby(p)):
         for i, valy in enumerate(y):
             # ax2[i % a, i // a].plot(range(1500), range(1500), 'g-')
-            if isinstance(name, tuple):
-                label = ','.join(['{}:{}'.format(paramsStudied[k][2:], name [k]) for k in range(len(paramsStudied))])
-            else:
-                label = '{}:{}'.format(paramsStudied[0][2:], name)
-            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
-            # ax2[i % a, i // a].plot(g['step'], abs(g[valy].diff(1).ewm(com=5).mean()))
+            # if isinstance(name, tuple):
+            #     label = ','.join(['{}:{}'.format(paramsStudied[k][2:], name [k]) for k in range(len(paramsStudied))])
+            # else:
+            #     label = '{}:{}'.format(paramsStudied[0][2:], name)
+            # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
+            # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
+            # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].rolling(window=10).mean(), label=label)
+            ax2[i % a, i // a].plot(g['step'], g[valy] )
             # ax2[i % a, i // a].scatter(g[x[i], g[valy], s=1, c=colors[j], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
             #                         label='CP_' + str(i) + "_smooth")
-            ax2[i % a, i // a].fill_between(g['step'],
-                                            g[valy]['quant_inf'],
-                                            g[valy]['quant_sup'], alpha=0.25, linewidth=0)
+            # ax2[i % a, i // a].fill_between(g['step'],
+            #                                 g[valy]['quant_inf'],
+            #                                 g[valy]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=valy)
             ax2[i % a, i // a].legend()
             # ax2[i % a, i // a].set_ylim([0, 10])

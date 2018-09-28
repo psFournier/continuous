@@ -118,7 +118,10 @@ class CPBased(Wrapper):
 
         maxCP = max(self.CPs)
         minCP = min(self.CPs)
-        interests = [(t < 0.9) * (cp - minCP) / (maxCP - minCP + 0.0001) for t, cp in zip(self.Ts, self.CPs)]
+        if maxCP - minCP > 5:
+            interests = [(cp - minCP) / (maxCP - minCP) for cp in self.CPs]
+        else:
+            interests = [1 - t for t in self.Ts]
 
         return interests
 

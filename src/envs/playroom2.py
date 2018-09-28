@@ -95,14 +95,9 @@ class Chest(Obj):
         super(Chest, self).__init__(env, x, y, name, prop, dep)
 
     def act(self, a):
-        # cond = all([d.state == 1 for d in self.dep])
-        # if cond and a == Actions.TOUCH and self.state == 0:
-        #     self.s = np.random.choice([0, 1], p=self.prop)
-
-        if a == Actions.TOUCH:
-            for d in self.dep:
-                if d.state == 1:
-                    self.s = np.random.choice([self.s, self.s + 1], p=self.prop)
+        cond = all([d.state == 1 for d in self.dep])
+        if cond and a == Actions.TOUCH and self.state == 0:
+            self.s = np.random.choice([0, 1], p=self.prop)
             # if a == Actions.TOUCHDOWN:
             #     if self.s == 0:
             #         self.s = np.random.choice([0, 1], p=self.prop)
@@ -115,10 +110,6 @@ class Chest(Obj):
             # elif a == Actions.TOUCHRIGHT:
             #     if self.s == 3:
             #         self.s = np.random.choice([3, 4], p=self.prop)
-
-    @property
-    def high(self):
-        return [len(self.dep)]
 
 class Playroom(Env):
 
