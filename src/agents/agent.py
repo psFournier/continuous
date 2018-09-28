@@ -71,7 +71,6 @@ class Agent():
     def log(self):
 
         if self.env_step % self.eval_freq == 0:
-
             R_mean = []
             for g, goal in enumerate(self.env_test.goals):
                 exp = {}
@@ -79,6 +78,7 @@ class Agent():
                 exp['terminal'] = False
                 R = 0
                 for i in range(self.ep_steps):
+                    if 1: self.env_test.render(mode='human')
                     exp['action'] = self.act(self.exp['state0'], mode='test')
                     exp = self.env_test.step(self.exp)
                     self.exp['state0'] = self.exp['state1']

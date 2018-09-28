@@ -11,25 +11,31 @@ class DDPG2(Agent):
         super(DDPG2, self).__init__(args, env, env_test, logger)
         self.args = args
         self.init(args, env)
+        for metric in self.actorCritic.criticModel.metrics_names:
+            self.metrics[self.actorCritic.criticModel.name + '_' + metric] = 0
 
     def init(self, args ,env):
         names = ['state0', 'action', 'state1', 'reward', 'terminal']
         self.buffer = ReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
         self.actorCritic = ActorCriticDDPG(args, env)
-        for metric_name in ['loss_dqn', 'loss_actor']:
-            self.metrics[metric_name] = 0
+        # self.critic = CriticDDPG(args, env)
+        # self.actor = ActorDDPG(args, env)
 
     def train(self):
 
         if self.buffer.nb_entries > self.batch_size:
             exp = self.buffer.sample(self.batch_size)
             s0, a0, s1, r, t = [exp[name] for name in self.buffer.names]
-            targets_dqn = self.actorCritic.get_targets_dqn(r, t, s1)
-            inputs = [s0, a0, targets_dqn]
-            loss_dqn = self.actorCritic.trainQval(inputs)
-            loss_actor = self.actorCritic.trainActor([s0])
-            self.metrics['loss_dqn'] += np.squeeze(loss_dqn)
-            self.metrics['loss_actor'] += np.squeeze(loss_actor)
+            a1 = self.actorCritic.actorTmodel.predict_on_batch(s1)
+            a1 = np.clip(a1, self.env.action_space.low, self.env.action_space.high)
+            q = self.actorCritic.criticTmodel.predict_on_batch([s1, a1])
+            targets = r + (1 - t) * self.actorCritic.gamma * np.squeeze(q)
+            targets = np.clip(targets, self.env.minR / (1 - self.actorCritic.gamma), self.env.maxR)
+            inputs = [s0, a0]
+            loss = self.actorCritic.criticModel.train_on_batch(inputs, targets)
+            for i, metric in enumerate(self.actorCritic.criticModel.metrics_names):
+                self.metrics[self.actorCritic.criticModel.name + '_' + metric] += loss[i]
+            self.actorCritic.trainActor([s0])
 
             # a2 = self.actor.model.predict_on_batch(s0)
             # grads = self.critic.gradsModel.predict_on_batch([s0, a2])
@@ -49,12 +55,12 @@ class DDPG2(Agent):
     def reset(self):
 
         if self.trajectory:
-
-            R = np.sum([self.env.unshape(exp['reward'], exp['terminal']) for exp in self.trajectory])
-            self.env.queue.append(R)
-
-            for i, expe in enumerate(reversed(self.trajectory)):
-                _ = self.buffer.append(expe.copy())
+            T = int(self.trajectory[-1]['terminal'])
+            R = np.sum([exp['reward'] for exp in self.trajectory])
+            S = len(self.trajectory)
+            self.env.processEp(R, S, T)
+            for expe in reversed(self.trajectory):
+                self.buffer.append(expe.copy())
 
             self.trajectory.clear()
 
@@ -63,16 +69,15 @@ class DDPG2(Agent):
 
         return state
 
-    def make_input(self, state, mode):
-        input = [np.expand_dims(state, axis=0)]
+    def make_input(self, state):
+        input = [np.reshape(state, (1, self.actorCritic.s_dim[0]))]
         return input
 
-    def act(self, state, mode='train'):
-        input = self.make_input(state, mode)
-        action = self.actorCritic.action(input)[0]
-        if mode == 'train':
-            noise = np.random.normal(0., 0.1, size=action[0].shape)
-            action = noise + action
+    def act(self, state):
+        input = self.make_input(state)
+        action = self.actorCritic.actorModel.predict(input, batch_size=1)
+        noise = np.random.normal(0., 0.1, size=action.shape)
+        action = noise + action
         action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
         action = action.squeeze()
         return action

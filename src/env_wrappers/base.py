@@ -9,23 +9,50 @@ from abc import ABCMeta, abstractmethod
 class Base(Wrapper):
     def __init__(self, env, args):
         super(Base, self).__init__(env)
-        self.args = args
+        self.gamma = float(args['--gamma'])
+        self.opt_init = float(args['--opt_init'])
+        self.goals = [None]
         self.minR = -1
         self.maxR = 0
         self.init()
 
     def init(self):
-        pass
+        self.queue = CompetenceQueue()
+
+    def reset(self, goal=None):
+        state = self.env.reset()
+        return state
 
     def step(self, exp):
         exp['state1'], exp['reward'], exp['terminal'], _ = self.env.step(exp['action'])
+        exp['terminal'] = False
+        exp['reward'] = self.shape(exp['reward'], exp['terminal'])
         return exp
 
     def processEp(self, R, S, T):
         pass
 
+    def shape(self, r, term):
+        b = (self.gamma - 1) * self.opt_init
+        r += b
+        if term:
+            c = -self.gamma * self.opt_init
+            r += c
+        return r
+
+    def unshape(self, r, term):
+        b = (self.gamma - 1) * self.opt_init
+        r -= b
+        if term:
+            c = -self.gamma * self.opt_init
+            r -= c
+        return r
+
     def get_stats(self):
+
         stats = {}
+        stats['agentR'] = float("{0:.3f}".format(self.queue.R[-1]))
+        stats['agentT'] = float("{0:.3f}".format(self.queue.T[-1]))
         return stats
 
     @property
