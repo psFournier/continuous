@@ -19,16 +19,16 @@ class PlayroomGM(CPBased):
 
     def step(self, exp):
         self.steps[self.object] += 1
-        exp['goal'] = self.goal
-        exp['mask'] = self.mask
-        exp['state1'] = self.env.step(exp['action'])
+        exp['g'] = self.goal
+        exp['m'] = self.mask
+        exp['s1'] = self.env.step(exp['a'])
         exp = self.eval_exp(exp)
         return exp
 
     def is_term(self, exp):
-        indices = np.where(exp['mask'])
-        goal = exp['goal'][indices]
-        s1_proj = exp['state1'][indices]
+        indices = np.where(exp['m'])
+        goal = exp['g'][indices]
+        s1_proj = exp['s1'][indices]
         return (s1_proj == goal).all()
 
     def reset(self, goal=None):

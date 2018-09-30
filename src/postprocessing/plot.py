@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-DIR = '../../log/cluster/last'
+DIR = '../../log/cluster/2009'
 ENV = 'dqn*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
@@ -37,7 +37,7 @@ params = ['--agent',
           '--env',
           '--eval_freq',
           '--gamma',
-          '--w0',
+          # '--w0',
           '--w1',
           '--w2',
           '--per',
@@ -88,19 +88,22 @@ if 1:
     df2 = df
     df2 = df2[(df2['--agent'] == 'dqngm')]
     df2 = df2[(df2['--env'] == 'PlayroomGM-v0')]
-    df2 = df2[(df2['--imit'] == 2)]
-    # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
+    # df2 = df2[(df2['--imit'] == 2)]
+    # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
     df2 = df2[(df2['--w1'] == 0)]
-    df2 = df2[(df2['--w0'] == 1)]
-    df2 = df2[(df2['--opt_init'] == 0)]
-    # df2 = df2[(df2['--network'] == 2)]
-    # df2 = df2[(df2['--clipping'] == 1)]
-    # df2 = df2[(df2['--explo'] == 1)]
+    # df2 = df2[(df2['--w0'] == 1)]
+    # df2 = df2[(df2['--opt_init'] == -20)]
+    # # df2 = df2[(df2['--network'] == 2)]
+    # # df2 = df2[(df2['--clipping'] == 1)]
+    # # df2 = df2[(df2['--explo'] == 1)]
+    # # df2 = df2[(df2['--theta'] == 0)]
     # df2 = df2[(df2['--theta'] == 0)]
-    df2 = df2[(df2['--theta'] == 0)]
     y = ['R']
-    y = ['agentT'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
-    # y = ['good_exp', 'loss_dqn', 'loss_dqn2', 'qval']
+    y = ['R'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
+    y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
+       'R_light2', 'R_light3', 'R_light4', 'R_xy']
+
+    # y = ['good_exp_off', 'loss_dqn', 'loss_dqn_off', 'qval', 'loss_imit_off', 'qval_off']
     # y = ['loss_imit']
     # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
     # y = ['R' + i for i in ['_agent', '_light', '_key1', '_chest1', '_chest2', '_chest3']]
@@ -143,7 +146,7 @@ if 1:
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].rolling(window=10).mean(), label=label)
-            ax2[i % a, i // a].plot(g['step'], g[valy] )
+            ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
             # ax2[i % a, i // a].scatter(g[x[i], g[valy], s=1, c=colors[j], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
             #                         label='CP_' + str(i) + "_smooth")

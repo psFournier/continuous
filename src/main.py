@@ -26,15 +26,12 @@ Options:
   --ep_steps VAL           Maximum episode steps [default: 200]
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
   --eval_freq VAL          Logging frequency [default: 2000]
-  --per YES_NO             Prioritized Experience Replay [default: 0]
+  --her YES_NO             Hindsight Experience Replay [default: 0]
   --margin VAL             Large margin loss margin [default: 0.1]
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]
-  --w0 VAL        Weight for imitaiton loss with imitaiton [default: 0]
-  --w1 VAL        Weight for imitaiton loss with imitaiton [default: 0]
-  --w2 VAL        Weight for imitaiton loss with imitaiton [default: 0]
-  --imit VAL        Self imitation [default: 1]
-  --filter VAL            Type of filter [default: 1]
+  --wimit VAL              Weight for imitaiton loss with imitaiton [default: 0]
+  --filter VAL             Type of filter [default: 1]
 """
 
 def build_logger(args):

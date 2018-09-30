@@ -12,22 +12,20 @@ class CriticDQNGM(CriticDQNG):
         super(CriticDQNGM, self).__init__(args, env)
 
     def initModels(self):
-        w0, w1, w2 = float(self.args['--w0']), float(self.args['--w1']), float(self.args['--w2'])
 
+        w = float(self.args['--wimit'])
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
-        T = Input(shape=(1,), dtype='float32')
         G = Input(shape=self.g_dim)
         M = Input(shape=self.g_dim)
-        E = Input(shape=(1,), dtype='float32')
         TARGETS = Input(shape=(1,))
 
         qvals = self.create_critic_network(S, G, M)
         self.model = Model([S, G, M], qvals)
         self.qvals = K.function(inputs=[S, G, M], outputs=[qvals], updates=None)
 
-        actionProbs = K.softmax(qvals / T)
-        self.actionProbs = K.function(inputs=[S, G, M, T], outputs=[actionProbs], updates=None)
+        actionProbs = K.softmax(qvals / 0.5)
+        self.actionProbs = K.function(inputs=[S, G, M], outputs=[actionProbs], updates=None)
 
         actionFilter = K.squeeze(K.one_hot(A, self.num_actions), axis=1)
         qval = K.sum(actionFilter * qvals, axis=1, keepdims=True)
@@ -36,45 +34,47 @@ class CriticDQNGM(CriticDQNG):
         val = K.max(qvals, axis=1, keepdims=True)
         self.val = K.function(inputs=[S, G, M], outputs=[val], updates=None)
 
-        if self.args['--imit'] == '1':
-            actionProb = K.sum(actionFilter * actionProbs, axis=1, keepdims=True)
-            imit = -K.log(actionProb)
-        elif self.args['--imit'] == '2':
-            width = float(self.args['--margin']) * (
-            K.max(qvals, axis=1, keepdims=True) - K.min(qvals, axis=1, keepdims=True))
-            one_hot = 1 - K.squeeze(K.one_hot(A, self.num_actions), axis=1)
-            width = K.repeat_elements(width, self.num_actions, axis=1)
-            margin = width * one_hot
-            imit = (K.max(qvals + margin, axis=1, keepdims=True) - qval)
-        else:
-            raise RuntimeError
-
-        adv0 = K.maximum(E - val, 0)
-        adv1 = K.cast(K.greater(E, val), dtype='float32')
-        good_exp = K.sum(adv1)
-
-        if self.args['--filter'] == '1':
-            imit *= adv0
-        elif self.args['--filter'] == '2':
-            imit *= adv1
-        else:
-            raise RuntimeError
-
-        loss = 0
         loss_dqn = K.mean(K.square(qval - TARGETS), axis=0)
-        loss += w0 * loss_dqn
-        loss_imit = K.mean(imit, axis=0)
-        loss += w1 * loss_imit
+        loss = loss_dqn
+        inputs = [S, A, G, M, TARGETS]
+        outputs = [loss_dqn, val, qval]
 
-        self.updatesDqn = self.optimizer.get_updates(params=self.model.trainable_weights, loss=loss_dqn)
-        self.trainDqn = K.function(inputs=[S, A, G, M, TARGETS],
-                                outputs=[loss_dqn, val, qval],
-                                updates=self.updatesDqn)
+        if w != 0:
+            margin = float(self.args['--margin'])
+            qvalWidth = K.max(qvals, axis=1, keepdims=True) - K.min(qvals, axis=1, keepdims=True)
+            qvalWidth = K.repeat_elements(margin * qvalWidth, self.num_actions, axis=1)
+            onehot = 1 - K.squeeze(K.one_hot(A, self.num_actions), axis=1)
+            onehotMargin = qvalWidth * onehot
+            imit = (K.max(qvals + onehotMargin, axis=1, keepdims=True) - qval)
 
-        self.updatesAll = self.optimizer.get_updates(params=self.model.trainable_weights, loss=loss)
-        self.trainAll = K.function(inputs=[S, A, G, M, T, E, TARGETS],
-                                   outputs=[loss_dqn, loss_imit, good_exp, val, qval, adv0],
-                                   updates=self.updatesAll)
+            E = Input(shape=(1,), dtype='float32')
+            adv = K.maximum(E - val, 0)
+            # advClip = K.cast(K.greater(E, val), dtype='float32')
+            # good_exp = K.sum(advClip)
+            imit *= adv
+
+            loss_imit = K.mean(imit, axis=0)
+            loss += w * loss_imit
+            inputs.append(E)
+            outputs.append(loss_imit)
+
+        updates = self.optimizer.get_updates(loss, self.model.trainable_weights)
+        self.train = K.function(inputs, outputs, updates)
+
+        # if self.args['--imit'] == '1':
+        #     actionProb = K.sum(actionFilter * actionProbs, axis=1, keepdims=True)
+        #     imit = -K.log(actionProb)
+
+
+        # self.updatesDqn = self.optimizer.get_updates(params=self.model.trainable_weights, loss=loss_dqn)
+        # self.trainDqn = K.function(inputs=[S, A, G, M, TARGETS],
+        #                         outputs=[loss_dqn, val, qval],
+        #                         updates=self.updatesDqn)
+        #
+        # self.updatesAll = self.optimizer.get_updates(params=self.model.trainable_weights, loss=loss)
+        # self.trainAll = K.function(inputs=[S, A, G, M, T, E, TARGETS],
+        #                            outputs=[loss_dqn, loss_imit, good_exp, val, qval, adv0],
+        #                            updates=self.updatesAll)
 
     def initTargetModels(self):
         S = Input(shape=self.s_dim)

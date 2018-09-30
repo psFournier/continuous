@@ -35,4 +35,4 @@ class ReplayBuffer(object):
 
     @property
     def nb_entries(self):
-        return len(self.contents['state0'])
+        return len(list(self.contents.values())[0])

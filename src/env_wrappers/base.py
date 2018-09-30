@@ -12,8 +12,8 @@ class Base(Wrapper):
         self.gamma = float(args['--gamma'])
         self.opt_init = float(args['--opt_init'])
         self.goals = [None]
-        self.minR = -1
-        self.maxR = 0
+        self.minR = 0
+        self.maxR = 1
         self.init()
 
     def init(self):
@@ -24,9 +24,9 @@ class Base(Wrapper):
         return state
 
     def step(self, exp):
-        exp['state1'], exp['reward'], exp['terminal'], _ = self.env.step(exp['action'])
-        exp['terminal'] = False
-        exp['reward'] = self.shape(exp['reward'], exp['terminal'])
+        exp['s1'], exp['r'], exp['t'], _ = self.env.step(exp['a'])
+        exp['t'] = False
+        exp['r'] = self.shape(exp['r'], exp['t'])
         return exp
 
     def processEp(self, R, S, T):
@@ -72,8 +72,8 @@ class CPBased(Wrapper):
         self.opt_init = float(args['--opt_init'])
         self.goals = []
         self.goal = None
-        self.minR = self.shape(-1, False)
-        self.maxR = self.shape(0, False)
+        self.minR = self.shape(0, False)
+        self.maxR = self.shape(1, False)
 
     def init(self):
         self.queues = [CompetenceQueue() for _ in self.goals]
@@ -82,8 +82,8 @@ class CPBased(Wrapper):
 
     def step(self, exp):
         self.steps[self.goal] += 1
-        exp['state1'] = self.env.step(exp['action'])
-        exp['goal'] = self.goal
+        exp['s1'] = self.env.step(exp['a'])
+        exp['g'] = self.goal
         exp = self.eval_exp(exp)
         return exp
 
@@ -91,13 +91,11 @@ class CPBased(Wrapper):
         return False
 
     def eval_exp(self, exp):
-        term = self.is_term(exp)
-        if term:
-            r = self.maxR
+        if self.is_term(exp):
+            exp['r'] = self.maxR
         else:
-            r = self.minR
-        exp['reward'] = r
-        exp['terminal'] = False
+            exp['r'] = self.minR
+        exp['t'] = False
         return exp
 
     def shape(self, r, term):
@@ -137,7 +135,6 @@ class CPBased(Wrapper):
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
             stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.CPs[i]))
             stats['agentR_{}'.format(goal)] = float("{0:.3f}".format(self.Rs[i]))
-            stats['agentT_{}'.format(goal)] = float("{0:.3f}".format(self.Ts[i]))
         return stats
 
     @property
@@ -145,10 +142,12 @@ class CPBased(Wrapper):
 
         maxCP = max(self.CPs)
         minCP = min(self.CPs)
+        maxR = max(self.Rs)
+        minR = min(self.Rs)
         if maxCP - minCP > 5:
             interests = [(cp - minCP) / (maxCP - minCP) for cp in self.CPs]
         else:
-            interests = [1 - t for t in self.Ts]
+            interests = [1 - (r - minR) / (maxR - minR + 0.0001) for r in self.Rs]
 
         return interests
 
@@ -159,8 +158,4 @@ class CPBased(Wrapper):
     @property
     def Rs(self):
         return [q.R[-1] for q in self.queues]
-
-    @property
-    def Ts(self):
-        return [q.T[-1] for q in self.queues]
 

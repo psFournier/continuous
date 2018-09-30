@@ -30,24 +30,24 @@ class Agent():
 
     def run(self):
         t0 = time.time()
-        self.exp['state0'] = self.reset()
+        self.exp['s0'] = self.reset()
         try:
             while self.env_step < self.max_steps:
 
-                if RENDER_TRAIN: self.env.render(mode='human')
-                self.exp['action'] = self.act(self.exp['state0'])
+                if 0: self.env.render(mode='human')
+                self.exp['a'] = self.act(self.exp['s0'])
                 self.exp = self.env.step(self.exp)
                 self.trajectory.append(self.exp.copy())
                 self.train()
                 self.env_step += 1
                 self.episode_step += 1
-                self.exp['state0'] = self.exp['state1']
+                self.exp['s0'] = self.exp['s1']
 
                 if self.episode_step >= self.ep_steps:
                     t1 = time.time()
                     # print(t1 - t0)
                     t0 = t1
-                    self.exp['state0'] = self.reset()
+                    self.exp['s0'] = self.reset()
 
                 self.log()
 
@@ -74,15 +74,19 @@ class Agent():
             R_mean = []
             for g, goal in enumerate(self.env_test.goals):
                 exp = {}
-                exp['state0'] = self.env_test.reset(goal=g)
-                exp['terminal'] = False
+                exp['s0'] = self.env_test.reset(goal=g)
+                if 0:
+                    self.env_test.render(mode='human')
+                    self.env_test.unwrapped.viewer._run_speed = 0.125
+                exp['t'] = False
                 R = 0
                 for i in range(self.ep_steps):
-                    if 1: self.env_test.render(mode='human')
-                    exp['action'] = self.act(self.exp['state0'], mode='test')
+                    if 0:
+                        self.env_test.render(mode='human')
+                    exp['a'] = self.act(self.exp['s0'], mode='test')
                     exp = self.env_test.step(self.exp)
-                    self.exp['state0'] = self.exp['state1']
-                    R += exp['reward']
+                    self.exp['s0'] = self.exp['s1']
+                    R += exp['r']
                 R_mean.append(R)
                 self.stats['R_{}'.format(goal)] = float("{0:.3f}".format(R))
             self.stats['R'] = float("{0:.3f}".format(np.mean(R_mean)))

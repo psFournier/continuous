@@ -1,53 +1,36 @@
-import numpy as np
 from gym import Wrapper
-from gym.spaces import Box
-import random as rnd
+import numpy as np
+from samplers.competenceQueue import CompetenceQueue
 import math
+from utils.linearSchedule import LinearSchedule
+from .base import CPBased
 
 
-class Reacher_e(Wrapper):
-    def __init__(self, env):
-        super(Reacher_e, self).__init__(env)
+class Reacher_e(CPBased):
+    def __init__(self, env, args):
+        super(Reacher_e, self).__init__(env, args)
 
-        self.goal = []
-        self.goal_space = Box(np.array([-0.6, -0.6]), np.array([0.6, 0.6]), dtype='float32')
-        self.XY = [6,7]
-        self.target_XY = [8,9]
+        self.goals = [0.02, 0.03, 0.04, 0.05]
+        self.init()
+        self.obj_feat = [8]
 
-        self.epsilon = 0.02
-        self.epsilon_space = [0.02, 0.03, 0.04, 0.05]
-        self.epsilon_idx = [10]
+        self.state_low = self.env.low
+        self.state_high = self.env.high
+        self.init_state = np.array(self.env.init)
 
-        self.rec = None
+    def is_term(self, exp):
+        d = np.linalg.norm(exp['state1'][[6, 7]])
+        term = d < self.goals[exp['goal']]
+        return term
 
-    def add_goal(self, state):
-        return np.concatenate([state, self.goal, np.array([self.epsilon])])
+    def reset(self, goal=None):
 
-    def _step(self,action):
+        if goal is None:
+            self.goal = self.get_idx()
+        else:
+            self.goal = goal
 
-        obs, env_reward, env_terminal, info = self.env.step(action)
-        state = self.add_goal(obs)
-
-        if self.rec is not None: self.rec.capture_frame()
-
-        reward, reached = self.eval_exp(self.prev_state, action, state, env_reward,
-                                         env_terminal)
-
-        self.prev_state = state
-        return state, reward, reached, info
-
-    def eval_exp(self, _, action, agent_state_1, reward, terminal):
-        reached_xy = agent_state_1[self.XY]
-        target_xy = agent_state_1[self.target_XY]
-        vec = reached_xy - target_xy
-        d = np.linalg.norm(vec)
-        term = d < self.epsilon
-        r = 0
-        if not term:
-            r = -1
-        return r, term
-
-    def _reset(self):
+        features = self.obj_feat[self.object]
 
         _ = self.env.reset()
         qpos = self.unwrapped.sim.data.qpos.flatten()
@@ -64,58 +47,15 @@ class Reacher_e(Wrapper):
 
         return state
 
-    def is_reachable(self):
-        return (np.linalg.norm(self.goal) < 0.2)
-
-    def hindsight(self, episode_exp, her_xy, her_eps):
-
-        virtual_exp = []
-
-        for idx, buffer_item in enumerate(episode_exp):
-
-            new_targets = []
-            if her_xy == 'future':
-                indices = range(idx, len(episode_exp))
-                future_indices = rnd.sample(indices, np.min([4, len(indices)]))
-                new_targets += [episode_exp[i]['state1'][self.XY]
-                                for i in list(future_indices)]
-            elif her_xy == 'final':
-                new_targets += episode_exp[-1]['state1'][self.XY]
-
-            new_eps = []
-            if her_eps == 'easier':
-                new_eps += [eps for eps in self.epsilon_space if eps > self.epsilon]
-            elif her_eps == 'harder':
-                new_eps += [eps for eps in self.epsilon_space if eps < self.epsilon]
-            elif her_eps == 'all':
-                new_eps += [eps for eps in self.epsilon_space if eps != self.epsilon]
-
-            for t in new_targets + [self.goal]:
-                for e in new_eps + [self.epsilon]:
-                    if (t != self.goal).any() or e != self.epsilon:
-                        res = buffer_item.copy()
-                        res['state0'][self.target_XY] = t
-                        res['state1'][self.target_XY] = t
-                        res['state0'][self.epsilon_idx] = e
-                        res['state1'][self.epsilon_idx] = e
-                        res['reward'], res['terminal'] = self.eval_exp(res['state0'],
-                                                                           res['action'],
-                                                                           res['state1'],
-                                                                           res['reward'],
-                                                                           res['terminal'])
-                        virtual_exp.append(res)
-
-        return virtual_exp
-
     @property
     def state_dim(self):
-        return (self.env.observation_space.shape[0]+self.goal_space.shape[0]+1,)
+        return 8,
 
     @property
     def action_dim(self):
-        return (self.env.action_space.shape[0],)
+        return 2,
 
     @property
-    def goal_parameterized(self):
-        return True
+    def goal_dim(self):
+        return 1,
 
