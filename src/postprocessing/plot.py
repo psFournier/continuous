@@ -102,7 +102,7 @@ if 1:
     # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
     #    'R_light2', 'R_light3', 'R_light4', 'R_xy']
 
-    y = ['loss_dqn', 'qval', 'val']
+    # y = ['loss_dqn', 'qval', 'val']
     # y = ['loss_imit']
     # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
     # y = ['R' + i for i in ['_agent', '_light', '_key1', '_chest1', '_chest2', '_chest3']]
@@ -130,8 +130,8 @@ if 1:
     # df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
     print(paramsStudied)
-    a, b = 3,1
-    fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
+    a, b = 3,3
+    fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
     colors = ['b', 'r']
     p = 'num_run'
     # p= paramsStudied
@@ -154,6 +154,6 @@ if 1:
             #                                 g[valy]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=valy)
             ax2[i % a, i // a].legend()
-            ax2[i % a, i // a].set_ylim([0, 100])
+            # ax2[i % a, i // a].set_ylim([0, 100])
 
 plt.show()

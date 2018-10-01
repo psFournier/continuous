@@ -134,13 +134,13 @@ class Playroom(Env):
         self.x = 0
         self.y = 0
         self.objects = []
-        self.light = Light(self, 0, 3, 'light', [0.2, 0.8])
-        self.key1 = Key(self, 3, 0, 'key1', [0, 1], dep=[self.light])
-        self.key2 = Key(self, 7, 0, 'key2', [0, 1], dep=[self.light])
+        self.light = Light(self, 0, 3, 'light', [0.5, 0.5])
+        self.key1 = Key(self, 3, 0, 'key1', [0.5, 0.5], dep=[self.light])
+        self.key2 = Key(self, 7, 0, 'key2', [0.5, 0.5], dep=[self.light])
         self.key3 = Key(self, 3, 4, 'key3', [0.5, 0.5], dep=[self.light])
         self.key4 = Key(self, 7, 4, 'key4', [0.5, 0.5], dep=[self.light])
-        self.chest1 = Chest(self, 2, 2, 'chest1', [0, 1], dep=[self.light, self.key1])
-        self.chest2 = Chest(self, 2, 6, 'chest2', [0, 1], dep=[self.light, self.key1, self.key2])
+        self.chest1 = Chest(self, 2, 2, 'chest1', [0.5, 0.5], dep=[self.light, self.key1])
+        self.chest2 = Chest(self, 2, 6, 'chest2', [0.5, 0.5], dep=[self.light, self.key1, self.key2])
         self.chest3 = Chest(self, 6, 2, 'chest3', [0.5, 0.5], dep=[self.light, self.key1, self.key2, self.key3])
         self.chest4 = Chest(self, 6, 6, 'chest4', [0.5, 0.5], dep=[self.light, self.key1, self.key2, self.key3, self.key4])
         self.lastaction = None

@@ -99,7 +99,7 @@ class CriticDQNGM(CriticDQNG):
 
     def create_critic_network(self, S, G=None, M=None):
         l1 = concatenate([multiply([subtract([S, G]), M]), S])
-        l2 = Dense(200, activation="relu")(l1)
-        l3 = Dense(200, activation="relu")(l2)
+        l2 = Dense(400, activation="relu")(l1)
+        l3 = Dense(300, activation="relu")(l2)
         Q_values = Dense(self.num_actions)(l3)
         return Q_values

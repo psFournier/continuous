@@ -24,7 +24,7 @@ class DQNGM(DQNG):
 
     def train(self):
 
-        if self.buffer.nb_entries > self.batch_size:
+        if self.buffer.nb_entries > 100 * self.batch_size:
             exp = self.buffer.sample(self.batch_size)
             targets = self.critic.get_targets_dqn(exp['r'], exp['t'], exp['s1'], exp['g'], exp['m'])
             inputs = [exp['s0'], exp['a'], exp['g'], exp['m'], targets]
