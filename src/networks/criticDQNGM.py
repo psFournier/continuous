@@ -24,7 +24,7 @@ class CriticDQNGM(CriticDQNG):
         self.model = Model([S, G, M], qvals)
         self.qvals = K.function(inputs=[S, G, M], outputs=[qvals], updates=None)
 
-        actionProbs = K.softmax(qvals / 0.5)
+        actionProbs = K.softmax(qvals)
         self.actionProbs = K.function(inputs=[S, G, M], outputs=[actionProbs], updates=None)
 
         actionFilter = K.squeeze(K.one_hot(A, self.num_actions), axis=1)
@@ -35,9 +35,11 @@ class CriticDQNGM(CriticDQNG):
         self.val = K.function(inputs=[S, G, M], outputs=[val], updates=None)
 
         loss_dqn = K.mean(K.square(qval - TARGETS), axis=0)
-        loss = loss_dqn
         inputs = [S, A, G, M, TARGETS]
         outputs = [loss_dqn, val, qval]
+
+        updates_dqn = self.optimizer.get_updates(loss_dqn, self.model.trainable_weights)
+        self.train_dqn = K.function(inputs, outputs, updates_dqn)
 
         if w != 0:
             margin = float(self.args['--margin'])
@@ -49,17 +51,17 @@ class CriticDQNGM(CriticDQNG):
 
             E = Input(shape=(1,), dtype='float32')
             adv = K.maximum(E - val, 0)
-            # advClip = K.cast(K.greater(E, val), dtype='float32')
-            # good_exp = K.sum(advClip)
+            advClip = K.cast(K.greater(E, val), dtype='float32')
+            good_exp = K.sum(advClip)
             imit *= adv
 
             loss_imit = K.mean(imit, axis=0)
-            loss += w * loss_imit
+            loss = loss_dqn + w * loss_imit
             inputs.append(E)
-            outputs.append(loss_imit)
+            outputs += [loss_imit, good_exp, adv]
 
-        updates = self.optimizer.get_updates(loss, self.model.trainable_weights)
-        self.train = K.function(inputs, outputs, updates)
+            updates_imit = self.optimizer.get_updates(loss, self.model.trainable_weights)
+            self.train_imit = K.function(inputs, outputs, updates_imit)
 
         # if self.args['--imit'] == '1':
         #     actionProb = K.sum(actionFilter * actionProbs, axis=1, keepdims=True)

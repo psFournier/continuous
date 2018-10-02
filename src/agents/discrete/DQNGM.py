@@ -14,10 +14,11 @@ class DQNGM(DQNG):
     def init(self, args ,env):
         names = ['s0', 'a', 's1', 'r', 't', 'g', 'm']
         metrics = ['loss_dqn', 'qval', 'val']
+        self.buffer = ReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
         if self.args['--wimit'] != '0':
             names.append('mcr')
-            metrics.append('loss_imit')
-        self.buffer = ReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
+            metrics += ['loss_dqn2', 'val2', 'qval2', 'loss_imit', 'good_exp']
+            self.bufferImit = PrioritizedReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
         self.critic = CriticDQNGM(args, env)
         for metric in metrics:
             self.metrics[metric] = 0
@@ -25,18 +26,29 @@ class DQNGM(DQNG):
     def train(self):
 
         if self.buffer.nb_entries > 100 * self.batch_size:
+
             exp = self.buffer.sample(self.batch_size)
             targets = self.critic.get_targets_dqn(exp['r'], exp['t'], exp['s1'], exp['g'], exp['m'])
             inputs = [exp['s0'], exp['a'], exp['g'], exp['m'], targets]
-            if self.args['--wimit'] != '0':
-                inputs.append(exp['mcr'])
-            metrics = self.critic.train(inputs)
+            metrics = self.critic.train_dqn(inputs)
             self.metrics['loss_dqn'] += np.squeeze(metrics[0])
             self.metrics['val'] += np.mean(metrics[1])
             self.metrics['qval'] += np.mean(metrics[2])
+
             if self.args['--wimit'] != '0':
+                exp = self.bufferImit.sample(self.batch_size)
+                targets = self.critic.get_targets_dqn(exp['r'], exp['t'], exp['s1'], exp['g'], exp['m'])
+                inputs = [exp['s0'], exp['a'], exp['g'], exp['m'], targets, exp['mcr']]
+                metrics = self.critic.train_imit(inputs)
+                self.metrics['loss_dqn2'] += np.squeeze(metrics[0])
+                self.metrics['val2'] += np.mean(metrics[1])
+                self.metrics['qval2'] += np.mean(metrics[2])
                 self.metrics['loss_imit'] += np.squeeze(metrics[3])
+                self.metrics['good_exp'] += np.squeeze(metrics[4])
+                self.bufferImit.update_priorities(exp['indices'], metrics[-1])
+
             self.critic.target_train()
+
             # self.bufferOff.update_priorities(i, adv)
 
     def make_input(self, state, mode):
@@ -74,8 +86,10 @@ class DQNGM(DQNG):
                                 mcr = (1 - self.critic.gamma ** (i+1)) / (1 - self.critic.gamma)
                                 mcrs.append(mcr)
 
-                expe['mcr'] = np.expand_dims(0, axis=1)
+                expe['mcr'] = np.expand_dims(-100, axis=1)
                 self.buffer.append(expe.copy())
+                if self.args['--wimit'] != '0':
+                    self.bufferImit.append(expe.copy())
 
                 for j, (g, m) in enumerate(zip(goals, masks)):
                     expe['g'] = g
@@ -84,6 +98,7 @@ class DQNGM(DQNG):
                     if self.args['--wimit'] != '0':
                         mcrs[j] = mcrs[j] * self.critic.gamma + expe['r']
                         expe['mcr'] = np.expand_dims(mcrs[j], axis=1)
+                        self.bufferImit.append(expe.copy())
                     self.buffer.append(expe.copy())
 
             # imagined_MCR = []
