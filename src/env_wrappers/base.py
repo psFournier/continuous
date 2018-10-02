@@ -116,7 +116,7 @@ class CPBased(Wrapper):
 
     def get_idx(self):
 
-        weighted_interests = [math.pow(I, self.theta) + 0.1 for I in self.interests]
+        weighted_interests = [math.pow(I, self.theta) for I in self.interests]
         sum = np.sum(weighted_interests)
         mass = np.random.random() * sum
         idx = 0

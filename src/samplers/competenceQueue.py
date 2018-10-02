@@ -4,7 +4,7 @@ import itertools
 import numpy as np
 
 class CompetenceQueue():
-    def __init__(self, window = 20, maxlen=200):
+    def __init__(self, window = 200, maxlen=201):
         self.window = window
         self.r = deque(maxlen=maxlen)
         self.CP = [0]
@@ -18,7 +18,7 @@ class CompetenceQueue():
         Rs = list(self.r)[-(min(self.size, self.window)):]
         self.R.append(np.mean(Rs))
         newCP = self.R[-1] - self.R[-(min(self.size, 10))]
-        self.CP.append(0.8 * self.CP[-1] + 0.2 * newCP)
+        self.CP.append(newCP)
 
     @property
     def size(self):
