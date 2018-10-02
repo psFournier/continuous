@@ -52,36 +52,30 @@ class DQNGM(DQNG):
             R = np.sum([self.env.unshape(exp['r'], exp['t']) for exp in self.trajectory])
             self.env.queues[self.env.object].append(R)
 
-            goals = [self.env.goal]
-            masks = [self.env.mask]
-            objs = [self.env.object]
-
+            goals = []
+            masks = []
+            objs = []
             if self.args['--wimit'] != '0':
-                lastexp = self.trajectory[-1]
-                input = [np.expand_dims(lastexp[name], axis=0) for name in ['s1', 'g', 'm']]
-                mcr = self.critic.val(input)[0].squeeze()
-                mcrs = [mcr]
+                mcrs = []
 
             for i, expe in enumerate(reversed(self.trajectory)):
-
-                if self.args['--wimit'] != '0':
-                    mcrs[0] = self.critic.gamma * mcrs[0] + expe['r']
-                    expe['mcr'] = np.expand_dims(mcrs[0], axis=1)
 
                 if self.args['--her'] != '0':
                     for obj, name in enumerate(self.env.goals):
                         mask = self.env.obj2mask(obj)
                         s1m = expe['s1'][np.where(mask)]
-                        sIm = self.env.init_state[np.where(mask)]
-                        found = obj not in objs and (s1m != sIm).any()
+                        s0m = expe['s0'][np.where(mask)]
+                        found = obj not in objs and (s1m != s0m).any()
                         if found:
                             goals.append(expe['s1'].copy())
                             masks.append(mask.copy())
                             objs.append(obj)
                             if self.args['--wimit'] != '0':
-                                input = [np.expand_dims(expe[name], axis=0) for name in ['s1', 'g', 'm']]
-                                mcr = self.critic.val(input)[0].squeeze()
+                                mcr = (1 - self.critic.gamma ** (i+1)) / (1 - self.critic.gamma)
                                 mcrs.append(mcr)
+
+                expe['mcr'] = np.expand_dims(0, axis=1)
+                self.buffer.append(expe.copy())
 
                 for j, (g, m) in enumerate(zip(goals, masks)):
                     expe['g'] = g
