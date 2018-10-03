@@ -72,6 +72,11 @@ class DQNGM(DQNG):
 
             for i, expe in enumerate(reversed(self.trajectory)):
 
+                expe['mcr'] = np.expand_dims(-100, axis=1)
+                self.buffer.append(expe.copy())
+                if self.args['--wimit'] != '0':
+                    self.bufferImit.append(expe.copy())
+
                 if self.args['--her'] != '0':
                     for obj, name in enumerate(self.env.goals):
                         mask = self.env.obj2mask(obj)
@@ -85,11 +90,6 @@ class DQNGM(DQNG):
                             if self.args['--wimit'] != '0':
                                 mcr = (1 - self.critic.gamma ** (i+1)) / (1 - self.critic.gamma)
                                 mcrs.append(mcr)
-
-                expe['mcr'] = np.expand_dims(-100, axis=1)
-                self.buffer.append(expe.copy())
-                if self.args['--wimit'] != '0':
-                    self.bufferImit.append(expe.copy())
 
                 for j, (g, m) in enumerate(zip(goals, masks)):
                     expe['g'] = g

@@ -8,3 +8,4 @@ from .discrete.DQNG import DQNG
 # from .discrete.DQNG02 import DQNG02
 from .discrete.DQNGM import DQNGM
 from .discrete.Qoff import Qoff
+from .continuous.DDPG2G import DDPG2G

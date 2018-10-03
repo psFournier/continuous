@@ -1,41 +1,34 @@
 import numpy as np
 RENDER_TRAIN = False
 INVERTED_GRADIENTS = True
-from networks import ActorDDPG, CriticDDPG, ActorCriticDDPG
-from agents.agent import Agent
+from networks import ActorCriticDDPGG
 from buffers import ReplayBuffer
+from agents import DDPG2
 
-class DDPG2(Agent):
+class DDPG2G(DDPG2):
 
     def __init__(self, args, env, env_test, logger):
-        super(DDPG2, self).__init__(args, env, env_test, logger)
-        self.args = args
-        self.init(args, env)
-        for metric in self.actorCritic.criticModel.metrics_names:
-            self.metrics[self.actorCritic.criticModel.name + '_' + metric] = 0
+        super(DDPG2G, self).__init__(args, env, env_test, logger)
 
     def init(self, args ,env):
-        names = ['state0', 'action', 'state1', 'reward', 'terminal']
+        names = ['s0', 'a', 's1', 'r', 't', 'g']
+        metrics = ['loss_dqn', 'loss_actor']
         self.buffer = ReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
-        self.actorCritic = ActorCriticDDPG(args, env)
-        # self.critic = CriticDDPG(args, env)
-        # self.actor = ActorDDPG(args, env)
+        self.actorCritic = ActorCriticDDPGG(args, env)
+        for metric in metrics:
+            self.metrics[metric] = 0
 
     def train(self):
 
         if self.buffer.nb_entries > self.batch_size:
             exp = self.buffer.sample(self.batch_size)
-            s0, a0, s1, r, t = [exp[name] for name in self.buffer.names]
-            a1 = self.actorCritic.actorTmodel.predict_on_batch(s1)
-            a1 = np.clip(a1, self.env.action_space.low, self.env.action_space.high)
-            q = self.actorCritic.criticTmodel.predict_on_batch([s1, a1])
-            targets = r + (1 - t) * self.actorCritic.gamma * np.squeeze(q)
-            targets = np.clip(targets, self.env.minR / (1 - self.actorCritic.gamma), self.env.maxR)
-            inputs = [s0, a0]
-            loss = self.actorCritic.criticModel.train_on_batch(inputs, targets)
-            for i, metric in enumerate(self.actorCritic.criticModel.metrics_names):
-                self.metrics[self.actorCritic.criticModel.name + '_' + metric] += loss[i]
-            self.actorCritic.trainActor([s0])
+            targets_dqn = self.actorCritic.get_targets_dqn(exp['r'], exp['t'], exp['s1'], exp['g'])
+            inputs = [exp['s0'], exp['a'], exp['g'], targets_dqn]
+            loss_dqn = self.actorCritic.trainQval(inputs)
+            loss_actor = self.actorCritic.trainActor([exp['s0'], exp['g']])
+            self.metrics['loss_dqn'] += np.squeeze(loss_dqn)
+            self.metrics['loss_actor'] += np.squeeze(loss_actor)
+
 
             # a2 = self.actor.model.predict_on_batch(s0)
             # grads = self.critic.gradsModel.predict_on_batch([s0, a2])
@@ -52,15 +45,38 @@ class DDPG2(Agent):
 
             self.actorCritic.target_train()
 
+    def make_input(self, state, mode):
+        if mode == 'train':
+            input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal]]
+        else:
+            input = [np.expand_dims(i, axis=0) for i in [state, self.env_test.goal]]
+        return input
+
     def reset(self):
 
         if self.trajectory:
-            T = int(self.trajectory[-1]['terminal'])
-            R = np.sum([exp['reward'] for exp in self.trajectory])
-            S = len(self.trajectory)
-            self.env.processEp(R, S, T)
-            for expe in reversed(self.trajectory):
+            R = np.sum([self.env.unshape(exp['r'], exp['t']) for exp in self.trajectory])
+            self.env.queues[self.env.idx].append(R)
+
+            goals = []
+
+            for i, expe in enumerate(reversed(self.trajectory)):
+
                 self.buffer.append(expe.copy())
+
+                for g in goals:
+                    expe['g'] = g
+                    expe = self.env.eval_exp(expe)
+                    self.buffer.append(expe.copy())
+
+                if self.args['--her'] != '0':
+                    for goal in self.env.goals:
+                        if goal != expe['g'] and goal not in goals:
+                            expe['g'] = goal
+                            expe = self.env.eval_exp(expe)
+                            if expe['r'] == 1:
+                                goals.append(goal)
+                                self.buffer.append(expe.copy())
 
             self.trajectory.clear()
 
@@ -68,18 +84,5 @@ class DDPG2(Agent):
         self.episode_step = 0
 
         return state
-
-    def make_input(self, state):
-        input = [np.reshape(state, (1, self.actorCritic.s_dim[0]))]
-        return input
-
-    def act(self, state):
-        input = self.make_input(state)
-        action = self.actorCritic.actorModel.predict(input, batch_size=1)
-        noise = np.random.normal(0., 0.1, size=action.shape)
-        action = noise + action
-        action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
-        action = action.squeeze()
-        return action
 
 

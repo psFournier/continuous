@@ -95,14 +95,14 @@ if 1:
     # # df2 = df2[(df2['--network'] == 2)]
     # # df2 = df2[(df2['--clipping'] == 1)]
     # # df2 = df2[(df2['--explo'] == 1)]
-    df2 = df2[(df2['--her'] == 1)]
+    # df2 = df2[(df2['--her'] == 1)]
     df2 = df2[(df2['--theta'] == 0)]
     y = ['R']
     y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
     # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
     #    'R_light2', 'R_light3', 'R_light4', 'R_xy']
 
-    # y = ['loss_dqn', 'loss_imit', 'qval', 'val']
+    y = ['loss_dqn', 'loss_imit', 'qval', 'val', 'good_exp', 'loss_dqn2', 'qval2', 'val2']
     # y = ['loss_imit']
     # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
     # y = ['R' + i for i in ['_agent', '_light', '_key1', '_chest1', '_chest2', '_chest3']]
@@ -136,23 +136,27 @@ if 1:
     p = 'num_run'
     p= paramsStudied
     for j, (name, g) in enumerate(df2.groupby(p)):
+
+        if isinstance(name, tuple):
+            label = ','.join(['{}:{}'.format(paramsStudied[k][2:], name[k]) for k in range(len(paramsStudied))])
+        else:
+            label = '{}:{}'.format(paramsStudied[0][2:], name)
+        # ax2[0,0].plot(g['step'], g.iloc[:, g.columns.get_level_values(1) == 'mean'].mean(axis=1), label=label)
+        # ax2[0,0].legend()
         for i, valy in enumerate(y):
             # ax2[i % a, i // a].plot(range(1500), range(1500), 'g-')
-            if isinstance(name, tuple):
-                label = ','.join(['{}:{}'.format(paramsStudied[k][2:], name [k]) for k in range(len(paramsStudied))])
-            else:
-                label = '{}:{}'.format(paramsStudied[0][2:], name)
+
             ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].rolling(window=10).mean(), label=label)
             # ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
-            # ax2[i % a, i // a].scatter(g[x[i]], g[valy], s=1)
+            # ax2[i % a, i // a].scatter(g[x[i]], g[valy], s=1, c=['red', 'blue', 'green'][j])
             # ax2[i % a, i // a].plot(g['step'], abs(g[valy].rolling(window=20).mean().diff(10)))
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
             #                         label='CP_' + str(i) + "_smooth")
-            ax2[i % a, i // a].fill_between(g['step'],
-                                            g[valy]['quant_inf'],
-                                            g[valy]['quant_sup'], alpha=0.25, linewidth=0)
+            # ax2[i % a, i // a].fill_between(g['step'],
+            #                                 g[valy]['quant_inf'],
+            #                                 g[valy]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=valy)
             ax2[i % a, i // a].legend()
             # ax2[i % a, i // a].set_ylim([0, 100])

@@ -4,3 +4,4 @@ from .criticDQNGM import CriticDQNGM
 from .criticDDPG import CriticDDPG
 from .actorDDPG import ActorDDPG
 from .actorCriticDDPG import ActorCriticDDPG
+from .actorCriticDDPGG import ActorCriticDDPGG

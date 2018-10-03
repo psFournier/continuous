@@ -13,21 +13,21 @@ class DDPG2(Agent):
         self.init(args, env)
 
     def init(self, args ,env):
-        names = ['state0', 'action', 'state1', 'reward', 'terminal']
+        names = ['s0', 'a', 's1', 'r', 't']
+        metrics = ['loss_dqn', 'loss_actor']
         self.buffer = ReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
         self.actorCritic = ActorCriticDDPG(args, env)
-        for metric_name in ['loss_dqn', 'loss_actor']:
-            self.metrics[metric_name] = 0
+        for metric in metrics:
+            self.metrics[metric] = 0
 
     def train(self):
 
         if self.buffer.nb_entries > self.batch_size:
             exp = self.buffer.sample(self.batch_size)
-            s0, a0, s1, r, t = [exp[name] for name in self.buffer.names]
-            targets_dqn = self.actorCritic.get_targets_dqn(r, t, s1)
-            inputs = [s0, a0, targets_dqn]
+            targets_dqn = self.actorCritic.get_targets_dqn(exp['r'], exp['t'], exp['s1'])
+            inputs = [exp['s0'], exp['a'], targets_dqn]
             loss_dqn = self.actorCritic.trainQval(inputs)
-            loss_actor = self.actorCritic.trainActor([s0])
+            loss_actor = self.actorCritic.trainActor([exp['s0']])
             self.metrics['loss_dqn'] += np.squeeze(loss_dqn)
             self.metrics['loss_actor'] += np.squeeze(loss_actor)
 
@@ -46,6 +46,10 @@ class DDPG2(Agent):
 
             self.actorCritic.target_train()
 
+    def make_input(self, state, mode):
+        input = [np.expand_dims(state, axis=0)]
+        return input
+
     def reset(self):
 
         if self.trajectory:
@@ -62,10 +66,6 @@ class DDPG2(Agent):
         self.episode_step = 0
 
         return state
-
-    def make_input(self, state, mode):
-        input = [np.expand_dims(state, axis=0)]
-        return input
 
     def act(self, state, mode='train'):
         input = self.make_input(state, mode)

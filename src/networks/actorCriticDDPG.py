@@ -64,7 +64,7 @@ class ActorCriticDDPG(object):
 
     def compute_targets(self, r, t, q):
         targets = r + (1 - t) * self.gamma * np.squeeze(q)
-        targets = np.clip(targets, self.env.minR / (1 - self.gamma), self.env.maxR)
+        targets = np.clip(targets, self.env.minR / (1 - self.gamma), self.env.maxR / (1 - self.gamma))
         return targets
 
     def target_train(self):

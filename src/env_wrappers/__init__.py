@@ -18,6 +18,12 @@ register(
     entry_point='envs.reacher:ReacherEnv',
     wrapper_entry_point=None
 )
+
+register(
+    id='ReacherEps-v0',
+    entry_point='envs.reacher:ReacherEnv',
+    wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
+)
 #
 # register(
 #     id='HalfCheetah-v2',
