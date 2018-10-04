@@ -3,12 +3,12 @@ import numpy as np
 from samplers.competenceQueue import CompetenceQueue
 import math
 from utils.linearSchedule import LinearSchedule
-from .base import CPBased
+from .base import CPBased, RndBased, Base
 
 
-class Reacher_e(CPBased):
+class Reacher_e2(RndBased):
     def __init__(self, env, args):
-        super(Reacher_e, self).__init__(env, args, [[0.02], [0.04], [0.06], [0.08], [0.1]])
+        super(Reacher_e2, self).__init__(env, args, [0.01], [0.1])
         self.init()
 
     def is_term(self, exp):
@@ -18,27 +18,16 @@ class Reacher_e(CPBased):
 
     def end_episode(self, trajectory):
         R = np.sum([self.unshape(exp['r'], exp['t']) for exp in trajectory])
-        self.queues[self.idx].append(R)
-
-        goals = []
+        self.queue.append(R)
         augmented_ep = []
+        if self.args['--her'] != '0':
+            min_d = min([np.linalg.norm(e['s1'][[6, 7]]) for e in trajectory])
         for i, expe in enumerate(reversed(trajectory)):
-
             augmented_ep.append(expe.copy())
-
-            for g in goals:
-                expe['g'] = g
+            if self.args['--her'] != '0':
+                expe['g'] = min_d + 0.01
                 expe = self.env.eval_exp(expe)
                 augmented_ep.append(expe.copy())
-
-            if self.args['--her'] != '0':
-                for goal in self.env.goals:
-                    if goal != expe['g'] and goal not in goals:
-                        expe['g'] = goal
-                        expe = self.env.eval_exp(expe)
-                        if expe['r'] == 1:
-                            goals.append(goal)
-                            augmented_ep.append(expe.copy())
         return augmented_ep
 
     @property

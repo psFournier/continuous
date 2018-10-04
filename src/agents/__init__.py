@@ -1,4 +1,4 @@
-from .continuous.DDPG2 import DDPG2
+from .continuous.DDPG2 import DDPG
 from .continuous.TD3 import TD3
 from .discrete.DQN import DQN
 from .discrete.DQNG import DQNG
@@ -8,4 +8,4 @@ from .discrete.DQNG import DQNG
 # from .discrete.DQNG02 import DQNG02
 from .discrete.DQNGM import DQNGM
 from .discrete.Qoff import Qoff
-from .continuous.DDPG2G import DDPG2G
+from .continuous.DDPGG import DDPGG

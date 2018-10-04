@@ -71,25 +71,22 @@ class Agent():
     def log(self):
 
         if self.env_step % self.eval_freq == 0:
-            # R_mean = []
-            # for g, goal in enumerate(self.env_test.goals):
-            #     exp = {}
-            #     exp['s0'] = self.env_test.reset(goal=g)
-            #     if 0:
-            #         self.env_test.render(mode='human')
-            #         self.env_test.unwrapped.viewer._run_speed = 0.125
-            #     exp['t'] = False
-            #     R = 0
-            #     for i in range(self.ep_steps):
-            #         if 0:
-            #             self.env_test.render(mode='human')
-            #         exp['a'] = self.act(exp['s0'], mode='test')
-            #         exp = self.env_test.step(exp)
-            #         exp['s0'] = exp['s1']
-            #         R += exp['r']
-            #     R_mean.append(R)
-            #     self.stats['R_{}'.format(goal)] = float("{0:.3f}".format(R))
-            # self.stats['R'] = float("{0:.3f}".format(np.mean(R_mean)))
+
+            exp = {}
+            exp['s0'] = self.env_test.reset(goal=np.array([0.02]))
+            if 0:
+                self.env_test.render(mode='human')
+                self.env_test.unwrapped.viewer._run_speed = 0.125
+            exp['t'] = False
+            R = 0
+            for i in range(self.ep_steps):
+                if 0:
+                    self.env_test.render(mode='human')
+                exp['a'] = self.act(exp['s0'], mode='test')
+                exp = self.env_test.step(exp)
+                exp['s0'] = exp['s1']
+                R += exp['r']
+            self.stats['R'] = float("{0:.3f}".format(R))
 
             wrapper_stats = self.env.get_stats()
             for key, val in wrapper_stats.items():

@@ -3,12 +3,12 @@ RENDER_TRAIN = False
 INVERTED_GRADIENTS = True
 from networks import ActorCriticDDPGG
 from buffers import ReplayBuffer
-from agents import DDPG2
+from agents import DDPG
 
-class DDPG2G(DDPG2):
+class DDPGG(DDPG):
 
     def __init__(self, args, env, env_test, logger):
-        super(DDPG2G, self).__init__(args, env, env_test, logger)
+        super(DDPGG, self).__init__(args, env, env_test, logger)
 
     def init(self, args ,env):
         names = ['s0', 'a', 's1', 'r', 't', 'g']
@@ -51,38 +51,5 @@ class DDPG2G(DDPG2):
         else:
             input = [np.expand_dims(i, axis=0) for i in [state, self.env_test.goal]]
         return input
-
-    def reset(self):
-
-        if self.trajectory:
-            R = np.sum([self.env.unshape(exp['r'], exp['t']) for exp in self.trajectory])
-            self.env.queues[self.env.idx].append(R)
-
-            goals = []
-
-            for i, expe in enumerate(reversed(self.trajectory)):
-
-                self.buffer.append(expe.copy())
-
-                for g in goals:
-                    expe['g'] = g
-                    expe = self.env.eval_exp(expe)
-                    self.buffer.append(expe.copy())
-
-                if self.args['--her'] != '0':
-                    for goal in self.env.goals:
-                        if goal != expe['g'] and goal not in goals:
-                            expe['g'] = goal
-                            expe = self.env.eval_exp(expe)
-                            if expe['r'] == 1:
-                                goals.append(goal)
-                                self.buffer.append(expe.copy())
-
-            self.trajectory.clear()
-
-        state = self.env.reset()
-        self.episode_step = 0
-
-        return state
 
 

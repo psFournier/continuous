@@ -5,10 +5,10 @@ from networks import ActorDDPG, CriticDDPG, ActorCriticDDPG
 from agents.agent import Agent
 from buffers import ReplayBuffer
 
-class DDPG2(Agent):
+class DDPG(Agent):
 
     def __init__(self, args, env, env_test, logger):
-        super(DDPG2, self).__init__(args, env, env_test, logger)
+        super(DDPG, self).__init__(args, env, env_test, logger)
         self.args = args
         self.init(args, env)
 
@@ -53,13 +53,9 @@ class DDPG2(Agent):
     def reset(self):
 
         if self.trajectory:
-
-            R = np.sum([self.env.unshape(exp['reward'], exp['terminal']) for exp in self.trajectory])
-            self.env.queue.append(R)
-
-            for i, expe in enumerate(reversed(self.trajectory)):
-                _ = self.buffer.append(expe.copy())
-
+            augmented_ep = self.env.end_episode(self.trajectory)
+            for e in augmented_ep:
+                self.buffer.append(e)
             self.trajectory.clear()
 
         state = self.env.reset()
