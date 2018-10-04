@@ -25,8 +25,8 @@ class Reacher_e2(RndBased):
         for i, expe in enumerate(reversed(trajectory)):
             augmented_ep.append(expe.copy())
             if self.args['--her'] != '0':
-                expe['g'] = min_d + 0.01
-                expe = self.env.eval_exp(expe)
+                expe['g'] = np.array([min_d + 0.01])
+                expe = self.eval_exp(expe)
                 augmented_ep.append(expe.copy())
         return augmented_ep
 

@@ -28,14 +28,14 @@ class Reacher_e(CPBased):
 
             for g in goals:
                 expe['g'] = g
-                expe = self.env.eval_exp(expe)
+                expe = self.eval_exp(expe)
                 augmented_ep.append(expe.copy())
 
             if self.args['--her'] != '0':
-                for goal in self.env.goals:
+                for goal in self.goals:
                     if goal != expe['g'] and goal not in goals:
                         expe['g'] = goal
-                        expe = self.env.eval_exp(expe)
+                        expe = self.eval_exp(expe)
                         if expe['r'] == 1:
                             goals.append(goal)
                             augmented_ep.append(expe.copy())
