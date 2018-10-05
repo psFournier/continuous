@@ -15,9 +15,11 @@ class ReacherWrap(Base):
         d = np.linalg.norm(exp['s1'][[6, 7]])
         if d < 0.02:
             exp['r'] = 1
+            exp['t'] = True
         else:
             exp['r'] = 0
-        exp['t'] = False
+            exp['t'] = False
+        # exp['r'] += (- np.square(exp['a']).sum())
         return exp
 
     @property
@@ -37,11 +39,12 @@ class ReacherWrapShaped(Base):
         d = np.linalg.norm(exp['s1'][[6, 7]])
         if d < 0.02:
             exp['r'] = 1
+            exp['t'] = True
         else:
             exp['r'] = 0
-
+            exp['t'] = False
+        # exp['r'] += (- np.square(exp['a']).sum())
         exp['r'] += (-self.gamma * np.linalg.norm(exp['s1'][[6, 7]]) + np.linalg.norm(exp['s0'][[6, 7]]))
-        exp['t'] = False
         return exp
 
     @property

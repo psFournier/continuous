@@ -24,9 +24,6 @@ class Base(Wrapper):
         exp = self.eval_exp(exp)
         return exp
 
-    def is_term(self, exp):
-        pass
-
     def end_episode(self, trajectory):
         R = np.sum([self.unshape(exp['r'], exp['t']) for exp in trajectory])
         self.queue.append(R)
@@ -36,12 +33,7 @@ class Base(Wrapper):
         return augmented_ep
 
     def eval_exp(self, exp):
-        if self.is_term(exp):
-            exp['r'] = self.maxR
-        else:
-            exp['r'] = self.minR
-        exp['t'] = False
-        return exp
+        pass
 
     def reset(self, goal=None):
         state = self.env.reset()

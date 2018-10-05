@@ -15,24 +15,36 @@ from env_wrappers.registration import registry, register, make, spec
 #
 register(
     id='ReacherShaped-v0',
-    entry_point='envs.reacher:ReacherEnv',
+    entry_point='envs.reacher:ReacherBaseEnv',
     wrapper_entry_point='env_wrappers.reacher:ReacherWrapShaped'
 )
 
 register(
     id='Reacher-v0',
+    entry_point='envs.reacher:ReacherBaseEnv',
+    wrapper_entry_point='env_wrappers.reacher:ReacherWrap'
+)
+
+register(
+    id='ReacherDeceptShaped-v0',
+    entry_point='envs.reacher:ReacherEnv',
+    wrapper_entry_point='env_wrappers.reacher:ReacherWrapShaped'
+)
+
+register(
+    id='ReacherDecept-v0',
     entry_point='envs.reacher:ReacherEnv',
     wrapper_entry_point='env_wrappers.reacher:ReacherWrap'
 )
 
 register(
-    id='ReacherEpsCP-v0',
+    id='ReacherDeceptEpsCP-v0',
     entry_point='envs.reacher:ReacherEnv',
     wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
 )
 
 register(
-    id='ReacherEpsRnd-v0',
+    id='ReacherDeceptEpsRnd-v0',
     entry_point='envs.reacher:ReacherEnv',
     wrapper_entry_point='env_wrappers.reacher_e2:Reacher_e2'
 )

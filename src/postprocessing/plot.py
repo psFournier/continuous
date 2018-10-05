@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 DIR = '../../log/cluster/last'
-ENV = 'dqn*-v0'
+ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
@@ -86,8 +86,8 @@ if 0:
 if 1:
 
     df2 = df
-    df2 = df2[(df2['--agent'] == 'dqngm')]
-    df2 = df2[(df2['--env'] == 'PlayroomGM-v0')]
+    df2 = df2[(df2['--agent'] == 'ddpgg')]
+    df2 = df2[(df2['--env'] == 'ReacherEpsCP-v0')]
     # df2 = df2[(df2['--imit'] == 2)]
     # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
     # df2 = df2[(df2['--wimit'] == 0)]
@@ -96,13 +96,15 @@ if 1:
     # # df2 = df2[(df2['--clipping'] == 1)]
     # # df2 = df2[(df2['--explo'] == 1)]
     # df2 = df2[(df2['--her'] == 1)]
-    df2 = df2[(df2['--theta'] == 0)]
+    df2 = df2[(df2['--theta'] != 4)]
     y = ['R']
-    y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
+    # y = ['R', 'agentR']
+    y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
+    # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
     # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
     #    'R_light2', 'R_light3', 'R_light4', 'R_xy']
 
-    y = ['loss_dqn', 'loss_imit', 'qval', 'val', 'good_exp', 'loss_dqn2', 'qval2', 'val2']
+    # y = ['loss_dqn', 'loss_imit', 'qval', 'val', 'good_exp', 'loss_dqn2', 'qval2', 'val2']
     # y = ['loss_imit']
     # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
     # y = ['R' + i for i in ['_agent', '_light', '_key1', '_chest1', '_chest2', '_chest3']]
@@ -130,7 +132,7 @@ if 1:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
     print(paramsStudied)
-    a, b = 3,3
+    a, b = 3,2
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
     colors = ['b', 'r']
     p = 'num_run'
@@ -146,17 +148,17 @@ if 1:
         for i, valy in enumerate(y):
             # ax2[i % a, i // a].plot(range(1500), range(1500), 'g-')
 
-            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
+            # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
-            # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].rolling(window=10).mean(), label=label)
+            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
             # ax2[i % a, i // a].scatter(g[x[i]], g[valy], s=1, c=['red', 'blue', 'green'][j])
             # ax2[i % a, i // a].plot(g['step'], abs(g[valy].rolling(window=20).mean().diff(10)))
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
             #                         label='CP_' + str(i) + "_smooth")
-            # ax2[i % a, i // a].fill_between(g['step'],
-            #                                 g[valy]['quant_inf'],
-            #                                 g[valy]['quant_sup'], alpha=0.25, linewidth=0)
+            ax2[i % a, i // a].fill_between(g['step'],
+                                            g[valy]['quant_inf'],
+                                            g[valy]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=valy)
             ax2[i % a, i // a].legend()
             # ax2[i % a, i // a].set_ylim([0, 100])

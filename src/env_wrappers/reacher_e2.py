@@ -11,10 +11,16 @@ class Reacher_e2(RndBased):
         super(Reacher_e2, self).__init__(env, args, [0.01], [0.1])
         self.init()
 
-    def is_term(self, exp):
+    def eval_exp(self, exp):
         d = np.linalg.norm(exp['s1'][[6, 7]])
-        term = d < exp['g']
-        return term
+        if d < exp['g']:
+            exp['r'] = 1
+            exp['t'] = True
+        else:
+            exp['r'] = 0
+            exp['t'] = False
+        # exp['r'] += (- np.square(exp['a']).sum())
+        return exp
 
     def end_episode(self, trajectory):
         R = np.sum([self.unshape(exp['r'], exp['t']) for exp in trajectory])
