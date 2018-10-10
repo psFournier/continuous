@@ -38,8 +38,14 @@ register(
 )
 
 register(
-    id='ReacherDE-v0',
+    id='ReacherE-v0',
     entry_point='envs.reacher:ReacherEnv',
+    wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
+)
+
+register(
+    id='ReacherDE-v0',
+    entry_point='envs.reacher:ReacherDEnv',
     wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
 )
 #

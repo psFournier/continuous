@@ -15,7 +15,7 @@ class ReacherWrap(Base):
 
     def eval_exp(self, exp):
         d = np.linalg.norm(exp['s1'][[6, 7]])
-        if d < 0.05:
+        if d < 0.04:
             exp['r'] = 1
         else:
             exp['r'] = 0
@@ -39,7 +39,7 @@ class ReacherWrapShaped(Base):
 
     def eval_exp(self, exp):
         d = np.linalg.norm(exp['s1'][[6, 7]])
-        if d < 0.05:
+        if d < 0.04:
             exp['r'] = 1
         else:
             exp['r'] = 0

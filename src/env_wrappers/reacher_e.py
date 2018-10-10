@@ -10,7 +10,8 @@ class Reacher_e(CPBased):
     def __init__(self, env, args):
         super(Reacher_e, self).__init__(env, args, [[0.02], [0.04], [0.06], [0.08], [0.1]])
         self.init()
-        self.test_goals = [np.array([0.02])] * 10
+        self.minQ = -np.inf
+        self.maxQ = np.inf
 
     def eval_exp(self, exp):
         d = np.linalg.norm(exp['s1'][[6, 7]])
