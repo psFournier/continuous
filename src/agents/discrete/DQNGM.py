@@ -61,8 +61,21 @@ class DQNGM(DQNG):
     def reset(self):
 
         if self.trajectory:
+            augmented_ep = self.env.end_episode(self.trajectory)
+            for e in augmented_ep:
+                self.buffer.append(e)
+            self.trajectory.clear()
+
+        state = self.env.reset()
+        self.episode_step = 0
+
+        return state
+
+    def reset(self):
+
+        if self.trajectory:
             R = np.sum([self.env.unshape(exp['r'], exp['t']) for exp in self.trajectory])
-            self.env.queues[self.env.object].append(R)
+            self.env.queues[self.env.idx].append(R)
 
             goals = []
             masks = []

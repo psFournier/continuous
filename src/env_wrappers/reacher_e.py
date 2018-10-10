@@ -10,6 +10,7 @@ class Reacher_e(CPBased):
     def __init__(self, env, args):
         super(Reacher_e, self).__init__(env, args, [[0.02], [0.04], [0.06], [0.08], [0.1]])
         self.init()
+        self.test_goals = [np.array([0.02])] * 10
 
     def eval_exp(self, exp):
         d = np.linalg.norm(exp['s1'][[6, 7]])
@@ -40,6 +41,7 @@ class Reacher_e(CPBased):
             if self.args['--her'] != '0':
                 for goal in self.goals:
                     if goal != expe['g'] and goal not in goals:
+                        # ATTENTION FAUX
                         expe['g'] = goal
                         expe = self.eval_exp(expe)
                         if expe['r'] == 1:

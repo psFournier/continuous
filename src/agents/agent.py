@@ -34,9 +34,9 @@ class Agent():
         try:
             while self.env_step < self.max_steps:
 
-                # if 0:
-                #     self.env.render(mode='human')
-                #     # self.env.unwrapped.viewer._run_speed = 0.125
+                if 0:
+                    self.env.render(mode='human')
+                    # self.env.unwrapped.viewer._run_speed = 0.125
                 self.exp['a'] = self.act(self.exp['s0'])
                 self.exp = self.env.step(self.exp)
                 self.trajectory.append(self.exp.copy())
@@ -50,6 +50,8 @@ class Agent():
                     # print(t1 - t0)
                     t0 = t1
                     self.exp['s0'] = self.reset()
+                else:
+                    self.exp['s0'] = self.exp['s1']
 
                 self.log()
 
@@ -73,25 +75,28 @@ class Agent():
     def log(self):
 
         if self.env_step % self.eval_freq == 0:
-            accuracy = 0
-            for _ in range(10):
-                exp = {}
-                exp['s0'] = self.env_test.reset(goal=np.array([0.02]))
-                # if 0:
-                #     self.env_test.render(mode='human')
-                #     self.env_test.unwrapped.viewer._run_speed = 0.125
-                exp['t'] = False
-                for i in range(self.ep_steps):
-                    # if 0:
-                    #     self.env_test.render(mode='human')
-                    exp['a'] = self.act(exp['s0'], mode='test')
-                    exp = self.env_test.step(exp)
-                    if exp['t']:
-                        accuracy += 1
-                        break
-                    else:
-                        exp['s0'] = exp['s1']
-            self.stats['R'] = float("{0:.3f}".format(accuracy / 10))
+            # r = 0
+            # for i, test_goal in enumerate(self.env.test_goals):
+            #     exp = {}
+            #     exp['s0'] = self.env_test.reset()
+            #     self.env_test.goal = test_goal
+            #     if self.env_test.test_idx:
+            #         self.env_test.idx = self.env_test.test_idx[i]
+            #     # if 0:
+            #     #     self.env_test.render(mode='human')
+            #     #     self.env_test.unwrapped.viewer._run_speed = 0.125
+            #     exp['t'] = False
+            #     for i in range(self.ep_steps):
+            #         # if 0:
+            #         #     self.env_test.render(mode='human')
+            #         exp['a'] = self.act(exp['s0'], mode='test')
+            #         exp = self.env_test.step(exp)
+            #         r += exp['r']
+            #         if exp['t']:
+            #             break
+            #         else:
+            #             exp['s0'] = exp['s1']
+            # self.stats['R'] = float("{0:.3f}".format(r / 10))
 
             wrapper_stats = self.env.get_stats()
             for key, val in wrapper_stats.items():

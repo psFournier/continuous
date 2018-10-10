@@ -12,12 +12,13 @@ class Base(Wrapper):
         self.args = args
         self.gamma = float(args['--gamma'])
         self.opt_init = float(args['--opt_init'])
-        self.minR = self.shape(0, False)
-        self.maxR = self.shape(1, False)
         self.init()
 
     def init(self):
         self.queue = CompetenceQueue()
+        self.goal = None
+        self.test_goals = [0] * 10
+        self.test_idx = []
 
     def step(self, exp):
         exp['s1'] = self.env.step(exp['a'])[0]
@@ -35,7 +36,7 @@ class Base(Wrapper):
     def eval_exp(self, exp):
         pass
 
-    def reset(self, goal=None):
+    def reset(self):
         state = self.env.reset()
         return state
 
@@ -81,11 +82,8 @@ class RndBased(Base):
         exp = self.eval_exp(exp)
         return exp
 
-    def reset(self, idx=None, goal=None):
-        if goal is None:
-            self.goal = np.random.uniform(self.low, self.high)
-        else:
-            self.goal = goal
+    def reset(self):
+        self.goal = np.random.uniform(self.low, self.high)
         state = self.env.reset()
         return state
 
@@ -120,20 +118,9 @@ class CPBased(Base):
             s += weighted_interests[idx]
         return idx
 
-    def reset(self, idx=None, goal=None):
-
-        if idx is None:
-            if goal is None:
-                self.idx = self.get_idx()
-                self.goal = np.array(self.goals[self.idx])
-            else:
-                self.idx = 0
-                self.goal = goal
-        else:
-            self.idx = idx
-            self.goal = np.array(self.goals[self.idx])
-
-
+    def reset(self):
+        self.idx = self.get_idx()
+        self.goal = np.array(self.goals[self.idx])
         state = self.env.reset()
         return state
 

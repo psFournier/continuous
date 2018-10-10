@@ -208,7 +208,7 @@ class Playroom(Env):
                 
         self.lastaction = a
 
-        return np.array(self.state)
+        return np.array(self.state),
 
     def get_underagent(self, x=0, y=0):
         for i, obj in enumerate(self.objects):

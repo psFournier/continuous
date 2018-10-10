@@ -10,6 +10,7 @@ class Reacher_e2(RndBased):
     def __init__(self, env, args):
         super(Reacher_e2, self).__init__(env, args, [0.01], [0.1])
         self.init()
+        self.test_goals = [np.array([0.02])] * 10
 
     def eval_exp(self, exp):
         d = np.linalg.norm(exp['s1'][[6, 7]])

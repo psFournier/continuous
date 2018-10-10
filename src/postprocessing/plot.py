@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-DIR = '../../log/cluster/last'
+DIR = '../../log/cluster/0810'
 ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
-if 0:
+if 1:
     for run in runs:
 
         config = pd.read_json(os.path.join(run, 'config.txt'), lines=True)
@@ -86,8 +86,8 @@ if 0:
 if 1:
 
     df2 = df
-    df2 = df2[(df2['--agent'] == 'ddpgg')]
-    df2 = df2[(df2['--env'] == 'ReacherEpsCP-v0')]
+    df2 = df2[(df2['--agent'] == 'ddpg')]
+    # df2 = df2[(df2['--env'] == 'Reacher-v0')]
     # df2 = df2[(df2['--imit'] == 2)]
     # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
     # df2 = df2[(df2['--wimit'] == 0)]
@@ -96,10 +96,10 @@ if 1:
     # # df2 = df2[(df2['--clipping'] == 1)]
     # # df2 = df2[(df2['--explo'] == 1)]
     # df2 = df2[(df2['--her'] == 1)]
-    df2 = df2[(df2['--theta'] != 4)]
-    y = ['R']
-    # y = ['R', 'agentR']
-    y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
+    # df2 = df2[(df2['--theta'] != 4)]
+    # y = ['R']
+    y = ['R', 'agentR']
+    # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
     # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
     # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
     #    'R_light2', 'R_light3', 'R_light4', 'R_xy']
@@ -132,7 +132,7 @@ if 1:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
     print(paramsStudied)
-    a, b = 3,2
+    a, b = 1,2
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
     colors = ['b', 'r']
     p = 'num_run'
