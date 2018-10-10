@@ -126,13 +126,13 @@ class Playroom(Env):
 
     def __init__(self):
         self.desc = np.asarray(MAP,dtype='c')
-        self.initialize()
         self.maxR = self.desc.shape[0] - 2
         self.maxC = (self.desc.shape[1] - 1) // 2 - 1
+        self.initialize()
 
     def initialize(self):
-        self.x = 0
-        self.y = 0
+        self.x = np.random.randint(0, self.maxR)
+        self.y = np.random.randint(0, self.maxC)
         self.objects = []
         self.light = Light(self, 0, 3, 'light', [0.5, 0.5])
         self.key1 = Key(self, 3, 0, 'key1', [0.5, 0.5], dep=[self.light])
