@@ -15,13 +15,13 @@ from env_wrappers.registration import registry, register, make, spec
 #
 register(
     id='ReacherShaped-v0',
-    entry_point='envs.reacher:ReacherBaseEnv',
+    entry_point='envs.reacher:ReacherEnv',
     wrapper_entry_point='env_wrappers.reacher:ReacherWrapShaped'
 )
 
 register(
     id='Reacher-v0',
-    entry_point='envs.reacher:ReacherBaseEnv',
+    entry_point='envs.reacher:ReacherEnv',
     wrapper_entry_point='env_wrappers.reacher:ReacherWrap'
 )
 

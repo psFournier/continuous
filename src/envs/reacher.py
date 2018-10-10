@@ -46,10 +46,10 @@ class ReacherEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             self.get_body_com("fingertip")[:2] - self.get_body_com("target")[:2]
         ])
 
-class ReacherBaseEnv(mujoco_env.MujocoEnv, utils.EzPickle):
+class ReacherDeceptiveEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     def __init__(self):
         utils.EzPickle.__init__(self)
-        xml_path = os.path.join(os.path.dirname(__file__), 'reacherBase.xml')
+        xml_path = os.path.join(os.path.dirname(__file__), 'reacherDeceptive.xml')
         mujoco_env.MujocoEnv.__init__(self, xml_path, 2)
 
     def step(self, a):

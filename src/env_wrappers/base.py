@@ -16,9 +16,6 @@ class Base(Wrapper):
 
     def init(self):
         self.queue = CompetenceQueue()
-        self.goal = None
-        self.test_goals = [0] * 10
-        self.test_idx = []
 
     def step(self, exp):
         exp['s1'] = self.env.step(exp['a'])[0]

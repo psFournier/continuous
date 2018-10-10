@@ -65,7 +65,7 @@ class DDPG(Agent):
 
     def act(self, state, mode='train'):
         input = self.make_input(state, mode)
-        action = self.actorCritic.Taction(input)[0]
+        action = self.actorCritic.action(input)[0]
         if mode == 'train':
             noise = np.random.normal(0., 0.1, size=action[0].shape)
             action = noise + action

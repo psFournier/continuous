@@ -43,9 +43,8 @@ class Agent():
                 self.train()
                 self.env_step += 1
                 self.episode_step += 1
-                self.exp['s0'] = self.exp['s1']
 
-                if self.exp['t'] or self.episode_step >= self.ep_steps:
+                if self.episode_step >= self.ep_steps:
                     t1 = time.time()
                     # print(t1 - t0)
                     t0 = t1
