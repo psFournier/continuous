@@ -16,11 +16,9 @@ class Reacher_e(CPBased):
         d = np.linalg.norm(exp['s1'][[6, 7]])
         if d < exp['g']:
             exp['r'] = 1
-            exp['t'] = True
         else:
             exp['r'] = 0
-            exp['t'] = False
-        # exp['r'] += (- np.square(exp['a']).sum())
+        exp['t'] = False
         return exp
 
     def end_episode(self, trajectory):
@@ -34,19 +32,21 @@ class Reacher_e(CPBased):
             augmented_ep.append(expe.copy())
 
             for g in goals:
-                expe['g'] = g
-                expe = self.eval_exp(expe)
-                augmented_ep.append(expe.copy())
+                altexp = expe.copy()
+                altexp['g'] = g
+                altexp = self.eval_exp(altexp)
+                augmented_ep.append(altexp.copy())
 
             if self.args['--her'] != '0':
                 for goal in self.goals:
                     if goal != expe['g'] and goal not in goals:
-                        # ATTENTION FAUX
-                        expe['g'] = goal
-                        expe = self.eval_exp(expe)
-                        if expe['r'] == 1:
+                        altexp = expe.copy()
+                        altexp['g'] = goal
+                        altexp = self.eval_exp(altexp)
+                        if altexp['r'] == 1:
                             goals.append(goal)
-                            augmented_ep.append(expe.copy())
+                            augmented_ep.append(altexp.copy())
+
         return augmented_ep
 
     @property
