@@ -10,15 +10,15 @@ class ReacherWrap(Base):
     def __init__(self, env, args):
         super(ReacherWrap, self).__init__(env, args)
         self.init()
-        self.minQ, self.maxQ = 0, 100
+        self.minQ, self.maxQ = -np.inf, np.inf
 
     def eval_exp(self, exp):
         d = np.linalg.norm(exp['s1'][[6, 7]])
-        if d < 0.05:
-            exp['r'] = 1
+        if d < 0.02:
+            exp['r'] = 0
             exp['t'] = False
         else:
-            exp['r'] = 0
+            exp['r'] = -1
             exp['t'] = False
         # exp['r'] += (- np.square(exp['a']).sum())
         return exp
@@ -41,10 +41,10 @@ class ReacherWrapShaped(Base):
     def eval_exp(self, exp):
         d = np.linalg.norm(exp['s1'][[6, 7]])
         if d < 0.02:
-            exp['r'] = 1
+            exp['r'] = 0
             exp['t'] = False
         else:
-            exp['r'] = 0
+            exp['r'] = -1
             exp['t'] = False
         # exp['r'] += (- np.square(exp['a']).sum())
         exp['r'] += (-self.gamma * np.linalg.norm(exp['s1'][[6, 7]]) + np.linalg.norm(exp['s0'][[6, 7]]))
