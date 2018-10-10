@@ -100,9 +100,9 @@ class Chest(Obj):
         #     self.s = np.random.choice([0, 1], p=self.prop)
 
         if a == Actions.TOUCH:
-            for d in self.dep:
-                if d.state == 1:
-                    self.s = np.random.choice([self.s, self.s + 1], p=self.prop)
+            if self.dep[self.s].state == 1:
+                self.s = np.random.choice([self.s, self.s + 1], p=self.prop)
+
             # if a == Actions.TOUCHDOWN:
             #     if self.s == 0:
             #         self.s = np.random.choice([0, 1], p=self.prop)
@@ -255,12 +255,75 @@ class Playroom(Env):
             res += obj.low
         return res
 
+    def optimal_action(self):
+        if self.light.state != 1:
+            x = self.light.x - self.x
+            y = self.light.y - self.y
+            if x > 0: a = Actions.UP
+            elif x < 0: a = Actions.DOWN
+            elif y > 0: a = Actions.RIGHT
+            elif y < 0: a = Actions.LEFT
+            else: a = Actions.TOUCH
+        elif self.key1.state != 1:
+            x = self.key1.x - self.x
+            y = self.key1.y - self.y
+            if x > 0: a = Actions.UP
+            elif x < 0: a = Actions.DOWN
+            elif y > 0: a = Actions.RIGHT
+            elif y < 0: a = Actions.LEFT
+            else: a = Actions.TAKE
+        elif self.key2.state != 1:
+            x = self.key2.x - self.x
+            y = self.key2.y - self.y
+            if x > 0: a = Actions.UP
+            elif x < 0: a = Actions.DOWN
+            elif y > 0: a = Actions.RIGHT
+            elif y < 0: a = Actions.LEFT
+            else: a = Actions.TAKE
+        elif self.key3.state != 1:
+            x = self.key3.x - self.x
+            y = self.key3.y - self.y
+            if x > 0: a = Actions.UP
+            elif x < 0: a = Actions.DOWN
+            elif y > 0: a = Actions.RIGHT
+            elif y < 0: a = Actions.LEFT
+            else: a = Actions.TAKE
+        elif self.key4.state != 1:
+            x = self.key4.x - self.x
+            y = self.key4.y - self.y
+            if x > 0: a = Actions.UP
+            elif x < 0: a = Actions.DOWN
+            elif y > 0: a = Actions.RIGHT
+            elif y < 0: a = Actions.LEFT
+            else: a = Actions.TAKE
+        elif self.chest4.state != 5:
+            x = self.chest4.x - self.x
+            y = self.chest4.y - self.y
+            if x > 0:
+                a = Actions.UP
+            elif x < 0:
+                a = Actions.DOWN
+            elif y > 0:
+                a = Actions.RIGHT
+            elif y < 0:
+                a = Actions.LEFT
+            else:
+                a = Actions.TOUCH
+        else:
+            a = Actions.NOOP
+        return a
+
 if __name__ == '__main__':
     env = Playroom()
     env.reset()
-    for a in [2,2,2,2,4,3,3,3,3,0,0,0,0,9,1,1,2,2,2,6,2,2]:
-        # a = np.random.randint(11)
+    i = 0
+    while (env.chest4.state != 5) and i < 1000:
+        a = env.optimal_action()
         env.step(a)
+        print(a)
+        i += 1
+    print(env.state)
+
 
     # def render(self, mode='human'):
     #     outfile = StringIO() if mode == 'ansi' else sys.stdout
