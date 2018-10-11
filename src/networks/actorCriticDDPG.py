@@ -1,4 +1,5 @@
-from keras.initializers import RandomUniform
+from keras.initializers import RandomUniform, lecun_uniform
+from keras.regularizers import l2
 from keras.models import Model
 from keras.layers import Dense, Input, Lambda, concatenate
 from keras.optimizers import Adam
@@ -13,42 +14,50 @@ class ActorCriticDDPG(object):
         self.s_dim = env.state_dim
         self.a_dim = env.action_dim
         self.gamma = 0.99
-        self.optimizerCritic = Adam(lr=0.001)
         self.args = args
         self.initModels()
         self.initTargetModels()
 
     def initModels(self):
-        S = Input(shape=self.s_dim)
-        A = Input(shape=self.a_dim)
+
+        S_c = Input(shape=self.s_dim)
+        A_c = Input(shape=self.a_dim)
         TARGETS = Input(shape=(1,))
-
-        layers, qval = self.create_critic_network(S, A)
-        self.qvalModel = Model([S, A], qval)
+        layers, qval = self.create_critic_network(S_c, A_c)
+        self.qvalModel = Model([S_c, A_c], qval)
         loss_dqn = K.mean(K.square(qval - TARGETS), axis=0)
-        self.updatesQval = self.optimizerCritic.get_updates(params=self.qvalModel.trainable_weights, loss=loss_dqn)
-        self.trainQval = K.function(inputs=[S, A, TARGETS], outputs=[loss_dqn], updates=self.updatesQval)
+        self.updatesQval = Adam(lr=0.001).get_updates(params=self.qvalModel.trainable_weights, loss=loss_dqn)
+        self.trainQval = K.function(inputs=[S_c, A_c, TARGETS], outputs=[loss_dqn], updates=self.updatesQval)
 
-        action = self.create_actor_network(S)
-        self.action = K.function(inputs=[S], outputs=[action], updates=None)
+        S_a = Input(shape=self.s_dim)
+        action = self.create_actor_network(S_a)
+        self.actionModel = Model(S_a, action)
+        self.action = K.function(inputs=[S_a], outputs=[action], updates=None)
+
         L1, L2, L3 = layers
-        qvalTrain = concatenate([L1(S), action])
+        qvalTrain = concatenate([L1(S_a), action])
         qvalTrain = L2(qvalTrain)
         qvalTrain = L3(qvalTrain)
-        self.actionModel = Model(S, action)
+        self.criticActionGrads = K.gradients(qvalTrain, action)[0]
 
-        # Method 1 without gradient inversion
-        self.optimizerActor = Adam(lr=0.0001)
-        loss_actor = -K.mean(qvalTrain)
-        self.updatesActor = self.optimizerActor.get_updates(params=self.actionModel.trainable_weights, loss=loss_actor)
+        low = tf.convert_to_tensor(self.env.action_space.low)
+        high = tf.convert_to_tensor(self.env.action_space.high)
+        width = high - low
+        pos = K.cast(K.greater_equal(self.criticActionGrads, 0), dtype='float32')
+        pos *= high - action
+        neg = K.cast(K.less(self.criticActionGrads, 0), dtype='float32')
+        neg *= action - low
+        inversion = (pos + neg) / width
+        self.invertedCriticActionGrads = self.criticActionGrads * inversion
 
-        # Method 2 with gradient inversion
-        # self.optimizerActor = DDPGAdam(lr=0.0001)
-        # loss_actor = K.mean(qvalTrain)
-        # self.updatesActor = self.optimizerActor.get_updates(params=self.actionModel.trainable_weights, loss=loss_actor,
-        #                                                     action=action, low=self.env.action_space.low, high=self.env.action_space.high)
-
-        self.trainActor = K.function(inputs=[S], outputs=[loss_actor], updates=self.updatesActor)
+        self.actorGrads = tf.gradients(action, self.actionModel.trainable_weights, grad_ys=-self.criticActionGrads)
+        # self.actorGrads = tf.gradients(action, self.actionModel.trainable_weights, grad_ys=-self.invertedCriticActionGrads)
+        self.updatesActor = DDPGAdam(lr=0.0001).get_updates(params=self.actionModel.trainable_weights,
+                                                        loss=None,
+                                                        grads=self.actorGrads)
+        self.trainActor = K.function(inputs=[S_a],
+                                     outputs=[action, self.criticActionGrads, self.invertedCriticActionGrads],
+                                     updates=self.updatesActor)
 
     def initTargetModels(self):
         S = Input(shape=self.s_dim)
@@ -92,36 +101,40 @@ class ActorCriticDDPG(object):
 
     def create_critic_network(self, S, A):
 
-        L1 = Dense(400, activation="relu")
+        L1 = Dense(400, activation="relu",
+                   kernel_initializer=lecun_uniform(),
+                   kernel_regularizer=l2(0.01))
         L1out = L1(S)
         L1out = concatenate([L1out, A])
-        L2 = Dense(300, activation="relu")
+        L2 = Dense(300, activation="relu",
+                   kernel_initializer=lecun_uniform(),
+                   kernel_regularizer=l2(0.01))
         L2out = L2(L1out)
-        L3 = Dense(1, activation='linear')
+        L3 = Dense(1, activation='linear',
+                   kernel_initializer=RandomUniform(minval=-3e-4, maxval=3e-4),
+                   kernel_regularizer=l2(0.01),
+                   bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))
         qval = L3(L2out)
         return [L1, L2, L3], qval
 
     def create_actor_network(self, S):
-        h0 = Dense(400, activation="relu")(S)
-        h1 = Dense(300, activation="relu")(h0)
-        V = Dense(self.a_dim[0], activation="tanh")(h1)
+        h0 = Dense(400, activation="relu",
+                   kernel_initializer=lecun_uniform())(S)
+        h1 = Dense(300, activation="relu",
+                   kernel_initializer=lecun_uniform())(h0)
+        V = Dense(self.a_dim[0],
+                  activation="tanh",
+                  kernel_initializer=RandomUniform(minval=-3e-3, maxval=3e-3),
+                  bias_initializer=RandomUniform(minval=-3e-3, maxval=3e-3))(h1)
         return V
 
 class DDPGAdam(Adam):
     def __init__(self, lr=0.001):
         super(DDPGAdam, self).__init__(lr=lr)
 
-    def get_updates(self, loss, params, action=None, high=None, low=None):
-        gradsC = K.gradients(loss, action)[0]
-        low = tf.convert_to_tensor(low)
-        high = tf.convert_to_tensor(high)
-        width = high - low
-        pos = K.cast(K.greater_equal(gradsC, 0), dtype='float32')
-        pos *= high - action
-        neg = K.cast(K.less(gradsC, 0), dtype='float32')
-        neg *= action - low
-        gradsC *= (pos + neg) / width
-        grads = tf.gradients(action, params, grad_ys=gradsC)
+    def get_updates(self, loss, params, grads=None):
+        if grads is None:
+            grads = self.get_gradients(loss, params)
         self.updates = [K.update_add(self.iterations, 1)]
 
         lr = self.lr

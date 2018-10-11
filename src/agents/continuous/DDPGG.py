@@ -25,9 +25,8 @@ class DDPGG(DDPG):
             targets_dqn = self.actorCritic.get_targets_dqn(exp['r'], exp['t'], exp['s1'], exp['g'])
             inputs = [exp['s0'], exp['a'], exp['g'], targets_dqn]
             loss_dqn = self.actorCritic.trainQval(inputs)
-            loss_actor = self.actorCritic.trainActor([exp['s0'], exp['g']])
+            action, criticActionGrads, invertedCriticActionGrads = self.actorCritic.trainActor([exp['s0'], exp['g']])
             self.metrics['loss_dqn'] += np.squeeze(loss_dqn)
-            self.metrics['loss_actor'] += np.squeeze(loss_actor)
 
 
             # a2 = self.actor.model.predict_on_batch(s0)
