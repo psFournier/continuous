@@ -16,7 +16,6 @@ class PlayroomGM(CPBased):
         self.init_state = np.array(self.env.init)
         self.minQ = 0
         self.maxQ = 100
-        self.minR = 0
 
     def step(self, exp):
         self.steps[self.idx] += 1

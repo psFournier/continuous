@@ -1,4 +1,6 @@
 from keras.models import Model
+from keras.initializers import RandomUniform, lecun_uniform
+from keras.regularizers import l2
 from keras.layers import Dense, Input, Lambda, Reshape
 from keras.optimizers import Adam
 import keras.backend as K
@@ -101,8 +103,16 @@ class CriticDQNGM(CriticDQNG):
         return np.expand_dims(targets_dqn, axis=1)
 
     def create_critic_network(self, S, G=None, M=None):
-        l1 = concatenate([multiply([subtract([S, G]), M]), S])
-        l2 = Dense(400, activation="relu")(l1)
-        l3 = Dense(300, activation="relu")(l2)
-        Q_values = Dense(self.num_actions)(l3)
+        L1 = concatenate([multiply([subtract([S, G]), M]), S])
+        L2 = Dense(400, activation="relu",
+                   kernel_initializer=lecun_uniform(),
+                   kernel_regularizer=l2(0.01))(L1)
+        L3 = Dense(300, activation="relu",
+                   kernel_initializer=lecun_uniform(),
+                   kernel_regularizer=l2(0.01))(L2)
+        Q_values = Dense(self.num_actions,
+                         activation='linear',
+                         kernel_initializer=RandomUniform(minval=-3e-4, maxval=3e-4),
+                         kernel_regularizer=l2(0.01),
+                         bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))(L3)
         return Q_values
