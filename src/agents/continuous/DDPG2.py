@@ -52,9 +52,10 @@ class DDPG(Agent):
     def reset(self):
 
         if self.trajectory:
-            augmented_ep = self.env.end_episode(self.trajectory)
-            for e in augmented_ep:
-                self.buffer.append(e)
+            self.env.end_episode(self.trajectory)
+            for expe in self.trajectory:
+                self.buffer.append(expe.copy())
+
             self.trajectory.clear()
 
         state = self.env.reset()

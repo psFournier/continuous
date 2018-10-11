@@ -9,7 +9,7 @@ ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
-if 1:
+if 0:
     for run in runs:
 
         config = pd.read_json(os.path.join(run, 'config.txt'), lines=True)

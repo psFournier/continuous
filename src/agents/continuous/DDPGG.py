@@ -51,4 +51,21 @@ class DDPGG(DDPG):
             input = [np.expand_dims(i, axis=0) for i in [state, self.env_test.goal]]
         return input
 
+    def reset(self):
+
+        if self.trajectory:
+            self.env.end_episode(self.trajectory)
+            for expe in self.trajectory:
+                self.buffer.append(expe.copy())
+            if self.args['--her'] != '0':
+                augmented_ep = self.env.augment_episode(self.trajectory)
+                for e in augmented_ep:
+                    self.buffer.append(e)
+            self.trajectory.clear()
+
+        state = self.env.reset()
+        self.episode_step = 0
+
+        return state
+
 

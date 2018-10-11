@@ -16,15 +16,14 @@ class Reacher_e(CPBased):
     def eval_exp(self, exp):
         d = np.linalg.norm(exp['s1'][[6, 7]])
         if d < exp['g']:
-            exp['r'] = 1
+            exp['r'] = 100
+            exp['t'] = True
         else:
             exp['r'] = 0
-        exp['t'] = False
+            exp['t'] = False
         return exp
 
-    def end_episode(self, trajectory):
-        R = np.sum([self.unshape(exp['r'], exp['t']) for exp in trajectory])
-        self.queues[self.idx].append(R)
+    def augment_episode(self, trajectory):
 
         goals = []
         augmented_ep = []

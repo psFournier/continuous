@@ -23,12 +23,10 @@ class Base(Wrapper):
         return exp
 
     def end_episode(self, trajectory):
-        R = np.sum([self.unshape(exp['r'], exp['t']) for exp in trajectory])
+        R = 0
+        for exp in reversed(trajectory):
+            R = R * self.gamma + exp['r']
         self.queue.append(R)
-        augmented_ep = []
-        for i, expe in enumerate(reversed(trajectory)):
-            augmented_ep.append(expe.copy())
-        return augmented_ep
 
     def eval_exp(self, exp):
         pass
@@ -114,6 +112,12 @@ class CPBased(Base):
             idx += 1
             s += weighted_interests[idx]
         return idx
+
+    def end_episode(self, trajectory):
+        R = 0
+        for exp in reversed(trajectory):
+            R = R * self.gamma + exp['r']
+        self.queues[self.idx].append(R)
 
     def reset(self):
         self.idx = self.get_idx()
