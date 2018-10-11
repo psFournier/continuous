@@ -49,8 +49,11 @@ class ActorCriticDDPGG(ActorCriticDDPG):
         inversion = (pos + neg) / width
         self.invertedCriticActionGrads = self.criticActionGrads * inversion
 
-        # self.actorGrads = tf.gradients(action, self.actionModel.trainable_weights, grad_ys=-self.criticActionGrads)
-        self.actorGrads = tf.gradients(action, self.actionModel.trainable_weights, grad_ys=-self.invertedCriticActionGrads)
+        if self.args['--inv_grad'] == '0':
+            self.actorGrads = tf.gradients(action, self.actionModel.trainable_weights, grad_ys=-self.criticActionGrads)
+        else:
+            self.actorGrads = tf.gradients(action, self.actionModel.trainable_weights, grad_ys=-self.invertedCriticActionGrads)
+
         self.updatesActor = DDPGAdam(lr=0.0001).get_updates(params=self.actionModel.trainable_weights,
                                                         loss=None,
                                                         grads=self.actorGrads)
