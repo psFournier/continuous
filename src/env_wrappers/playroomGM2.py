@@ -11,9 +11,6 @@ class PlayroomGM2(PlayroomGM):
         masks = []
         augmented_demo = []
 
-        obj = self.get_idx()
-        mask = self.obj2mask(obj)
-
         for i, expe in enumerate(reversed(demo)):
 
             # For this way of augmenting episodes, the agent actively searches states that
@@ -29,18 +26,18 @@ class PlayroomGM2(PlayroomGM):
                 #     expe['mcr'] = np.expand_dims(mcrs[j], axis=1)
                 augmented_demo.append(altexp.copy())
 
-            s1m = expe['s1'][np.where(mask)]
-            s0m = expe['s0'][np.where(mask)]
+            s1m = expe['s1'][np.where(self.mask)]
+            s0m = expe['s0'][np.where(self.mask)]
             if (s1m != s0m).any():
                 altexp = expe.copy()
                 altexp['g'] = expe['s1']
-                altexp['m'] = mask
+                altexp['m'] = self.mask
                 altexp = self.eval_exp(altexp)
                 # if self.args['--wimit'] != '0':
                 #     mcr = (1 - self.gamma ** (i + 1)) / (1 - self.gamma)
                 #     mcrs.append(mcr)
                 augmented_demo.append(altexp)
                 goals.append(expe['s1'])
-                masks.append(mask)
+                masks.append(self.mask)
 
         return augmented_demo
