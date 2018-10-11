@@ -112,6 +112,12 @@ class PlayroomGM(CPBased):
 
         return augmented_ep
 
+    def augment_demo(self, demo):
+        return demo
+
+    def augment_exp(self, exp):
+        return exp
+
     @property
     def state_dim(self):
         return 11,

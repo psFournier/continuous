@@ -37,6 +37,7 @@ class DQNGM(DQNG):
 
             if self.args['--wimit'] != '0':
                 exp = self.bufferImit.sample(self.imitBatchsize)
+                exp = self.env.augment_exp(exp)
                 targets = self.critic.get_targets_dqn(exp['r'], exp['t'], exp['s1'], exp['g'], exp['m'])
                 inputs = [exp['s0'], exp['a'], exp['g'], exp['m'], targets]
                 metrics = self.critic.train_imit(inputs)
@@ -92,6 +93,6 @@ class DQNGM(DQNG):
         if self.env_step % self.demo_freq == 0 and self.args['--wimit'] != '0':
             for i in range(5):
                 demo = self.get_demo(rndprop=0.)
-                augmented_demo = self.env.augment_episode(demo)
+                augmented_demo = self.env.augment_demo(demo)
                 for exp in augmented_demo:
                     self.bufferImit.append(exp)
