@@ -26,6 +26,7 @@ Options:
   --ep_steps VAL           Maximum episode steps [default: 200]
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
   --eval_freq VAL          Logging frequency [default: 2000]
+  --demo_freq VAL          Logging frequency [default: 2000]
   --her YES_NO             Hindsight Experience Replay [default: 0]
   --margin VAL             Large margin loss margin [default: 0.1]
   --gamma VAL              Discount factor [default: 0.99]

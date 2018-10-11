@@ -100,7 +100,7 @@ class Chest(Obj):
         #     self.s = np.random.choice([0, 1], p=self.prop)
 
         if a == Actions.TOUCH:
-            if self.dep[self.s].state == 1:
+            if self.s < len(self.dep) and self.dep[self.s].state == 1:
                 self.s = np.random.choice([self.s, self.s + 1], p=self.prop)
 
             # if a == Actions.TOUCHDOWN:
@@ -256,6 +256,7 @@ class Playroom(Env):
         return res
 
     def optimal_action(self):
+        done = False
         if self.light.state != 1:
             x = self.light.x - self.x
             y = self.light.y - self.y
@@ -311,18 +312,24 @@ class Playroom(Env):
                 a = Actions.TOUCH
         else:
             a = Actions.NOOP
-        return a
+            done = True
+        return a, done
 
 if __name__ == '__main__':
     env = Playroom()
     env.reset()
     i = 0
-    while (env.chest4.state != 5) and i < 1000:
-        a = env.optimal_action()
-        env.step(a)
+    while (env.chest4.state != 5) and i < 10000:
+        if np.random.rand() < 0.9:
+            a = np.random.randint(7)
+            env.step(a)
+        else:
+            a = env.optimal_action()
+            env.step(a)
         print(a)
         i += 1
     print(env.state)
+    print(i)
 
 
     # def render(self, mode='human'):

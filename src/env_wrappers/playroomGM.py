@@ -60,15 +60,18 @@ class PlayroomGM(CPBased):
         R = np.sum([self.unshape(exp['r'], exp['t']) for exp in trajectory])
         self.queues[self.idx].append(R)
 
+    def augment_episode(self, trajectory):
+
         goals = []
         masks = []
         augmented_ep = []
+        trajectory_mask = []
+        if 'm' in trajectory[-1].keys():
+            trajectory_mask.append(trajectory[-1]['m'])
         # if self.args['--wimit'] != '0':
         #     mcrs = []
 
         for i, expe in enumerate(reversed(trajectory)):
-
-            augmented_ep.append(expe.copy())
 
             for j, (g, m) in enumerate(zip(goals, masks)):
                 altexp = expe.copy()
@@ -80,28 +83,27 @@ class PlayroomGM(CPBased):
                 #     expe['mcr'] = np.expand_dims(mcrs[j], axis=1)
                 augmented_ep.append(altexp.copy())
 
-            if self.args['--her'] != '0':
-                for obj_idx, goal in enumerate(self.goals):
-                    # self.goals contains the objects, not their goal value
-                    m = self.obj2mask(obj_idx)
-                    # I compare the object mask to the one pursued and to those already "imagined"
-                    if all([(m != m2).any() for m2 in masks + [expe['m']]]):
-                        # We can't test all alternative goals, and chosing random ones would bring
-                        # little improvement. So we select goals as states where an object as changed
-                        # its state.
-                        s1m = expe['s1'][np.where(m)]
-                        s0m = expe['s0'][np.where(m)]
-                        if (s1m != s0m).any():
-                            altexp = expe.copy()
-                            altexp['g'] = expe['s1']
-                            altexp['m'] = m
-                            altexp = self.eval_exp(altexp)
-                            # if self.args['--wimit'] != '0':
-                            #     mcr = (1 - self.gamma ** (i + 1)) / (1 - self.gamma)
-                            #     mcrs.append(mcr)
-                            augmented_ep.append(altexp)
-                            goals.append(expe['s1'])
-                            masks.append(m)
+            for obj_idx, goal in enumerate(self.goals):
+                # self.goals contains the objects, not their goal value
+                m = self.obj2mask(obj_idx)
+                # I compare the object mask to the one pursued and to those already "imagined"
+                if all([(m != m2).any() for m2 in masks + trajectory_mask]):
+                    # We can't test all alternative goals, and chosing random ones would bring
+                    # little improvement. So we select goals as states where an object as changed
+                    # its state.
+                    s1m = expe['s1'][np.where(m)]
+                    s0m = expe['s0'][np.where(m)]
+                    if (s1m != s0m).any():
+                        altexp = expe.copy()
+                        altexp['g'] = expe['s1']
+                        altexp['m'] = m
+                        altexp = self.eval_exp(altexp)
+                        # if self.args['--wimit'] != '0':
+                        #     mcr = (1 - self.gamma ** (i + 1)) / (1 - self.gamma)
+                        #     mcrs.append(mcr)
+                        augmented_ep.append(altexp)
+                        goals.append(expe['s1'])
+                        masks.append(m)
 
         return augmented_ep
 

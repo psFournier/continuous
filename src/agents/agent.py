@@ -20,6 +20,7 @@ class Agent():
         self.eval_freq = int(args['--eval_freq'])
         self.batch_size = int(args['--batchsize'])
         self.max_steps = int(args['--max_steps'])
+        self.demo_freq = int(args['--demo_freq'])
         self.env_step = 0
         self.episode_step = 0
         self.stats = {}
@@ -54,6 +55,7 @@ class Agent():
                     self.exp['s0'] = self.exp['s1']
 
                 self.log()
+                self.demo()
 
         except KeyboardInterrupt:
             print("Keybord interruption")
@@ -70,6 +72,24 @@ class Agent():
         pass
 
     def act(self, state, mode='train'):
+        pass
+
+    def get_demo(self, rndprop):
+        demo = []
+        exp = {}
+        exp['s0'] = self.env_test.env.reset()
+        done = False
+        while not done:
+            if np.random.rand() < rndprop:
+                exp['a'] = np.random.randint(self.env_test.action_dim)
+                done = False
+            else:
+                exp['a'], done = self.env_test.env.optimal_action()
+            exp['s1'] = self.env_test.env.step(exp['a'])[0]
+            demo.append(exp.copy())
+        return demo
+
+    def demo(self):
         pass
 
     def log(self):
