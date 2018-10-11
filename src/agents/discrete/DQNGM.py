@@ -62,7 +62,7 @@ class DQNGM(DQNG):
 
         if self.trajectory:
             self.env.end_episode(self.trajectory)
-            for expe in reversed(self.trajectory):
+            for expe in self.trajectory:
                 self.buffer.append(expe.copy())
             if self.args['--her'] != '0':
                 augmented_ep = self.env.augment_episode(self.trajectory)

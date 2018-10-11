@@ -9,7 +9,7 @@ ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
-if 0:
+if 1:
     for run in runs:
 
         config = pd.read_json(os.path.join(run, 'config.txt'), lines=True)
@@ -44,7 +44,8 @@ params = ['--agent',
           '--wimit',
           '--opt_init',
           '--shaping',
-          '--theta']
+          '--theta',
+          '--inv_grad']
 
 if 0:
     df1 = df
@@ -86,8 +87,8 @@ if 0:
 if 1:
 
     df2 = df
-    df2 = df2[(df2['--agent'] == 'ddpg')]
-    df2 = df2[(df2['--env'] == 'ReacherDS-v0')]
+    # df2 = df2[(df2['--agent'] == 'ddpg')]
+    # df2 = df2[(df2['--env'] == 'ReacherDS-v0')]
     # df2 = df2[(df2['--imit'] == 2)]
     # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
     # df2 = df2[(df2['--wimit'] == 0)]
@@ -129,20 +130,20 @@ if 1:
     def quant_sup(x):
         return x.quantile(0.8)
     op_dict = {a:[np.median, np.mean, quant_inf, quant_sup] for a in y}
-    # df2 = df2.groupby(x + params).agg(op_dict).reset_index()
+    df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
     print(paramsStudied)
     a, b = 1,1
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
     colors = ['b', 'r']
     p = 'num_run'
-    # p= paramsStudied
+    p= paramsStudied
     for j, (name, g) in enumerate(df2.groupby(p)):
 
-        # if isinstance(name, tuple):
-        #     label = ','.join(['{}:{}'.format(paramsStudied[k][2:], name[k]) for k in range(len(paramsStudied))])
-        # else:
-        #     label = '{}:{}'.format(paramsStudied[0][2:], name)
+        if isinstance(name, tuple):
+            label = ','.join(['{}:{}'.format(paramsStudied[k][2:], name[k]) for k in range(len(paramsStudied))])
+        else:
+            label = '{}:{}'.format(paramsStudied[0][2:], name)
         # ax2[0,0].plot(g['step'], g.iloc[:, g.columns.get_level_values(1) == 'mean'].mean(axis=1), label=label)
         # ax2[0,0].legend()
         for i, valy in enumerate(y):
@@ -150,8 +151,8 @@ if 1:
 
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
-            # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
-            ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
+            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
+            # ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
             # ax2[i % a, i // a].scatter(g[x[i]], g[valy], s=1, c=['red', 'blue', 'green'][j])
             # ax2[i % a, i // a].plot(g['step'], abs(g[valy].rolling(window=20).mean().diff(10)))
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),

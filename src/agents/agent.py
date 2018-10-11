@@ -81,12 +81,14 @@ class Agent():
         done = False
         while not done:
             if np.random.rand() < rndprop:
-                exp['a'] = np.random.randint(self.env_test.action_dim)
+                a = np.random.randint(self.env_test.action_dim)
                 done = False
             else:
-                exp['a'], done = self.env_test.env.optimal_action()
+                a, done = self.env_test.env.optimal_action()
+            exp['a'] = np.expand_dims(a, axis=1)
             exp['s1'] = self.env_test.env.step(exp['a'])[0]
             demo.append(exp.copy())
+            exp['s0'] = exp['s1']
         return demo
 
     def demo(self):

@@ -37,21 +37,21 @@ class Base(Wrapper):
         state = self.env.reset()
         return state
 
-    def shape(self, r, term):
-        b = (self.gamma - 1) * self.opt_init
-        r += b
-        if term:
-            c = -self.gamma * self.opt_init
-            r += c
-        return r
-
-    def unshape(self, r, term):
-        b = (self.gamma - 1) * self.opt_init
-        r -= b
-        if term:
-            c = -self.gamma * self.opt_init
-            r -= c
-        return r
+    # def shape(self, r, term):
+    #     b = (self.gamma - 1) * self.opt_init
+    #     r += b
+    #     if term:
+    #         c = -self.gamma * self.opt_init
+    #         r += c
+    #     return r
+    #
+    # def unshape(self, r, term):
+    #     b = (self.gamma - 1) * self.opt_init
+    #     r -= b
+    #     if term:
+    #         c = -self.gamma * self.opt_init
+    #         r -= c
+    #     return r
 
     def get_stats(self):
 
@@ -105,7 +105,7 @@ class CPBased(Base):
         return exp
 
     def get_idx(self):
-        weighted_interests = [math.pow(I, self.theta) for I in self.interests]
+        weighted_interests = [math.pow(I, self.theta) + 0.05 for I in self.interests]
         sum = np.sum(weighted_interests)
         mass = np.random.random() * sum
         idx = 0
@@ -136,7 +136,7 @@ class CPBased(Base):
         minCP = min(self.CPs)
         maxR = max(self.Rs)
         minR = min(self.Rs)
-        if maxCP - minCP > 5:
+        if maxCP - minCP > 1:
             interests = [(cp - minCP) / (maxCP - minCP) for cp in self.CPs]
         else:
             interests = [1 - (r - minR) / (maxR - minR + 0.0001) for r in self.Rs]

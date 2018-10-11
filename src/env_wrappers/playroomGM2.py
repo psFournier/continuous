@@ -1,58 +1,50 @@
-from gym import Wrapper
 import numpy as np
-from samplers.competenceQueue import CompetenceQueue
-import math
-from utils.linearSchedule import LinearSchedule
-from .base import RndBased
+from .playroomGM import PlayroomGM
 
-class PlayroomGM2(RndBased):
+class PlayroomGM2(PlayroomGM):
     def __init__(self, env, args):
-        super(PlayroomGM2, self).__init__(env, args, None, None)
-        self.mask = None
-        self.init()
-        self.obj_feat = [[i] for i in range(2, 11)]
-        self.state_low = self.env.low
-        self.state_high = self.env.high
-        self.init_state = np.array(self.env.init)
+        super(PlayroomGM2, self).__init__(env, args)
 
-    def step(self, exp):
-        exp['g'] = self.goal
-        exp['m'] = self.mask
-        exp['s1'] = self.env.step(exp['a'])[0]
-        exp = self.eval_exp(exp)
-        return exp
+    def augment_episode(self, trajectory):
 
-    def eval_exp(self, exp):
-        exp['r'] = np.sum([mi if exp['g'][i] == exp['s1'][i] else 0 for i, mi in enumerate(exp['m'])])
-        exp['t'] = False
-        exp['r'] = self.shape(exp['r'], exp['t'])
-        return exp
+        goals = []
+        masks = []
+        augmented_ep = []
+        trajectory_mask = []
+        if 'm' in trajectory[-1].keys():
+            trajectory_mask.append(trajectory[-1]['m'])
+        # if self.args['--wimit'] != '0':
+        #     mcrs = []
+        obj = self.get_idx()
+        mask = self.obj2mask(obj)
 
-    def reset(self, idx=None, goal=None):
+        for i, expe in enumerate(reversed(trajectory)):
 
-        self.mask = np.random.randint(0,2,size=self.state_dim)
-        self.goal = self.init_state.copy()
-        for i, mi in enumerate(self.mask):
-            if mi:
-                self.goal[i] = np.random.randint(self.state_low[i], self.state_high[i] + 1)
-        self.mask = self.mask / np.sum(self.mask)
+            # For this way of augmenting episodes, the agent actively searches states that
+            # are new in some sense, with no importance granted to the difficulty of reaching
+            # such states
+            for j, (g, m) in enumerate(zip(goals, masks)):
+                altexp = expe.copy()
+                altexp['g'] = g
+                altexp['m'] = m
+                altexp = self.eval_exp(altexp)
+                # if self.args['--wimit'] != '0':
+                #     mcrs[j] = mcrs[j] * self.gamma + expe['r']
+                #     expe['mcr'] = np.expand_dims(mcrs[j], axis=1)
+                augmented_ep.append(altexp.copy())
 
-        state = self.env.reset()
-        return state
+            s1m = expe['s1'][np.where(mask)]
+            s0m = expe['s0'][np.where(mask)]
+            if (s1m != s0m).any():
+                altexp = expe.copy()
+                altexp['g'] = expe['s1']
+                altexp['m'] = mask
+                altexp = self.eval_exp(altexp)
+                # if self.args['--wimit'] != '0':
+                #     mcr = (1 - self.gamma ** (i + 1)) / (1 - self.gamma)
+                #     mcrs.append(mcr)
+                augmented_ep.append(altexp)
+                goals.append(expe['s1'])
+                masks.append(mask)
 
-    def obj2mask(self, idx):
-        res = np.zeros(shape=self.state_dim)
-        res[self.obj_feat[idx]] = 1
-        return res
-
-    @property
-    def state_dim(self):
-        return 11,
-
-    @property
-    def goal_dim(self):
-        return 11,
-
-    @property
-    def action_dim(self):
-        return 7
+        return augmented_ep

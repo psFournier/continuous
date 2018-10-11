@@ -16,6 +16,7 @@ class PlayroomGM(CPBased):
         self.init_state = np.array(self.env.init)
         self.minQ = 0
         self.maxQ = 100
+        self.minR = 0
 
     def step(self, exp):
         self.steps[self.idx] += 1
@@ -31,10 +32,10 @@ class PlayroomGM(CPBased):
         s1_proj = exp['s1'][indices]
         if (s1_proj == goal).all():
             exp['t'] = True
-            exp['r'] = self.shape(0, True)
+            exp['r'] = 100
         else:
             exp['t'] = False
-            exp['r'] = self.shape(-1, False)
+            exp['r'] = 0
         return exp
 
     def reset(self):
@@ -57,7 +58,9 @@ class PlayroomGM(CPBased):
         return res
 
     def end_episode(self, trajectory):
-        R = np.sum([self.unshape(exp['r'], exp['t']) for exp in trajectory])
+        R = 0
+        for exp in reversed(trajectory):
+            R = R * self.gamma + exp['r']
         self.queues[self.idx].append(R)
 
     def augment_episode(self, trajectory):
@@ -73,6 +76,9 @@ class PlayroomGM(CPBased):
 
         for i, expe in enumerate(reversed(trajectory)):
 
+            # For this way of augmenting episodes, the agent actively searches states that
+            # are new in some sense, with no importance granted to the difficulty of reaching
+            # such states
             for j, (g, m) in enumerate(zip(goals, masks)):
                 altexp = expe.copy()
                 altexp['g'] = g
