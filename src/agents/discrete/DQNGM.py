@@ -16,9 +16,9 @@ class DQNGM(DQNG):
         metrics = ['loss_dqn', 'qval', 'val']
         self.buffer = ReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
         if self.args['--wimit'] != '0':
-            names.append('mcr')
             metrics += ['loss_dqn2', 'val2', 'qval2', 'loss_imit', 'good_exp']
-            self.bufferImit = PrioritizedReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
+            self.bufferImit = ReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
+            self.imitBatchsize = 32
         self.critic = CriticDQNGM(args, env)
         for metric in metrics:
             self.metrics[metric] = 0
@@ -36,20 +36,16 @@ class DQNGM(DQNG):
             self.metrics['qval'] += np.mean(metrics[2])
 
             if self.args['--wimit'] != '0':
-                exp = self.bufferImit.sample(self.batch_size)
+                exp = self.bufferImit.sample(self.imitBatchsize)
                 targets = self.critic.get_targets_dqn(exp['r'], exp['t'], exp['s1'], exp['g'], exp['m'])
-                inputs = [exp['s0'], exp['a'], exp['g'], exp['m'], targets, exp['mcr']]
+                inputs = [exp['s0'], exp['a'], exp['g'], exp['m'], targets]
                 metrics = self.critic.train_imit(inputs)
                 self.metrics['loss_dqn2'] += np.squeeze(metrics[0])
                 self.metrics['val2'] += np.mean(metrics[1])
                 self.metrics['qval2'] += np.mean(metrics[2])
                 self.metrics['loss_imit'] += np.squeeze(metrics[3])
-                self.metrics['good_exp'] += np.squeeze(metrics[4])
-                self.bufferImit.update_priorities(exp['indices'], metrics[-1])
 
             self.critic.target_train()
-
-            # self.bufferOff.update_priorities(i, adv)
 
     def make_input(self, state, mode):
         if mode == 'train':
@@ -75,9 +71,27 @@ class DQNGM(DQNG):
 
         return state
 
+    def get_demo(self, rndprop):
+        demo = []
+        exp = {}
+        exp['s0'] = self.env_test.env.reset()
+        done = False
+        while not done:
+            if np.random.rand() < rndprop:
+                a = np.random.randint(self.env_test.action_dim)
+                done = False
+            else:
+                a, done = self.env_test.env.optimal_action()
+            exp['a'] = np.expand_dims(a, axis=1)
+            exp['s1'] = self.env_test.env.step(exp['a'])[0]
+            demo.append(exp.copy())
+            exp['s0'] = exp['s1']
+        return demo
+
     def demo(self):
-        if self.env_step % self.demo_freq == 0:
-            demo = self.get_demo(rndprop=0.1)
-            augmented_demo = self.env.augment_episode(demo)
-            for exp in augmented_demo:
-                self.buffer.append(exp)
+        if self.env_step % self.demo_freq == 0 and self.args['--wimit'] != '0':
+            for i in range(5):
+                demo = self.get_demo(rndprop=0.)
+                augmented_demo = self.env.augment_episode(demo)
+                for exp in augmented_demo:
+                    self.bufferImit.append(exp)

@@ -49,16 +49,17 @@ class CriticDQNGM(CriticDQNG):
             onehotMargin = qvalWidth * onehot
             imit = (K.max(qvals + onehotMargin, axis=1, keepdims=True) - qval)
 
-            E = Input(shape=(1,), dtype='float32')
-            adv = K.maximum(E - val, 0)
-            advClip = K.cast(K.greater(E, val), dtype='float32')
-            good_exp = K.sum(advClip)
-            imit *= adv
+            # E = Input(shape=(1,), dtype='float32')
+            # adv = K.maximum(E - val, 0)
+            # advClip = K.cast(K.greater(E, val), dtype='float32')
+            # good_exp = K.sum(advClip)
+            # imit *= adv
 
             loss_imit = K.mean(imit, axis=0)
             loss = loss_dqn + w * loss_imit
-            inputs.append(E)
-            outputs += [loss_imit, good_exp, adv]
+            outputs += [loss_imit]
+            # inputs.append(E)
+            # outputs += [loss_imit, good_exp, adv]
 
             updates_imit = self.optimizer.get_updates(loss, self.model.trainable_weights)
             self.train_imit = K.function(inputs, outputs, updates_imit)
