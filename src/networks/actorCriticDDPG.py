@@ -176,3 +176,4 @@ class DDPGAdam(Adam):
 
             self.updates.append(K.update(p, new_p))
         return self.updates
+

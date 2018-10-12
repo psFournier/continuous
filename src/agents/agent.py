@@ -35,8 +35,10 @@ class Agent():
         try:
             while self.env_step < self.max_steps:
 
-                if 0:
+                if 1:
                     self.env.render(mode='human')
+                    # self.env.unwrapped.viewer._record_video = True
+                    # self.env.unwrapped.viewer._video_path = os.path.join(self.logger.get_dir(), "video_%07d.mp4")
                     # self.env.unwrapped.viewer._run_speed = 0.125
                 self.exp['a'] = self.act(self.exp['s0'])
                 self.exp = self.env.step(self.exp)
@@ -59,11 +61,6 @@ class Agent():
 
         except KeyboardInterrupt:
             print("Keybord interruption")
-            self.save_regions()
-            self.save_policy()
-
-        self.save_regions()
-        self.save_policy()
 
     def reset(self):
         return self.env.reset()
@@ -120,8 +117,7 @@ class Agent():
 
             self.logger.dumpkvs()
 
-    def save_regions(self):
-        pass
+            self.save_model()
 
-    def save_policy(self):
+    def save_model(self):
         pass

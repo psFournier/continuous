@@ -38,13 +38,37 @@ register(
 )
 
 register(
-    id='ReacherE-v0',
+    id='Reacher1S-v0',
+    entry_point='envs.reacher:ReacherEnv',
+    wrapper_entry_point='env_wrappers.reacher1:Reacher1S'
+)
+
+register(
+    id='Reacher1-v0',
+    entry_point='envs.reacher:ReacherEnv',
+    wrapper_entry_point='env_wrappers.reacher1:Reacher1'
+)
+
+register(
+    id='Reacher1DS-v0',
+    entry_point='envs.reacher:ReacherDEnv',
+    wrapper_entry_point='env_wrappers.reacher1:Reacher1S'
+)
+
+register(
+    id='Reacher1D-v0',
+    entry_point='envs.reacher:ReacherDEnv',
+    wrapper_entry_point='env_wrappers.reacher1:Reacher1'
+)
+
+register(
+    id='Reacher1E-v0',
     entry_point='envs.reacher:ReacherEnv',
     wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
 )
 
 register(
-    id='ReacherDE-v0',
+    id='Reacher1DE-v0',
     entry_point='envs.reacher:ReacherDEnv',
     wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
 )

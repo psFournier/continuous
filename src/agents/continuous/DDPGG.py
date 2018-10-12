@@ -4,6 +4,7 @@ INVERTED_GRADIENTS = True
 from networks import ActorCriticDDPGG
 from buffers import ReplayBuffer
 from agents import DDPG
+import os
 
 class DDPGG(DDPG):
 
@@ -27,21 +28,6 @@ class DDPGG(DDPG):
             loss_dqn = self.actorCritic.trainQval(inputs)
             action, criticActionGrads, invertedCriticActionGrads = self.actorCritic.trainActor([exp['s0'], exp['g']])
             self.metrics['loss_dqn'] += np.squeeze(loss_dqn)
-
-
-            # a2 = self.actor.model.predict_on_batch(s0)
-            # grads = self.critic.gradsModel.predict_on_batch([s0, a2])
-            # low = self.env.action_space.low
-            # high = self.env.action_space.high
-            # for d in range(grads[0].shape[0]):
-            #     width = high[d] - low[d]
-            #     for k in range(self.batch_size):
-            #         if grads[k][d] >= 0:
-            #             grads[k][d] *= (high[d] - a2[k][d]) / width
-            #         else:
-            #             grads[k][d] *= (a2[k][d] - low[d]) / width
-            # self.actor.train(s0, grads)
-
             self.actorCritic.target_train()
 
     def make_input(self, state, mode):
@@ -67,5 +53,6 @@ class DDPGG(DDPG):
         self.episode_step = 0
 
         return state
+
 
 

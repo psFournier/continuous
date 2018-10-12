@@ -23,6 +23,18 @@ class Reacher_e(CPBased):
             exp['t'] = False
         return exp
 
+    def reset(self):
+        self.idx = self.get_idx()
+        self.goal = np.array(self.goals[self.idx])
+        _ = self.env.reset()
+        qpos = self.unwrapped.sim.data.qpos.flatten()
+        qvel = self.unwrapped.sim.data.qvel.flatten()
+        qpos[2] = -0.025
+        qpos[3] = 0.15
+        self.unwrapped.set_state(qpos, qvel)
+        state = self.unwrapped._get_obs()
+        return state
+
     def augment_episode(self, trajectory):
 
         goals = []

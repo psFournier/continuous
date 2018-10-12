@@ -4,6 +4,7 @@ INVERTED_GRADIENTS = True
 from networks import ActorDDPG, CriticDDPG, ActorCriticDDPG
 from agents.agent import Agent
 from buffers import ReplayBuffer
+import os
 
 class DDPG(Agent):
 
@@ -72,5 +73,10 @@ class DDPG(Agent):
         action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
         action = action.squeeze()
         return action
+
+    def save_model(self):
+        self.actorCritic.actionModel.save(os.path.join(self.logger.get_dir(), 'actor_model'), overwrite=True)
+        self.actorCritic.qvalModel.save(os.path.join(self.logger.get_dir(), 'qval_model'), overwrite=True)
+
 
 
