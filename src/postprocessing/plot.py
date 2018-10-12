@@ -34,7 +34,7 @@ print(df.columns)
 x = ['step']
 params = ['--agent',
           '--batchsize',
-          '--env',
+          # '--env',
           '--eval_freq',
           '--gamma',
           # '--w0',
@@ -87,7 +87,7 @@ if 0:
 if 1:
 
     df2 = df
-    # df2 = df2[(df2['--agent'] == 'ddpg')]
+    df2 = df2[(df2['--agent'] == 'ddpg')]
     # df2 = df2[(df2['--env'] == 'ReacherDS-v0')]
     # df2 = df2[(df2['--imit'] == 2)]
     # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
@@ -157,9 +157,9 @@ if 1:
             # ax2[i % a, i // a].plot(g['step'], abs(g[valy].rolling(window=20).mean().diff(10)))
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
             #                         label='CP_' + str(i) + "_smooth")
-            # ax2[i % a, i // a].fill_between(g['step'],
-            #                                 g[valy]['quant_inf'],
-            #                                 g[valy]['quant_sup'], alpha=0.25, linewidth=0)
+            ax2[i % a, i // a].fill_between(g['step'],
+                                            g[valy]['quant_inf'],
+                                            g[valy]['quant_sup'], alpha=0.25, linewidth=0)
             ax2[i % a, i // a].set_title(label=valy)
             ax2[i % a, i // a].legend()
             # ax2[i % a, i // a].set_ylim([0, 100])

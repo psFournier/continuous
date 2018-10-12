@@ -21,7 +21,7 @@ Options:
   --seed SEED              Random seed
   --theta THETA            CP importance for goal selection [default: 0]
   --shaping YES_NO         Reward shaping [default: 0]
-  --inv_grad YES_NO        Gradient inversion near action limits [default: 0]
+  --inv_grad YES_NO        Gradient inversion near action limits [default: 1]
   --opt_init YES_NO        Positive initialisation [default: 0]
   --max_steps VAL          Maximum total steps [default: 200000]
   --ep_steps VAL           Maximum episode steps [default: 200]
