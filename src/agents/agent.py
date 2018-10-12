@@ -35,7 +35,7 @@ class Agent():
         try:
             while self.env_step < self.max_steps:
 
-                if 1:
+                if 0:
                     self.env.render(mode='human')
                     # self.env.unwrapped.viewer._record_video = True
                     # self.env.unwrapped.viewer._video_path = os.path.join(self.logger.get_dir(), "video_%07d.mp4")

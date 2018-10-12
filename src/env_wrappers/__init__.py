@@ -166,6 +166,12 @@ register(
 )
 
 register(
+    id='PlayroomGMulti-v0',
+    entry_point='envs:Playroom',
+    wrapper_entry_point='env_wrappers.playroomGMulti:PlayroomGMulti'
+)
+
+register(
     id='PlayroomGM2-v0',
     entry_point='envs:Playroom',
     wrapper_entry_point='env_wrappers.playroomGM2:PlayroomGM2'

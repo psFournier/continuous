@@ -16,7 +16,7 @@
 		<geom conaffinity="0" fromto="-.3 -.3 .01 -.3 .3 .01" name="sideW" rgba="0.9 0.4 0.6 1" size=".02" type="capsule"/>
 
 		<geom contype="1" fromto=" .0 .075 .005  .0 .3 .005" name="NE" rgba="0.9 0.4 0.6 1" size=".01" type="capsule"/>
-		<geom contype="1" fromto=" -.05 .125 .005  -.05 .3 .005" name="NW" rgba="0.9 0.4 0.6 1" size=".01" type="capsule"/>
+		<geom contype="1" fromto=" -.05 .145 .005  -.05 .3 .005" name="NW" rgba="0.9 0.4 0.6 1" size=".01" type="capsule"/>
 
 		<!-- Arm -->
 		<geom conaffinity="0" contype="0" fromto="0 0 0 0 0 0.02" name="root" rgba="0.9 0.4 0.6 1" size=".011" type="cylinder"/>

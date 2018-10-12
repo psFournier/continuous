@@ -34,7 +34,7 @@ print(df.columns)
 x = ['step']
 params = ['--agent',
           '--batchsize',
-          # '--env',
+          '--env',
           '--eval_freq',
           '--gamma',
           # '--w0',
@@ -87,7 +87,7 @@ if 0:
 if 1:
 
     df2 = df
-    df2 = df2[(df2['--agent'] == 'ddpg')]
+    df2 = df2[(df2['--agent'] == 'ddpgg')]
     # df2 = df2[(df2['--env'] == 'ReacherDS-v0')]
     # df2 = df2[(df2['--imit'] == 2)]
     # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
@@ -99,7 +99,7 @@ if 1:
     # df2 = df2[(df2['--her'] == 1)]
     # df2 = df2[(df2['--theta'] != 4)]
     # y = ['R']
-    y = ['agentR']
+    y = ['agentR_[0.04]']
     # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
     # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
     # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
@@ -151,7 +151,7 @@ if 1:
 
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
-            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
+            ax2[i % a, i // a].plot(g['step'], g[valy]['median'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
             # ax2[i % a, i // a].scatter(g[x[i]], g[valy], s=1, c=['red', 'blue', 'green'][j])
             # ax2[i % a, i // a].plot(g['step'], abs(g[valy].rolling(window=20).mean().diff(10)))
