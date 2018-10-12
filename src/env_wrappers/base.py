@@ -11,7 +11,6 @@ class Base(Wrapper):
         super(Base, self).__init__(env)
         self.args = args
         self.gamma = float(args['--gamma'])
-        self.opt_init = float(args['--opt_init'])
         self.init()
 
     def init(self):
