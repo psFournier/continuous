@@ -27,19 +27,20 @@ class DQNGM(DQNG):
 
         if self.buffer.nb_entries > 100 * self.batch_size:
 
-            exp = self.buffer.sample(self.batch_size)
-            targets = self.critic.get_targets_dqn(exp['r'], exp['t'], exp['s1'], exp['g'], exp['m'])
-            inputs = [exp['s0'], exp['a'], exp['g'], exp['m'], targets]
+            samples = self.buffer.sample(self.batch_size)
+            samples = self.env.augment_samples(samples)
+            targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
+            inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets]
             metrics = self.critic.train_dqn(inputs)
             self.metrics['loss_dqn'] += np.squeeze(metrics[0])
             self.metrics['val'] += np.mean(metrics[1])
             self.metrics['qval'] += np.mean(metrics[2])
 
             if self.args['--wimit'] != '0':
-                exp = self.bufferImit.sample(self.imitBatchsize)
-                exp = self.env.augment_exp(exp)
-                targets = self.critic.get_targets_dqn(exp['r'], exp['t'], exp['s1'], exp['g'], exp['m'])
-                inputs = [exp['s0'], exp['a'], exp['g'], exp['m'], targets]
+                samples = self.bufferImit.sample(self.imitBatchsize)
+                samples = self.env.augment_tutor_samples(samples)
+                targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
+                inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets]
                 metrics = self.critic.train_imit(inputs)
                 self.metrics['loss_dqn2'] += np.squeeze(metrics[0])
                 self.metrics['val2'] += np.mean(metrics[1])

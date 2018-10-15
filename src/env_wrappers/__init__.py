@@ -4,73 +4,85 @@ from env_wrappers.registration import registry, register, make, spec
 # register(
 #     id='Reacher_xy-v0',
 #     entry_point='envs.reacher:ReacherEnv',
-#     wrapper_entry_point='env_wrappers.reacher_xy:Reacher_xy'
+#     wrapper_entry_point='env_wrappers.reacher.reacher_xy:Reacher_xy'
 # )
 #
 # register(
 #     id='Reacher_e-v0',
 #     entry_point='envs.reacher:ReacherEnv',
-#     wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
+#     wrapper_entry_point='env_wrappers.reacher.reacher_e:Reacher_e'
 # )
 #
 register(
     id='ReacherS-v0',
     entry_point='envs.reacher:ReacherEnv',
-    wrapper_entry_point='env_wrappers.reacher:ReacherWrapShaped'
+    wrapper_entry_point='env_wrappers.reacher.reacher:ReacherWrapShaped'
 )
 
 register(
     id='Reacher-v0',
     entry_point='envs.reacher:ReacherEnv',
-    wrapper_entry_point='env_wrappers.reacher:ReacherWrap'
+    wrapper_entry_point='env_wrappers.reacher.reacher:ReacherWrap'
 )
 
 register(
     id='ReacherDS-v0',
     entry_point='envs.reacher:ReacherDEnv',
-    wrapper_entry_point='env_wrappers.reacher:ReacherWrapShaped'
+    wrapper_entry_point='env_wrappers.reacher.reacher:ReacherWrapShaped'
 )
 
 register(
     id='ReacherD-v0',
     entry_point='envs.reacher:ReacherDEnv',
-    wrapper_entry_point='env_wrappers.reacher:ReacherWrap'
+    wrapper_entry_point='env_wrappers.reacher.reacher.reacher:ReacherWrap'
 )
 
 register(
     id='Reacher1S-v0',
     entry_point='envs.reacher:ReacherEnv',
-    wrapper_entry_point='env_wrappers.reacher1:Reacher1S'
+    wrapper_entry_point='env_wrappers.reacher.reacher.reacher1:Reacher1S'
 )
 
 register(
     id='Reacher1-v0',
     entry_point='envs.reacher:ReacherEnv',
-    wrapper_entry_point='env_wrappers.reacher1:Reacher1'
+    wrapper_entry_point='env_wrappers.reacher.reacher.reacher1:Reacher1'
 )
 
 register(
     id='Reacher1DS-v0',
     entry_point='envs.reacher:ReacherDEnv',
-    wrapper_entry_point='env_wrappers.reacher1:Reacher1S'
+    wrapper_entry_point='env_wrappers.reacher.reacher.reacher1:Reacher1S'
 )
 
 register(
     id='Reacher1D-v0',
     entry_point='envs.reacher:ReacherDEnv',
-    wrapper_entry_point='env_wrappers.reacher1:Reacher1'
+    wrapper_entry_point='env_wrappers.reacher.reacher.reacher1:Reacher1'
 )
 
 register(
     id='Reacher1E-v0',
     entry_point='envs.reacher:ReacherEnv',
-    wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
+    wrapper_entry_point='env_wrappers.reacher.reacher.reacher_e:Reacher_e'
 )
 
 register(
     id='Reacher1DE-v0',
     entry_point='envs.reacher:ReacherDEnv',
-    wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
+    wrapper_entry_point='env_wrappers.reacher.reacher.reacher_e:Reacher_e'
+)
+
+register(
+    id='Reacher1E2-v0',
+    entry_point='envs.reacher:ReacherEnv',
+    wrapper_entry_point='env_wrappers.reacher.reacher.reacher_e2:Reacher_e2'
+)
+
+register(
+    id='Reacher1DE2-v0',
+    entry_point='envs.reacher:ReacherDEnv',
+    wrapper_entry_point='env_wrappers.reacher.reacher.reacher_e2:Reacher_e2'
 )
 #
 # register(
@@ -94,13 +106,13 @@ register(
 # register(
 #     id='Reacher_xy_sagg-v0',
 #     entry_point='envs:ReacherEnv',
-#     wrapper_entry_point='env_wrappers.reacher_xy_sagg:Reacher_xy'
+#     wrapper_entry_point='env_wrappers.reacher.reacher.reacher_xy_sagg:Reacher_xy'
 # )
 #
 # register(
 #     id='Reacher_xy_sagg_plot-v0',
 #     entry_point='envs:ReacherEnv',
-#     wrapper_entry_point='env_wrappers.reacher_xy_sagg_plot:Reacher_xy'
+#     wrapper_entry_point='env_wrappers.reacher.reacher.reacher_xy_sagg_plot:Reacher_xy'
 # )
 
 # register(
@@ -150,56 +162,62 @@ register(
 register(
     id='Playroom-v0',
     entry_point='envs:Playroom',
-    wrapper_entry_point='env_wrappers.playroom:Playroom'
+    wrapper_entry_point='env_wrappers.playroom.playroom:Playroom'
 )
 
 register(
     id='PlayroomG-v0',
     entry_point='envs:Playroom',
-    wrapper_entry_point='env_wrappers.playroomG:PlayroomG'
+    wrapper_entry_point='env_wrappers.playroom.playroomG:PlayroomG'
 )
 
 register(
     id='PlayroomGM-v0',
     entry_point='envs:Playroom',
-    wrapper_entry_point='env_wrappers.playroomGM:PlayroomGM'
+    wrapper_entry_point='env_wrappers.playroom.playroomGM:PlayroomGM'
 )
 
 register(
     id='PlayroomGMulti-v0',
     entry_point='envs:Playroom',
-    wrapper_entry_point='env_wrappers.playroomGMulti:PlayroomGMulti'
+    wrapper_entry_point='env_wrappers.playroom.playroomGMulti:PlayroomGMulti'
+)
+
+register(
+    id='PlayroomGM1-v0',
+    entry_point='envs:Playroom',
+    wrapper_entry_point='env_wrappers.playroom.playroomGM1:PlayroomGM1'
 )
 
 register(
     id='PlayroomGM2-v0',
     entry_point='envs:Playroom',
-    wrapper_entry_point='env_wrappers.playroomGM2:PlayroomGM2'
+    wrapper_entry_point='env_wrappers.playroom.playroomGM2:PlayroomGM2'
 )
 
 register(
     id='PlayroomGM3-v0',
     entry_point='envs:Playroom',
-    wrapper_entry_point='env_wrappers.playroomGM3:PlayroomGM3'
+    wrapper_entry_point='env_wrappers.playroom.playroomGM3:PlayroomGM3'
 )
 
 register(
     id='PlayroomGM4-v0',
     entry_point='envs:Playroom',
-    wrapper_entry_point='env_wrappers.playroomGM4:PlayroomGM4'
+    wrapper_entry_point='env_wrappers.playroom.playroomGM4:PlayroomGM4'
 )
 
 
 register(
     id='PlayroomGO-v0',
     entry_point='envs:Playroom',
-    wrapper_entry_point='env_wrappers.playroomGO:PlayroomGO'
+    wrapper_entry_point='env_wrappers.playroom.playroomGO:PlayroomGO'
 )
 
 register(
     id='PlayroomGF-v0',
     entry_point='envs:Playroom',
-    wrapper_entry_point='env_wrappers.playroomGF:PlayroomGF'
+    wrapper_entry_point='env_wrappers.playroom.playroomGF:PlayroomGF'
 )
 
 register(
