@@ -15,11 +15,24 @@ class PlayroomGM3(PlayroomGM):
             augmented_demo.append(exp.copy())
         return augmented_demo
 
-    def augment_exp(self, samples):
-        exps = [{'s0': samples['s0'][i], 'a': samples['a'][i], 's1': samples['s1'][i]} for i in range(samples['s0'].shape[0])]
+    def augment_tutor_samples(self, samples):
+        batchsize = samples['s0'].shape[0]
+        exps = [{key: samples[key][i] for key in samples.keys()} for i in range(batchsize)]
         for i, exp in enumerate(exps):
-            exp['m'] = self.mask
-            exp['g'] = self.goal
+            task = self.sample_task()
+            exp['m'] = self.task2mask(task)
+            exp['g'] = self.sample_goal(task)
+            exps[i] = self.eval_exp(exp)
+        res = {name: np.array([exp[name] for exp in exps]) for name in ['s0', 'a', 's1', 'r', 't', 'g', 'm']}
+        return res
+
+    def augment_samples(self, samples):
+        batchsize = samples['s0'].shape[0]
+        exps = [{key: samples[key][i] for key in samples.keys()} for i in range(batchsize)]
+        for i, exp in enumerate(exps):
+            task = self.sample_task()
+            exp['m'] = self.task2mask(task)
+            exp['g'] = self.sample_goal(task)
             exps[i] = self.eval_exp(exp)
         res = {name: np.array([exp[name] for exp in exps]) for name in ['s0', 'a', 's1', 'r', 't', 'g', 'm']}
         return res
