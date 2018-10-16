@@ -135,11 +135,13 @@ class CPBased(Base):
 
     @property
     def interests(self):
-        sumCP = np.sum(self.CPs)
+        minCP = min(self.CPs)
+        maxCP = max(self.CPs)
+        CPs = [math.pow((cp - minCP) / (maxCP - minCP + 0.0001), self.theta) for cp in self.CPs]
+        sumCP = np.sum(CPs)
         Ntasks = len(self.CPs)
         espilon = 0.4
         interests = [espilon / Ntasks + (1 - espilon) * cp / (sumCP + 0.0001) for cp in self.CPs]
-        interests = [math.pow(I, self.theta) for I in interests]
         return interests
 
     @property
