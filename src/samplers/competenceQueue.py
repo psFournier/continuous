@@ -4,7 +4,7 @@ import itertools
 import numpy as np
 
 class CompetenceQueue():
-    def __init__(self, window = 20, maxlen=50):
+    def __init__(self, window = 30, maxlen=200):
         self.window = window
         self.mcr = deque(maxlen=maxlen)
         self.t = deque(maxlen=maxlen)
@@ -18,12 +18,13 @@ class CompetenceQueue():
         self.update()
 
     def update(self):
-        MCRs = list(self.mcr)[-(min(self.size, self.window)):]
-        Ts = list(self.t)[-(min(self.size, self.window)):]
+        window = min(self.size, self.window)
+        MCRs = list(self.mcr)[-window:]
+        Ts = list(self.t)[-window:]
         self.MCR.append(np.mean(MCRs))
         self.T.append(np.mean(Ts))
         # newCP = self.MCR[-1] - self.MCR[-(min(self.size, 10))]
-        newCP = self.T[-1] - self.T[-(min(self.size, 20))]
+        newCP = self.T[-1] - self.T[-window]
         self.CP.append(newCP)
 
     @property
