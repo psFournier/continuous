@@ -1,5 +1,5 @@
 import numpy as np
-from ..base import CPBased
+from .base import CPBased
 
 class PlayroomGM(CPBased):
     def __init__(self, env, args):
@@ -10,8 +10,11 @@ class PlayroomGM(CPBased):
         self.state_low = self.env.low
         self.state_high = self.env.high
         self.init_state = np.array(self.env.init)
-        self.minQ = 0
-        self.maxQ = 100
+        self.r_done = 0
+        self.r_notdone = -1
+        self.terminal = True
+        self.minQ = self.r_notdone / (1 - self.gamma)
+        self.maxQ = self.r_done if self.terminal else self.r_done / (1 - self.gamma)
 
     def step(self, exp):
         self.steps[self.task] += 1
@@ -26,11 +29,11 @@ class PlayroomGM(CPBased):
         goal = exp['g'][indices]
         s1_proj = exp['s1'][indices]
         if (s1_proj == goal).all():
-            exp['t'] = True
-            exp['r'] = 0
+            exp['t'] = self.terminal
+            exp['r'] = self.r_done
         else:
             exp['t'] = False
-            exp['r'] = -1
+            exp['r'] = self.r_notdone
         return exp
 
     def end_episode(self, trajectory):

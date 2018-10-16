@@ -87,7 +87,7 @@ if 0:
 if 1:
 
     df2 = df
-    df2 = df2[(df2['--agent'] == 'ddpgg')]
+    # df2 = df2[(df2['--agent'] == 'ddpgg')]
     # df2 = df2[(df2['--env'] == 'ReacherDS-v0')]
     # df2 = df2[(df2['--imit'] == 2)]
     # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
@@ -100,8 +100,8 @@ if 1:
     # df2 = df2[(df2['--theta'] != 4)]
     # y = ['R']
     y = ['agentR']
-    y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
-    # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
+    # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
+    y = ['agentT'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
     # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
     #    'R_light2', 'R_light3', 'R_light4', 'R_xy']
 
@@ -133,7 +133,7 @@ if 1:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
     print(paramsStudied)
-    a, b = 3,2
+    a, b = 3,3
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
     colors = ['b', 'r']
     p = 'num_run'
