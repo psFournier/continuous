@@ -108,9 +108,8 @@ class Agent():
             for metric, val in self.metrics.items():
                 self.stats[metric] = val / self.eval_freq
                 self.metrics[metric] = 0
-            for metric, val in self.imitMetrics.items():
-                self.stats[metric] = val / self.eval_freq
-                self.imitMetrics[metric] = 0
+
+            self.get_stats()
 
             for key in sorted(self.stats.keys()):
                 self.logger.logkv(key, self.stats[key])
@@ -120,4 +119,7 @@ class Agent():
             self.save_model()
 
     def save_model(self):
+        pass
+
+    def get_stats(self):
         pass

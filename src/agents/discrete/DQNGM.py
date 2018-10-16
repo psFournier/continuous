@@ -12,7 +12,7 @@ class DQNGM(DQNG):
         super(DQNGM, self).__init__(args, env, env_test, logger)
 
     def init(self, args ,env):
-        names = ['s0', 'a', 's1', 'r', 't', 'g', 'm']
+        names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'task']
         metrics = ['loss_dqn', 'qval', 'val']
         self.buffer = ReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
         if self.args['--wimit'] != '0':
@@ -22,6 +22,7 @@ class DQNGM(DQNG):
         self.critic = CriticDQNGM(args, env)
         for metric in metrics:
             self.metrics[metric] = 0
+        self.goalcounts = np.zeros((len(self.env.goals),))
 
     def train(self):
 
@@ -35,6 +36,7 @@ class DQNGM(DQNG):
             self.metrics['loss_dqn'] += np.squeeze(metrics[0])
             self.metrics['val'] += np.mean(metrics[1])
             self.metrics['qval'] += np.mean(metrics[2])
+            self.goalcounts += np.bincount(samples['task'], minlength=len(self.env.goals))
 
             if self.args['--wimit'] != '0':
                 samples = self.bufferImit.sample(self.imitBatchsize)
@@ -48,6 +50,12 @@ class DQNGM(DQNG):
                 self.metrics['loss_imit'] += np.squeeze(metrics[3])
 
             self.critic.target_train()
+
+    def get_stats(self):
+        sumsamples = np.sum(self.goalcounts)
+        if sumsamples != 0:
+            for i, goal in enumerate(self.env.goals):
+                self.stats['samplecount_{}'.format(goal)] = float("{0:.3f}".format(self.goalcounts[i] / sumsamples))
 
     def make_input(self, state, mode):
         if mode == 'train':

@@ -20,6 +20,7 @@ class PlayroomGM(CPBased):
         self.steps[self.task] += 1
         exp['g'] = self.goal
         exp['m'] = self.mask
+        exp['task'] = self.task
         exp['s1'] = self.env.step(exp['a'])[0]
         exp = self.eval_exp(exp)
         return exp
