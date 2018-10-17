@@ -1,9 +1,9 @@
 import numpy as np
 from .playroom2GM import Playroom2GM
 
-class Playroom2GM1(Playroom2GM):
+class Playroom2GM0(Playroom2GM):
     def __init__(self, env, args):
-        super(Playroom2GM1, self).__init__(env, args)
+        super(Playroom2GM0, self).__init__(env, args)
 
     def augment_episode(self, episode):
 
