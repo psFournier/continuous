@@ -231,3 +231,9 @@ register(
     entry_point='envs:Labyrinth',
     wrapper_entry_point='env_wrappers.labyrinthG:LabyrinthG'
 )
+
+register(
+    id='Playroom2GM-v0',
+    entry_point='envs:Playroom2',
+    wrapper_entry_point='env_wrappers.playroom2GM:Playroom2GM'
+)

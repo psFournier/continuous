@@ -110,7 +110,7 @@ class CriticDQNGM(CriticDQNG):
         L3 = Dense(300, activation="relu",
                    kernel_initializer=lecun_uniform(),
                    kernel_regularizer=l2(0.01))(L2)
-        Q_values = Dense(self.num_actions,
+        Q_values = Dense(self.env.action_dim,
                          activation='linear',
                          kernel_initializer=RandomUniform(minval=-3e-4, maxval=3e-4),
                          kernel_regularizer=l2(0.01),

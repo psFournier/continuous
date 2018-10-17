@@ -141,7 +141,7 @@ class CPBased(Base):
         sumCP = np.sum(CPs)
         Ntasks = len(self.CPs)
         espilon = 0.4
-        interests = [espilon / Ntasks + (1 - espilon) * cp / (sumCP + 0.0001) for cp in self.CPs]
+        interests = [espilon / Ntasks + (1 - espilon) * cp / (sumCP + 0.0001) for cp in CPs]
         return interests
 
     @property
