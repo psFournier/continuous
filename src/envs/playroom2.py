@@ -22,10 +22,11 @@ MAP = [
 
 
 class Moves:
-    UP = 0
-    DOWN = 1
-    LEFT = 2
-    RIGHT = 3
+    NOOP = 0
+    UP = 1
+    DOWN = 2
+    LEFT = 3
+    RIGHT = 4
 
 class Actions:
     NOOP = 0
@@ -213,7 +214,7 @@ class Playroom2(Env):
 
     def underagent(self):
         for obj in self.objects:
-            if obj.x == self.x and obj.y == self.y:
+            if obj.x == self.x and obj.y == self.y and obj.inhand == 0:
                 return obj
         return None
 
@@ -226,6 +227,42 @@ class Playroom2(Env):
     def reset(self):
         self.initialize()
         return np.array(self.state)
+
+    def optimal_action_obj(self, obj):
+        x = obj.x - self.x
+        y = obj.y - self.y
+        if x > 0:
+            m = Moves.UP
+        elif x < 0:
+            m = Moves.DOWN
+        elif y > 0:
+            m = Moves.RIGHT
+        elif y < 0:
+            m = Moves.LEFT
+        else:
+            m = Moves.NOOP
+        if ((abs(x) <= 1 and y == 0) != (abs(y) <= 1 and x == 0)) or (x == 0 and y == 0):
+            if isinstance(obj, Key):
+                act = Actions.TAKE
+            else:
+                act = Actions.TOUCH
+        else:
+            act = Actions.NOOP
+        a = m * 4 + act
+        return a
+
+    def optimal_action(self):
+        done = False
+        if self.light.s != 1:
+            a = self.optimal_action_obj(self.light)
+        elif self.key1.inhand != 1:
+            a = self.optimal_action_obj(self.key1)
+        elif self.chest1.s != 2:
+            a = self.optimal_action_obj(self.chest1)
+        else:
+            a = Moves.NOOP * 4 + Actions.NOOP
+            done = True
+        return a, done
 
     @property
     def high(self):
@@ -252,9 +289,9 @@ if __name__ == '__main__':
     env = Playroom2()
     env.reset()
     i = 0
-    while (env.chest1.s != 5) and i < 100000:
-        a = randint(0, 15)
-        env.step(np.array(a))
+    while (env.chest1.s != 2) and i < 100000:
+        a = env.optimal_action()
+        env.step(a[0])
         i += 1
     print(env.state)
     print(i)
