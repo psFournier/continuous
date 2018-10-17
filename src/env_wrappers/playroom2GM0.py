@@ -47,15 +47,16 @@ class Playroom2GM0(Playroom2GM):
                         tasks.append(task)
 
             if np.random.rand() < 0.02:
-                m = self.task2mask(0)
+                task = 0
+                m = self.task2mask(task)
                 altexp = expe.copy()
                 altexp['g'] = expe['s1']
                 altexp['m'] = m
-                altexp['task'] = 0
+                altexp['task'] = task
                 altexp = self.eval_exp(altexp)
                 augmented_ep.append(altexp)
                 goals.append(expe['s1'])
                 masks.append(m)
-                tasks.append(0)
+                tasks.append(task)
 
         return augmented_ep
