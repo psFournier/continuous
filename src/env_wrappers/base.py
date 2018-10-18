@@ -129,19 +129,32 @@ class CPBased(Base):
             stats['step_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
             stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
             stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.CPs[i]))
-            stats['agentR_{}'.format(goal)] = float("{0:.3f}".format(self.Rs[i]))
-            stats['agentT_{}'.format(goal)] = float("{0:.3f}".format(self.Ts[i]))
+            stats['agentC_{}'.format(goal)] = float("{0:.3f}".format(self.Cs[i]))
+            # stats['agentT_{}'.format(goal)] = float("{0:.3f}".format(self.Ts[i]))
         return stats
+
+    # @property
+    # def interests(self):
+    #     minCP = min(self.CPs)
+    #     maxCP = max(self.CPs)
+    #     CPs = [math.pow((cp - minCP) / (maxCP - minCP + 0.0001), self.theta) for cp in self.CPs]
+    #     sumCP = np.sum(CPs)
+    #     Ntasks = len(self.CPs)
+    #     espilon = 0.4
+    #     interests = [espilon / Ntasks + (1 - espilon) * cp / (sumCP + 0.0001) for cp in CPs]
+    #     return interests
 
     @property
     def interests(self):
-        minCP = min(self.CPs)
         maxCP = max(self.CPs)
-        CPs = [math.pow((cp - minCP) / (maxCP - minCP + 0.0001), self.theta) for cp in self.CPs]
-        sumCP = np.sum(CPs)
-        Ntasks = len(self.CPs)
-        espilon = 0.4
-        interests = [espilon / Ntasks + (1 - espilon) * cp / (sumCP + 0.0001) for cp in CPs]
+        minCP = min(self.CPs)
+        wCP = maxCP - minCP
+        maxC = max(self.Cs)
+        minC = min(self.Cs)
+        wC = maxC - minC
+        interests = [(cp-minCP)/wCP + (maxC - c)/(wC*wCP) for c, cp in zip(self.Cs, self.CPs)]
+        sum = np.sum([np.exp(i * self.theta) for i in interests])
+        interests = [np.exp(i * self.theta) / sum for i in interests]
         return interests
 
     @property
@@ -149,10 +162,8 @@ class CPBased(Base):
         return [abs(q.CP[-1]) if q.CP else 0 for q in self.queues]
 
     @property
-    def Rs(self):
-        return [q.MCR[-1] for q in self.queues]
-
-    @property
-    def Ts(self):
+    def Cs(self):
+        # return [q.MCR[-1] for q in self.queues]
         return [q.T[-1] for q in self.queues]
+
 

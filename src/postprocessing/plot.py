@@ -88,7 +88,7 @@ if 1:
 
     df2 = df
     # df2 = df2[(df2['--agent'] == 'ddpgg')]
-    # df2 = df2[(df2['--env'] == 'ReacherDS-v0')]
+    df2 = df2[(df2['--env'] == 'Playroom2GM0-v0')]
     # df2 = df2[(df2['--imit'] == 2)]
     # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
     # df2 = df2[(df2['--wimit'] == 0)]
@@ -97,11 +97,13 @@ if 1:
     # # df2 = df2[(df2['--clipping'] == 1)]
     # # df2 = df2[(df2['--explo'] == 1)]
     # df2 = df2[(df2['--her'] == 1)]
-    # df2 = df2[(df2['--theta'] == 1)]
+    df2 = df2[(df2['--theta'] == 1)]
     # y = ['R']
-    y = ['agentR']
+    # y = ['agentR']
     # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
-    y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
+    # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
+    y = ['I'+s for s in ['_pos', '_light','_key1', '_chest1']]
+
     # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
     #    'R_light2', 'R_light3', 'R_light4', 'R_xy']
 
@@ -130,20 +132,23 @@ if 1:
     def quant_sup(x):
         return x.quantile(0.8)
     op_dict = {a:[np.median, np.mean, quant_inf, quant_sup] for a in y}
-    df2 = df2.groupby(x + params).agg(op_dict).reset_index()
+    avg = 0
+    if avg:
+        df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
     print(paramsStudied)
-    a, b = 3,3
+    a, b = 2,2
     fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
     colors = ['b', 'r']
     p = 'num_run'
-    p= paramsStudied
+    if avg:
+        p= paramsStudied
     for j, (name, g) in enumerate(df2.groupby(p)):
-
-        if isinstance(name, tuple):
-            label = ','.join(['{}:{}'.format(paramsStudied[k][2:], name[k]) for k in range(len(paramsStudied))])
-        else:
-            label = '{}:{}'.format(paramsStudied[0][2:], name)
+        if avg:
+            if isinstance(name, tuple):
+                label = ','.join(['{}:{}'.format(paramsStudied[k][2:], name[k]) for k in range(len(paramsStudied))])
+            else:
+                label = '{}:{}'.format(paramsStudied[0][2:], name)
         # ax2[0,0].plot(g['step'], g.iloc[:, g.columns.get_level_values(1) == 'mean'].mean(axis=1), label=label)
         # ax2[0,0].legend()
         for i, valy in enumerate(y):
@@ -151,8 +156,10 @@ if 1:
 
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
             # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
-            ax2[i % a, i // a].plot(g['step'], g[valy]['median'], label=label)
-            # ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
+            if avg:
+                ax2[i % a, i // a].plot(g['step'], g[valy]['median'], label=label)
+            else:
+                ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
             # ax2[i % a, i // a].scatter(g[x[i]], g[valy], s=1, c=['red', 'blue', 'green'][j])
             # ax2[i % a, i // a].plot(g['step'], abs(g[valy].rolling(window=20).mean().diff(10)))
             # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
