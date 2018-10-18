@@ -86,4 +86,4 @@ class Playroom2GM(CPBased):
 
     @property
     def action_dim(self):
-        return 16
+        return 6
