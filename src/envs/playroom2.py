@@ -21,18 +21,26 @@ MAP = [
 ]
 
 
-class Moves:
+# class Moves:
+#     NOOP = 0
+#     UP = 1
+#     DOWN = 2
+#     LEFT = 3
+#     RIGHT = 4
+#
+# class Actions:
+#     NOOP = 0
+#     TOUCH = 1
+#     TAKE = 2
+#     DROP = 3
+
+class Actions:
     NOOP = 0
     UP = 1
     DOWN = 2
     LEFT = 3
     RIGHT = 4
-
-class Actions:
-    NOOP = 0
-    TOUCH = 1
-    TAKE = 2
-    DROP = 3
+    TOUCH = 5
 
 # class Moves:
 #     UP = 0
@@ -61,7 +69,7 @@ class Obj():
     def __init__(self, env, pos, name, prop, dep=None):
         self.x, self.y = pos
         self.s = 0
-        self.inhand = 0
+        # self.inhand = 0
         self.env = env
         self.name = name
         self.prop = prop
@@ -73,15 +81,18 @@ class Obj():
 
     @property
     def state(self):
-        return [self.x, self.y, self.s, self.inhand]
+        return [self.x, self.y, self.s]
+        # return [self.x, self.y, self.s, self.inhand]
 
     @property
     def high(self):
-        return [self.env.maxR, self.env.maxC, 1, 1]
+        return [self.env.maxR, self.env.maxC, 1]
+        # return [self.env.maxR, self.env.maxC, 1, 1]
 
     @property
     def low(self):
-        return [0, 0, 0, 0]
+        return [0, 0, 0]
+        # return [0, 0, 0, 0]
 
 class Light(Obj):
     def __init__(self, env, pos, name, prop):
@@ -91,37 +102,39 @@ class Light(Obj):
         if a == Actions.TOUCH and self.s == 0:
             self.s = np.random.choice([0, 1], p=self.prop)
 
-    @property
-    def state(self):
-        return [self.x, self.y, self.s]
-
-    @property
-    def high(self):
-        return [self.env.maxR, self.env.maxC, 1]
-
-    @property
-    def low(self):
-        return [0, 0, 0]
+    # @property
+    # def state(self):
+    #     return [self.x, self.y, self.s]
+    #
+    # @property
+    # def high(self):
+    #     return [self.env.maxR, self.env.maxC, 1]
+    #
+    # @property
+    # def low(self):
+    #     return [0, 0, 0]
 
 class Key(Obj):
     def __init__(self, env, pos, name, prop, dep):
         super(Key, self).__init__(env, pos, name, prop, dep)
 
     def act(self, a):
-        if self.env.light.s == 1 and a == Actions.TAKE:
-            self.inhand = np.random.choice([0, 1], p=self.prop)
+        # if self.env.light.s == 1 and a == Actions.TAKE:
+        #     self.inhand = np.random.choice([0, 1], p=self.prop)
+        if self.env.light.s == 1 and a == Actions.TOUCH and self.s == 0:
+            self.s = np.random.choice([0, 1], p=self.prop)
 
-    @property
-    def state(self):
-        return [self.x, self.y, self.inhand]
-
-    @property
-    def high(self):
-        return [self.env.maxR, self.env.maxC, 1]
-
-    @property
-    def low(self):
-        return [0, 0, 0]
+    # @property
+    # def state(self):
+    #     return [self.x, self.y, self.inhand]
+    #
+    # @property
+    # def high(self):
+    #     return [self.env.maxR, self.env.maxC, 1]
+    #
+    # @property
+    # def low(self):
+    #     return [0, 0, 0]
 
 class Chest(Obj):
     def __init__(self, env, pos, name, prop, dep):
@@ -130,25 +143,26 @@ class Chest(Obj):
     def act(self, a):
         if a == Actions.TOUCH and self.s < len(self.dep):
             obj = self.dep[self.s]
-            if (isinstance(obj, Light) and obj.s == 1) or (isinstance(obj, Key) and obj.inhand == 1):
+            if obj.s == 1:
+            # if (isinstance(obj, Light) and obj.s == 1) or (isinstance(obj, Key) and obj.inhand == 1):
                 new_s = np.random.choice([self.s, self.s + 1], p=self.prop)
                 if new_s != self.s:
-                    # obj.inhand = 0
+                    # obj.s = 0
                     self.s = new_s
         # if self.env.light.s == 1 and a == Actions.TAKE:
         #     self.inhand = np.random.choice([0, 1], p=self.prop)
 
-    @property
-    def state(self):
-        return [self.x, self.y, self.s]
+    # @property
+    # def state(self):
+    #     return [self.x, self.y, self.s]
 
     @property
     def high(self):
         return [self.env.maxR, self.env.maxC, len(self.dep)]
 
-    @property
-    def low(self):
-        return [0, 0, 0]
+    # @property
+    # def low(self):
+    #     return [0, 0, 0]
 
 
 class Playroom2(Env):
@@ -180,49 +194,47 @@ class Playroom2(Env):
         self.lastaction = None
 
     def act(self, a):
-        objinhand = self.inhand()
+        # objinhand = self.inhand()
         objunder = self.underagent()
 
-        if objinhand is not None:
-            objinhand.x = self.x
-            objinhand.y = self.y
+        # if objinhand is not None:
+        #     objinhand.x = self.x
+        #     objinhand.y = self.y
 
-        if objinhand is not None and objunder is None and a == Actions.DROP:
-            objinhand.inhand = 0
-
-        if objinhand is None and objunder is not None and a == Actions.TAKE:
-            objunder.act(a)
+        # if objinhand is not None and objunder is None and a == Actions.DROP:
+        #     objinhand.inhand = 0
+        #
+        # if objinhand is None and objunder is not None and a == Actions.TAKE:
+        #     objunder.act(a)
 
         if objunder is not None and a == Actions.TOUCH:
             objunder.act(a)
 
     def step(self, a):
-        m = a // 4
-        act = a % 4
-        if m == Moves.UP and self.desc[1 + self.x, 1 + 2 * self.y] == b" ":
+        if a == Actions.UP and self.desc[1 + self.x, 1 + 2 * self.y] == b" ":
             self.x += 1
-        elif m == Moves.DOWN and self.desc[self.x, 1 + 2 * self.y] == b" ":
+        elif a == Actions.DOWN and self.desc[self.x, 1 + 2 * self.y] == b" ":
             self.x -= 1
-        elif m == Moves.LEFT and self.desc[1 + self.x, 2 * self.y] == b" ":
+        elif a == Actions.LEFT and self.desc[1 + self.x, 2 * self.y] == b" ":
             self.y -= 1
-        elif m == Moves.RIGHT and self.desc[1 + self.x, 2 * self.y + 2] == b" ":
+        elif a == Actions.RIGHT and self.desc[1 + self.x, 2 * self.y + 2] == b" ":
             self.y += 1
-        self.act(act)
+        self.act(a)
         self.lastaction = a
 
         return np.array(self.state),
 
     def underagent(self):
         for obj in self.objects:
-            if obj.x == self.x and obj.y == self.y and obj.inhand == 0:
+            if obj.x == self.x and obj.y == self.y:
                 return obj
         return None
 
-    def inhand(self):
-        for obj in self.objects:
-            if obj.inhand == 1:
-                return obj
-        return None
+    # def inhand(self):
+    #     for obj in self.objects:
+    #         if obj.inhand == 1:
+    #             return obj
+    #     return None
 
     def reset(self):
         self.initialize()
@@ -232,35 +244,35 @@ class Playroom2(Env):
         x = obj.x - self.x
         y = obj.y - self.y
         if x > 0:
-            m = Moves.UP
+            a = Actions.UP
         elif x < 0:
-            m = Moves.DOWN
+            a = Actions.DOWN
         elif y > 0:
-            m = Moves.RIGHT
+            a = Actions.RIGHT
         elif y < 0:
-            m = Moves.LEFT
+            a = Actions.LEFT
         else:
-            m = Moves.NOOP
-        if ((abs(x) <= 1 and y == 0) != (abs(y) <= 1 and x == 0)) or (x == 0 and y == 0):
-            if isinstance(obj, Key):
-                act = Actions.TAKE
-            else:
-                act = Actions.TOUCH
-        else:
-            act = Actions.NOOP
-        a = m * 4 + act
+            a = Actions.TOUCH
+        # if ((abs(x) <= 1 and y == 0) != (abs(y) <= 1 and x == 0)) or (x == 0 and y == 0):
+        #     if isinstance(obj, Key):
+        #         act = Actions.TAKE
+        #     else:
+        #         act = Actions.TOUCH
+        # else:
+        #     act = Actions.NOOP
+        # a = m * 4 + act
         return a
 
     def optimal_action(self):
         done = False
         if self.light.s != 1:
             a = self.optimal_action_obj(self.light)
-        elif self.key1.inhand != 1:
+        elif self.key1.s != 1:
             a = self.optimal_action_obj(self.key1)
         elif self.chest1.s != 2:
             a = self.optimal_action_obj(self.chest1)
         else:
-            a = Moves.NOOP * 4 + Actions.NOOP
+            a = Actions.NOOP
             done = True
         return a, done
 
