@@ -3,7 +3,8 @@ from .base import CPBased
 
 class PlayroomGM(CPBased):
     def __init__(self, env, args):
-        super(PlayroomGM, self).__init__(env, args, [obj.name for obj in env.objects])
+        goal_names = [obj.name for obj in env.objects]
+        super(PlayroomGM, self).__init__(env, args, goal_names)
         self.mask = None
         self.init()
         self.obj_feat = [[i] for i in range(2, 11)]

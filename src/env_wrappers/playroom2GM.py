@@ -9,7 +9,7 @@ class Playroom2GM(CPBased):
         self.obj_feat = [[0,1], [4], [7], [10]]
         self.state_low = self.env.low
         self.state_high = self.env.high
-        self.initstate = np.array(self.env.initstate)
+        self.init_state = np.array(self.env.initstate)
         self.r_done = 0
         self.r_notdone = -1
         self.terminal = True
@@ -46,8 +46,8 @@ class Playroom2GM(CPBased):
 
     def sample_goal(self, task):
         features = self.obj_feat[task]
-        goal = self.initstate.copy()
-        while not (goal != self.initstate).any():
+        goal = self.init_state.copy()
+        while not (goal != self.init_state).any():
             for f in features:
                 goal[f] = np.random.randint(self.state_low[f], self.state_high[f] + 1)
         return goal
@@ -63,6 +63,9 @@ class Playroom2GM(CPBased):
         res = np.zeros(shape=self.state_dim)
         res[self.obj_feat[idx]] = 1
         return res
+
+    def mask2task(self, mask):
+        return list(np.where(mask)[0])
 
     def augment_episode(self, episode):
         return episode

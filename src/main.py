@@ -24,7 +24,7 @@ Options:
   --inv_grad YES_NO        Gradient inversion near action limits [default: 1]
   --opt_init YES_NO        Positive initialisation [default: 0]
   --max_steps VAL          Maximum total steps [default: 500000]
-  --ep_steps VAL           Maximum episode steps [default: 200]
+  --ep_steps VAL           Maximum episode steps [default: 400]
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
   --eval_freq VAL          Logging frequency [default: 2000]
   --demo_freq VAL          Logging frequency [default: 2000]
