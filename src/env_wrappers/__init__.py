@@ -249,3 +249,9 @@ register(
     entry_point='envs:Playroom2',
     wrapper_entry_point='env_wrappers.playroom2GM1:Playroom2GM1'
 )
+
+register(
+    id='Playroom3GM-v0',
+    entry_point='envs:Playroom2',
+    wrapper_entry_point='env_wrappers.playroom3GM:Playroom3GM'
+)

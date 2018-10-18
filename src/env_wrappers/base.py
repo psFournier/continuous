@@ -84,15 +84,18 @@ class RndBased(Base):
 class CPBased(Base):
     def __init__(self, env, args, goals):
         self.goals = goals
-        super(CPBased, self).__init__(env, args)
+        self.interests = [0] * len(self.goals)
         self.theta = float(args['--theta'])
         self.goal = None
         self.idx = None
+        super(CPBased, self).__init__(env, args)
+
 
     def init(self):
         self.queues = [CompetenceQueue() for _ in self.goals]
         self.steps = [0 for _ in self.goals]
         self.replays = [0 for _ in self.goals]
+        self.update_interests()
 
     def step(self, exp):
         self.steps[self.idx] += 1
@@ -102,14 +105,9 @@ class CPBased(Base):
         return exp
 
     def sample_task(self):
-        sum = np.sum(self.interests)
-        mass = np.random.random() * sum
-        idx = 0
-        s = self.interests[0]
-        while mass > s:
-            idx += 1
-            s += self.interests[idx]
-        return idx
+        self.update_interests()
+        task = np.random.choice(len(self.goals), p=self.interests)
+        return task
 
     def end_episode(self, trajectory):
         R = 0
@@ -144,18 +142,17 @@ class CPBased(Base):
     #     interests = [espilon / Ntasks + (1 - espilon) * cp / (sumCP + 0.0001) for cp in CPs]
     #     return interests
 
-    @property
-    def interests(self):
+    def update_interests(self):
+        eps = 0.0001
         maxCP = max(self.CPs)
         minCP = min(self.CPs)
-        wCP = maxCP - minCP
+        wCP = maxCP - minCP + eps
         maxC = max(self.Cs)
         minC = min(self.Cs)
-        wC = maxC - minC
-        interests = [(cp-minCP)/wCP + (maxC - c)/(wC*wCP) for c, cp in zip(self.Cs, self.CPs)]
+        wC = maxC - minC + eps
+        interests = [(cp - minCP) / wCP + (maxC - c) / (wC * wCP) for c, cp in zip(self.Cs, self.CPs)]
         sum = np.sum([np.exp(i * self.theta) for i in interests])
-        interests = [np.exp(i * self.theta) / sum for i in interests]
-        return interests
+        self.interests = [np.exp(i * self.theta) / sum for i in interests]
 
     @property
     def CPs(self):

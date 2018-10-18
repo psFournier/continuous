@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQN, DQNG, TD3, DDPG, DQNGM, Qoff, DDPGG
+from agents import DQN, DQNG, TD3, DDPG, DQNGM, Qoff, DDPGG, DQNGM3
 from utils.logger import Logger
 import datetime
 from utils.util import load
@@ -75,6 +75,8 @@ if __name__ == '__main__':
         agent = DQNG(args, env, env_test, logger)
     elif args['--agent'] == 'dqngm':
         agent = DQNGM(args, env, env_test, logger)
+    elif args['--agent'] == 'dqngm3':
+        agent = DQNGM3(args, env, env_test, logger)
     elif args['--agent'] == 'ddpg':
         agent = DDPG(args, env, env_test, logger)
     elif args['--agent'] == 'ddpgg':
