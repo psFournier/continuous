@@ -40,7 +40,7 @@ class Agent():
                     # self.env.unwrapped.viewer._record_video = True
                     # self.env.unwrapped.viewer._video_path = os.path.join(self.logger.get_dir(), "video_%07d.mp4")
                     # self.env.unwrapped.viewer._run_speed = 0.125
-                self.exp['a'] = self.act(self.exp['s0'])
+                self.exp = self.act(self.exp)
                 self.exp = self.env.step(self.exp)
                 self.trajectory.append(self.exp.copy())
                 self.train()

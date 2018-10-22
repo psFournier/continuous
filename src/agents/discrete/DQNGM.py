@@ -48,6 +48,7 @@ class DQNGM(DQNG):
                 self.metrics['val2'] += np.mean(metrics[1])
                 self.metrics['qval2'] += np.mean(metrics[2])
                 self.metrics['loss_imit'] += np.squeeze(metrics[3])
+                self.metrics['good_exp'] += np.squeeze(metrics[5])
 
             self.critic.target_train()
 
@@ -63,6 +64,19 @@ class DQNGM(DQNG):
         else:
             input = [np.expand_dims(i, axis=0) for i in [state, self.env_test.goal, self.env_test.mask]]
         return input
+
+    def act(self, exp, mode='train'):
+        input = self.make_input(exp['s0'], mode)
+        actionProbs = self.critic.actionProbs(input)[0].squeeze()
+        if mode=='train':
+            action = np.random.choice(range(self.env.action_dim), p=actionProbs)
+        else:
+            action = np.argmax(actionProbs[0])
+        prob = actionProbs[action]
+        action = np.expand_dims(action, axis=1)
+        exp['a'] = action
+        # exp['p_a'] = prob
+        return exp
 
     def reset(self):
 
@@ -86,6 +100,8 @@ class DQNGM(DQNG):
         demo = []
         exp = {}
         exp['s0'] = self.env_test.env.reset()
+        # obj = None
+        # goal = np.random.randint(8, size=2)
         obj = self.env_test.env.chest1
         goal = 2
         while True:

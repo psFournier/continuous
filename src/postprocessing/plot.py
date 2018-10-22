@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-DIR = '../../log/cluster/last'
+DIR = '../../log/cluster/2210'
 ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
@@ -92,13 +92,13 @@ if 1:
     # df2 = df2[(df2['--env'] == 'Playroom2GM0-v0')]
     # df2 = df2[(df2['--imit'] == 2)]
     # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
-    df2 = df2[(df2['--wimit'] == 1)]
+    df2 = df2[(df2['--wimit'] == 0)]
     # df2 = df2[(df2['--opt_init'] == -20)]
     # # df2 = df2[(df2['--network'] == 2)]
     # # df2 = df2[(df2['--clipping'] == 1)]
     # # df2 = df2[(df2['--explo'] == 1)]
-    df2 = df2[(df2['--margin'] == 0.5)]
-    df2 = df2[(df2['--theta'] == 1)]
+    # df2 = df2[(df2['--margin'] == 0.5)]
+    df2 = df2[(df2['--theta'] == 0)]
     # y = ['R']
     # y = ['agentR']
     # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
@@ -140,7 +140,7 @@ if 1:
 
     print(paramsStudied)
     a, b = 2,2
-    fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
+    fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
     colors = ['b', 'r']
     p = 'num_run'
     if avg:

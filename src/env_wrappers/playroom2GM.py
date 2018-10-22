@@ -10,8 +10,8 @@ class Playroom2GM(CPBased):
         self.state_low = self.env.low
         self.state_high = self.env.high
         self.init_state = np.array(self.env.initstate)
-        self.r_done = 50
-        self.r_notdone = -0.5
+        self.r_done = 0
+        self.r_notdone = -1
         self.terminal = True
         self.minQ = self.r_notdone / (1 - self.gamma)
         self.maxQ = self.r_done if self.terminal else self.r_done / (1 - self.gamma)

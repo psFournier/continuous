@@ -18,6 +18,7 @@ class CriticDQNGM(CriticDQNG):
         w = float(self.args['--wimit'])
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
+        PA = Input(shape=(1,))
         G = Input(shape=self.g_dim)
         M = Input(shape=self.g_dim)
         TARGETS = Input(shape=(1,))
@@ -31,12 +32,15 @@ class CriticDQNGM(CriticDQNG):
 
         actionFilter = K.squeeze(K.one_hot(A, self.num_actions), axis=1)
         qval = K.sum(actionFilter * qvals, axis=1, keepdims=True)
+        actionProb = K.sum(actionFilter * actionProbs, axis=1, keepdims=True)
         self.qval = K.function(inputs=[S, G, M, A], outputs=[qval], updates=None)
 
         val = K.max(qvals, axis=1, keepdims=True)
         self.val = K.function(inputs=[S, G, M], outputs=[val], updates=None)
 
-        loss_dqn = K.mean(K.square(qval - TARGETS), axis=0)
+        # weights = PA / actionProb
+        losses = K.square(qval - TARGETS)
+        loss_dqn = K.mean(losses, axis=0)
         inputs = [S, A, G, M, TARGETS]
         outputs = [loss_dqn, val, qval]
 
@@ -50,6 +54,8 @@ class CriticDQNGM(CriticDQNG):
             onehotMargin = K.repeat_elements(margin * qvalWidth, self.num_actions, axis=1) * onehot
             imit = (K.max(qvals + onehotMargin, axis=1, keepdims=True) - qval)
 
+            # imit = -K.log(actionProb)
+
             MCR = Input(shape=(1,), dtype='float32')
             # adv = K.maximum(E - val, 0)
             advClip = K.cast(K.greater(MCR, val), dtype='float32')
@@ -59,7 +65,7 @@ class CriticDQNGM(CriticDQNG):
             loss_imit = K.mean(imit, axis=0)
             loss = loss_dqn + w * loss_imit
             inputs += [MCR]
-            outputs += [loss_imit, qvalWidth, imit, good_exp]
+            outputs += [loss_imit, imit, good_exp]
             # inputs.append(E)
             # outputs += [loss_imit, good_exp, adv]
 
