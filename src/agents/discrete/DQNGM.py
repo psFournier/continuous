@@ -12,7 +12,7 @@ class DQNGM(DQNG):
         super(DQNGM, self).__init__(args, env, env_test, logger)
 
     def init(self, args ,env):
-        names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'task']
+        names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'task', 'mcr']
         metrics = ['loss_dqn', 'qval', 'val']
         self.buffer = ReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
         if self.args['--wimit'] != '0':
@@ -42,7 +42,7 @@ class DQNGM(DQNG):
                 samples = self.bufferImit.sample(self.imitBatchsize)
                 samples = self.env.augment_tutor_samples(samples)
                 targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
-                inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets]
+                inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets, samples['mcr']]
                 metrics = self.critic.train_imit(inputs)
                 self.metrics['loss_dqn2'] += np.squeeze(metrics[0])
                 self.metrics['val2'] += np.mean(metrics[1])
@@ -67,13 +67,14 @@ class DQNGM(DQNG):
     def reset(self):
 
         if self.trajectory:
-            self.env.end_episode(self.trajectory)
-            for expe in self.trajectory:
-                self.buffer.append(expe.copy())
-            if self.args['--her'] != '0':
-                augmented_ep = self.env.augment_episode(self.trajectory)
-                for e in augmented_ep:
-                    self.buffer.append(e)
+            augmented_episode = self.env.end_episode(self.trajectory)
+            for expe in augmented_episode:
+                self.buffer.append(expe)
+            # for expe in self.trajectory:
+            #     self.buffer.append(expe.copy())
+            # augmented_ep = self.env.augment_episode(self.trajectory)
+            # for e in augmented_ep:
+            #     self.buffer.append(e)
             self.trajectory.clear()
 
         state = self.env.reset()
@@ -85,17 +86,21 @@ class DQNGM(DQNG):
         demo = []
         exp = {}
         exp['s0'] = self.env_test.env.reset()
-        done = False
-        while not done:
+        obj = self.env_test.env.chest1
+        goal = 2
+        while True:
             if np.random.rand() < rndprop:
                 a = np.random.randint(self.env_test.action_dim)
                 done = False
             else:
-                a, done = self.env_test.env.optimal_action()
-            exp['a'] = np.expand_dims(a, axis=1)
-            exp['s1'] = self.env_test.env.step(exp['a'])[0]
-            demo.append(exp.copy())
-            exp['s0'] = exp['s1']
+                a, done = self.env_test.env.opt_action(obj, goal)
+            if not done:
+                exp['a'] = np.expand_dims(a, axis=1)
+                exp['s1'] = self.env_test.env.step(exp['a'])[0]
+                demo.append(exp.copy())
+                exp['s0'] = exp['s1']
+            else:
+                break
         return demo
 
     def demo(self):

@@ -11,6 +11,7 @@ class Playroom2GM0(Playroom2GM):
         masks = []
         augmented_demo = []
         tasks = []
+        mcrs = []
 
         for i, expe in enumerate(reversed(demo)):
 
@@ -23,6 +24,9 @@ class Playroom2GM0(Playroom2GM):
                 altexp['m'] = m
                 altexp['task'] = t
                 altexp = self.eval_exp(altexp)
+                mcrs[j] = mcrs[j] * self.gamma + altexp['r']
+                altexp['mcr'] = np.expand_dims(mcrs[j], axis=1)
+
                 augmented_demo.append(altexp.copy())
 
             for task, _ in enumerate(self.goals):
@@ -41,9 +45,11 @@ class Playroom2GM0(Playroom2GM):
                         altexp['m'] = m
                         altexp['task'] = task
                         altexp = self.eval_exp(altexp)
+                        altexp['mcr'] = np.expand_dims(altexp['r'], axis=1)
                         augmented_demo.append(altexp)
                         goals.append(expe['s1'])
                         masks.append(m)
                         tasks.append(task)
+                        mcrs.append(altexp['r'])
 
         return augmented_demo

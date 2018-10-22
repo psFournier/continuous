@@ -221,7 +221,6 @@ class Playroom2(Env):
             self.y += 1
         self.act(a)
         self.lastaction = a
-
         return np.array(self.state),
 
     def underagent(self):
@@ -240,41 +239,45 @@ class Playroom2(Env):
         self.initialize()
         return np.array(self.state)
 
-    def optimal_action_obj(self, obj):
-        x = obj.x - self.x
-        y = obj.y - self.y
-        if x > 0:
+    def go(self, x , y):
+        dx = x - self.x
+        dy = y - self.y
+        if dx > 0:
             a = Actions.UP
-        elif x < 0:
+        elif dx < 0:
             a = Actions.DOWN
-        elif y > 0:
+        elif dy > 0:
             a = Actions.RIGHT
-        elif y < 0:
+        elif dy < 0:
             a = Actions.LEFT
         else:
-            a = Actions.TOUCH
-        # if ((abs(x) <= 1 and y == 0) != (abs(y) <= 1 and x == 0)) or (x == 0 and y == 0):
-        #     if isinstance(obj, Key):
-        #         act = Actions.TAKE
-        #     else:
-        #         act = Actions.TOUCH
-        # else:
-        #     act = Actions.NOOP
-        # a = m * 4 + act
+            a = None
         return a
 
-    def optimal_action(self):
-        done = False
-        if self.light.s != 1:
-            a = self.optimal_action_obj(self.light)
-        elif self.key1.s != 1:
-            a = self.optimal_action_obj(self.key1)
-        elif self.chest1.s != 2:
-            a = self.optimal_action_obj(self.chest1)
+    def opt_action(self, obj, goal):
+        if obj is None:
+            a = self.go(goal[0], goal[1])
+            if a is not None:
+                return a, False
+            else:
+                return Actions.NOOP, True
         else:
-            a = Actions.NOOP
-            done = True
-        return a, done
+            if obj.dep:
+                for i, o in enumerate(obj.dep[:goal]):
+                    if o.s < 1:
+                        a = self.go(o.x, o.y)
+                        if a is None:
+                            return Actions.TOUCH, False
+                        else:
+                            return a, False
+            if obj.s < goal:
+                a = self.go(obj.x, obj.y)
+                if a is None:
+                    return Actions.TOUCH, False
+                else:
+                    return a, False
+            else:
+                return Actions.NOOP, True
 
     @property
     def high(self):
@@ -300,13 +303,13 @@ class Playroom2(Env):
 if __name__ == '__main__':
     env = Playroom2()
     env.reset()
-    i = 0
-    while (env.chest1.s != 2) and i < 100000:
-        a = env.optimal_action()
-        env.step(a[0])
-        i += 1
-    print(env.state)
-    print(i)
+    while True:
+        a, done = env.opt_action(env.chest1, 2)
+        if not done:
+            env.step(a)
+        else:
+            break
+        print(a, env.state)
 
 
     # def render(self, mode='human'):

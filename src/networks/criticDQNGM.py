@@ -46,20 +46,20 @@ class CriticDQNGM(CriticDQNG):
         if w != 0:
             margin = float(self.args['--margin'])
             qvalWidth = K.max(qvals, axis=1, keepdims=True) - K.min(qvals, axis=1, keepdims=True)
-            qvalWidth = K.repeat_elements(margin * qvalWidth, self.num_actions, axis=1)
             onehot = 1 - K.squeeze(K.one_hot(A, self.num_actions), axis=1)
-            onehotMargin = qvalWidth * onehot
+            onehotMargin = K.repeat_elements(margin * qvalWidth, self.num_actions, axis=1) * onehot
             imit = (K.max(qvals + onehotMargin, axis=1, keepdims=True) - qval)
 
-            # E = Input(shape=(1,), dtype='float32')
+            MCR = Input(shape=(1,), dtype='float32')
             # adv = K.maximum(E - val, 0)
-            # advClip = K.cast(K.greater(E, val), dtype='float32')
-            # good_exp = K.sum(advClip)
-            # imit *= adv
+            advClip = K.cast(K.greater(MCR, val), dtype='float32')
+            good_exp = K.sum(advClip)
+            imit *= advClip
 
             loss_imit = K.mean(imit, axis=0)
             loss = loss_dqn + w * loss_imit
-            outputs += [loss_imit]
+            inputs += [MCR]
+            outputs += [loss_imit, qvalWidth, imit, good_exp]
             # inputs.append(E)
             # outputs += [loss_imit, good_exp, adv]
 

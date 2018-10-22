@@ -45,7 +45,8 @@ params = ['--agent',
           '--opt_init',
           '--shaping',
           '--theta',
-          '--inv_grad']
+          '--inv_grad',
+          '--margin']
 
 if 0:
     df1 = df
@@ -88,26 +89,27 @@ if 1:
 
     df2 = df
     # df2 = df2[(df2['--agent'] == 'ddpgg')]
-    df2 = df2[(df2['--env'] == 'Playroom2GM0-v0')]
+    # df2 = df2[(df2['--env'] == 'Playroom2GM0-v0')]
     # df2 = df2[(df2['--imit'] == 2)]
     # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
-    # df2 = df2[(df2['--wimit'] == 0)]
+    df2 = df2[(df2['--wimit'] == 1)]
     # df2 = df2[(df2['--opt_init'] == -20)]
     # # df2 = df2[(df2['--network'] == 2)]
     # # df2 = df2[(df2['--clipping'] == 1)]
     # # df2 = df2[(df2['--explo'] == 1)]
-    # df2 = df2[(df2['--her'] == 1)]
+    df2 = df2[(df2['--margin'] == 0.5)]
     df2 = df2[(df2['--theta'] == 1)]
     # y = ['R']
     # y = ['agentR']
     # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
     # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
-    y = ['I'+s for s in ['_pos', '_light','_key1', '_chest1']]
+    y = ['agentC'+s for s in ['_pos', '_light','_key1', '_chest1']]
 
     # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
     #    'R_light2', 'R_light3', 'R_light4', 'R_xy']
 
-    # y = ['loss_dqn', 'loss_imit', 'qval', 'val', 'good_exp', 'loss_dqn2', 'qval2', 'val2']
+    # y = ['loss_dqn', 'loss_imit', 'qval', 'val']
+    # y = ['good_exp', 'loss_dqn2', 'qval2', 'val2']
     # y = ['loss_imit']
     # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
     # y = ['R' + i for i in ['_agent', '_light', '_key1', '_chest1', '_chest2', '_chest3']]

@@ -95,7 +95,6 @@ class CPBased(Base):
         self.queues = [CompetenceQueue() for _ in self.goals]
         self.steps = [0 for _ in self.goals]
         self.replays = [0 for _ in self.goals]
-        self.buffer = GoalBuffer()
         self.update_interests()
 
     def step(self, exp):
