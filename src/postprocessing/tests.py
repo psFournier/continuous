@@ -20,18 +20,16 @@ samples4 = np.clip(np.random.normal(sigm(t - 1e5, 4e-5), scale=0.05), 0, 1)
 samples = np.stack([samples1, samples2, samples3, samples4, samples5], axis=1)
 columns = ['1', '2', '3', '4', '5']
 samples = pd.DataFrame(samples, index=t, columns=columns)
-derivated = samples.rolling(window=100).mean().diff(100)
+samples[['d'+i for i in columns]] = samples.rolling(window=100).mean().diff(100)
 
-def sum(row):
-    return np.sum([np.exp(row[col] * 20) for col in columns])
-derivated['sum'] = derivated.apply(sum, axis=1)
-
+samples['widthcp'] = samples[['d'+i for i in columns]].apply(lambda row: np.max(row) - np.min(row), axis=1)
+derivated['sum'] = derivated.apply(lambda row: np.sum([np.exp(row[col] * 2 / row['widthcp']) for col in columns]), axis=1)
 for c in columns:
-    derivated['soft'+c] = derivated.apply(lambda row: np.exp(row[c] * 20) / row['sum'], axis=1)
+    derivated['soft_'+c] = derivated.apply(lambda row: np.exp(row[c] * 2 / row['widthcp']) / row['sum'], axis=1)
 
 fig2, ax2 = plt.subplots(2, 1, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
 for col in columns:
     ax2[0, 0].plot(samples[col])
-    ax2[1, 0].plot(derivated['soft'+col])
+    ax2[1, 0].plot(derivated['soft_'+col])
     ax2[1, 0].set_ylim([0, 1])
 plt.show()

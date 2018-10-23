@@ -1,6 +1,7 @@
 import numpy as np
 from gym import Env
 from random import randint
+from collections import OrderedDict
 
 '''self.light = Light(self, 2, 3)
         self.key1 = Key1(self, 0, 3)
@@ -66,15 +67,18 @@ def gencoordinates(m, n):
             x, y = randint(m, n), randint(m, n)
 
 class Obj():
-    def __init__(self, env, pos, name, prop, dep=None):
-        self.x, self.y = pos
-        self.s = 0
-        # self.inhand = 0
+    def __init__(self, env, name, prop, dep=None):
         self.env = env
         self.name = name
         self.prop = prop
         self.dep = dep
         self.env.objects.append(self)
+        self.init()
+
+    def init(self):
+        self.x, self.y = next(self.env.g)
+        self.s = 0
+
 
     def act(self, a):
         pass
@@ -95,12 +99,16 @@ class Obj():
         # return [0, 0, 0, 0]
 
 class Light(Obj):
-    def __init__(self, env, pos, name, prop):
-        super(Light, self).__init__(env, pos, name, prop)
+    def __init__(self, env, name, prop):
+        super(Light, self).__init__(env, name, prop)
 
     def act(self, a):
         if a == Actions.TOUCH and self.s == 0:
             self.s = np.random.choice([0, 1], p=self.prop)
+
+    def init(self):
+        self.x, self.y = next(self.env.g)
+        self.s = np.random.choice([0, 1], p=[0.9, 0.1])
 
     # @property
     # def state(self):
@@ -115,14 +123,24 @@ class Light(Obj):
     #     return [0, 0, 0]
 
 class Key(Obj):
-    def __init__(self, env, pos, name, prop, dep):
-        super(Key, self).__init__(env, pos, name, prop, dep)
+    def __init__(self, env, name, prop, dep):
+        super(Key, self).__init__(env, name, prop, dep)
 
     def act(self, a):
-        # if self.env.light.s == 1 and a == Actions.TAKE:
-        #     self.inhand = np.random.choice([0, 1], p=self.prop)
-        if self.env.light.s == 1 and a == Actions.TOUCH and self.s == 0:
+        dep_ok = self.s < len(self.dep) and all([o.s == s for o, s in self.dep[:self.s+1]])
+        if dep_ok and a == Actions.TOUCH and self.s == 0:
             self.s = np.random.choice([0, 1], p=self.prop)
+
+    def init(self):
+        self.x, self.y = next(self.env.g)
+        n = 0
+        p = [1]
+        for o, s in self.dep:
+            if o.s == s:
+                n += 1
+                p[0] -= 0.1
+                p.append(0.1)
+        self.s = np.random.choice(range(n+1), p=p)
 
     # @property
     # def state(self):
@@ -137,20 +155,24 @@ class Key(Obj):
     #     return [0, 0, 0]
 
 class Chest(Obj):
-    def __init__(self, env, pos, name, prop, dep):
-        super(Chest, self).__init__(env, pos, name, prop, dep)
+    def __init__(self, env, name, prop, dep):
+        super(Chest, self).__init__(env, name, prop, dep)
 
     def act(self, a):
-        if a == Actions.TOUCH and self.s < len(self.dep):
-            obj = self.dep[self.s]
-            if obj.s == 1:
-            # if (isinstance(obj, Light) and obj.s == 1) or (isinstance(obj, Key) and obj.inhand == 1):
-                new_s = np.random.choice([self.s, self.s + 1], p=self.prop)
-                if new_s != self.s:
-                    # obj.s = 0
-                    self.s = new_s
-        # if self.env.light.s == 1 and a == Actions.TAKE:
-        #     self.inhand = np.random.choice([0, 1], p=self.prop)
+        dep_ok = self.s < len(self.dep) and all([o.s == s for o, s in self.dep[:self.s+1]])
+        if dep_ok and a == Actions.TOUCH:
+            self.s = np.random.choice([self.s, self.s + 1], p=self.prop)
+
+    def init(self):
+        self.x, self.y = next(self.env.g)
+        n = 0
+        p = [1]
+        for o, s in self.dep[:-1]:
+            if o.s == s:
+                n += 1
+                p[0] -= 0.1
+                p.append(0.1)
+        self.s = np.random.choice(range(n+1), p=p)
 
     # @property
     # def state(self):
@@ -179,13 +201,13 @@ class Playroom2(Env):
         self.x, self.y = next(self.g)
         self.objects = []
         prop = [0, 1]
-        self.light = Light(self, next(self.g), 'light', prop)
-        self.key1 = Key(self, next(self.g), 'key1', prop, dep=[self.light])
+        self.light = Light(self, 'light', prop)
+        self.key1 = Key(self, 'key1', prop, dep=[(self.light, 1)])
         # self.key2 = Key(self, next(self.g), 'key2', prop, dep=[self.light])
         # self.key3 = Key(self, next(self.g), 'key3', prop, dep=[self.light])
         # self.key4 = Key(self, next(self.g), 'key4', prop, dep=[self.light])
         # self.chest0 = Chest(self, next(self.g), 'chest0', prop, dep=[self.light])
-        self.chest1 = Chest(self, next(self.g), 'chest1', prop, dep=[self.light, self.key1])
+        self.chest1 = Chest(self, 'chest1', prop, dep=[(self.light, 1), (self.key1, 1)])
         # self.chest2 = Chest(self, next(self.g), 'chest2', prop, dep=[self.light, self.key1, self.key2])
         # self.chest3 = Chest(self, next(self.g), 'chest3', prop, dep=[self.light, self.key1, self.key2, self.key3])
         # self.chest4 = Chest(self, next(self.g), 'chest4', prop,
@@ -262,9 +284,9 @@ class Playroom2(Env):
             else:
                 return Actions.NOOP, True
         else:
-            if obj.dep:
-                for i, o in enumerate(obj.dep[:goal]):
-                    if o.s < 1:
+            if obj.dep is not None:
+                for o, s in obj.dep[:goal]:
+                    if o.s != s:
                         a = self.go(o.x, o.y)
                         if a is None:
                             return Actions.TOUCH, False
@@ -303,6 +325,7 @@ class Playroom2(Env):
 if __name__ == '__main__':
     env = Playroom2()
     env.reset()
+    print(env.state)
     while True:
         a, done = env.opt_action(env.chest1, 2)
         if not done:
