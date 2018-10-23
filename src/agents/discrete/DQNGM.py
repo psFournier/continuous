@@ -100,10 +100,10 @@ class DQNGM(DQNG):
         demo = []
         exp = {}
         exp['s0'] = self.env_test.env.reset()
-        # obj = None
-        # goal = np.random.randint(8, size=2)
-        obj = self.env_test.env.chest1
-        goal = 2
+        obj = np.random.choice(self.env_test.env.objects)
+        goal = np.random.randint(obj.high[2]+1)
+        # obj = self.env_test.env.light
+        # goal = 1
         while True:
             if np.random.rand() < rndprop:
                 a = np.random.randint(self.env_test.action_dim)
@@ -120,9 +120,9 @@ class DQNGM(DQNG):
         return demo
 
     def demo(self):
-        if self.env_step % self.demo_freq == 0 and self.args['--wimit'] != '0':
+        if self.env_step % self.demo_freq == 0:
             for i in range(5):
                 demo = self.get_demo(rndprop=0.)
                 augmented_demo = self.env.augment_demo(demo)
                 for exp in augmented_demo:
-                    self.bufferImit.append(exp)
+                    self.buffer.append(exp)

@@ -10,8 +10,8 @@ class Playroom2GM(CPBased):
         self.state_low = self.env.low
         self.state_high = self.env.high
         self.init_state = np.array(self.env.initstate)
-        self.r_done = 0
-        self.r_notdone = -1
+        self.r_done = 100
+        self.r_notdone = 0
         self.terminal = True
         self.minQ = self.r_notdone / (1 - self.gamma)
         self.maxQ = self.r_done if self.terminal else self.r_done / (1 - self.gamma)
@@ -42,11 +42,11 @@ class Playroom2GM(CPBased):
         T = episode[-1]['t']
         self.queues[self.task].append(T)
 
-        goals = [self.goal]
-        masks = [self.mask]
-        tasks = [self.task]
-        mcrs = [np.array([0])]
-        augmented_ep = self.process_trajectory(trajectory=episode, goals=goals, masks=masks, tasks=tasks, mcrs=mcrs)
+        augmented_ep = self.process_trajectory(trajectory=episode,
+                                               goals=[self.goal],
+                                               masks=[self.mask],
+                                               tasks=[self.task],
+                                               mcrs=[np.array([0])])
 
         return augmented_ep
 
@@ -105,6 +105,10 @@ class Playroom2GM(CPBased):
             self.task = np.random.choice(len(self.goals), p=self.interests)
             features = self.obj_feat[self.task]
         self.mask = self.task2mask(self.task)
+
+        # self.task = 0
+        # features = self.obj_feat[self.task]
+        # self.mask = self.task2mask(self.task)
 
         self.goal = state.copy()
         while not (self.goal != state).any():

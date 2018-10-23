@@ -63,7 +63,7 @@ class CriticDQNGM(CriticDQNG):
             imit *= advClip
 
             loss_imit = K.mean(imit, axis=0)
-            loss = loss_dqn + w * loss_imit
+            loss = loss_dqn + 0 * loss_imit
             inputs += [MCR]
             outputs += [loss_imit, imit, good_exp]
             # inputs.append(E)
