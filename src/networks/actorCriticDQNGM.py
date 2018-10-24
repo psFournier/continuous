@@ -53,9 +53,9 @@ class ActorCriticDQNGM(object):
         qvalTrain = L1(input)
         qvalTrain = L2(qvalTrain)
         qvalTrain = L3(qvalTrain)
-        val = K.sum(qvalTrain * probs)
+        val = K.sum(qvalTrain * probs, axis=1, keepdims=True)
         inputs = [S_a, G_a, M_a]
-        outputs = [val]
+        outputs = [probs, qvalTrain, val]
         self.updatesActor = Adam(lr=0.001).get_updates(params=self.probsModel.trainable_weights, loss=-val)
         self.trainActor = K.function(inputs=inputs, outputs=outputs, updates=self.updatesActor)
 
@@ -79,7 +79,8 @@ class ActorCriticDQNGM(object):
     def get_targets_dqn(self, r, t, s, g, m):
         probs = self.Tprobs([s, g, m])[0]
         qvals = self.Tqvals([s, g, m])[0]
-        q = qvals[np.argmax(probs, axis=1)]
+        a1 = list(np.argmax(probs, axis=1))
+        q = qvals[range(len(a1)), a1]
         targets = self.compute_targets(r, t, q)
         return np.expand_dims(targets, axis=1)
 

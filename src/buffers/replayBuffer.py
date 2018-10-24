@@ -1,12 +1,21 @@
 import numpy as np
-from buffers.ringBuffer import RingBuffer
 
+class RingBuffer(object):
+    def __init__(self):
+        self.data = []
 
-def array_min2d(x):
-    x = np.array(x)
-    if x.ndim >= 2:
-        return x
-    return x.reshape(-1, 1)
+    def __len__(self):
+        return len(self.data)
+
+    def get_batch(self, idxs):
+        return [self.data[idx] for idx in idxs]
+
+    def append(self, v, next_idx):
+
+        if next_idx >= len(self.data):
+            self.data.append(v)
+        else:
+            self.data[next_idx] = v
 
 
 class ReplayBuffer(object):

@@ -10,3 +10,4 @@ from .discrete.DQNGM import DQNGM
 from .discrete.Qoff import Qoff
 from .continuous.DDPGG import DDPGG
 from .discrete.DQNGM3 import DQNGM3
+from .discrete.ACDQNGM import ACDQNGM

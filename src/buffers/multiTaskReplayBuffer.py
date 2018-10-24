@@ -28,7 +28,7 @@ class TaskRingBuffer(object):
             res.append(self._storage[idx])
         return res
 
-class TaskReplayBuffer(object):
+class MultiTaskReplayBuffer(object):
     def __init__(self, limit, tasks, names):
         self._storage = []
         self._next_idx = 0
