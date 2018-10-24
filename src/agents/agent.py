@@ -13,7 +13,6 @@ class Agent():
 
         self.env = env
         self.env_test = env_test
-        self.buffer = buffer
         self.logger = logger
         self.log_dir = args['--log_dir']
         self.ep_steps = int(args['--ep_steps'])
@@ -26,7 +25,6 @@ class Agent():
         self.stats = {}
         self.exp = {}
         self.metrics = {}
-        self.imitMetrics = {}
         self.trajectory = []
 
     def run(self):

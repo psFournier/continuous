@@ -106,9 +106,9 @@ class Light(Obj):
         if a == Actions.TOUCH and self.s == 0:
             self.s = np.random.choice([0, 1], p=self.prop)
 
-    # def init(self):
-    #     self.x, self.y = next(self.env.g)
-    #     self.s = np.random.choice([0, 1], p=[0.9, 0.1])
+    def init(self):
+        self.x, self.y = next(self.env.g)
+        self.s = np.random.choice([0, 1], p=[0.9, 0.1])
 
     # @property
     # def state(self):
@@ -131,16 +131,16 @@ class Key(Obj):
         if dep_ok and a == Actions.TOUCH and self.s == 0:
             self.s = np.random.choice([0, 1], p=self.prop)
 
-    # def init(self):
-    #     self.x, self.y = next(self.env.g)
-    #     n = 0
-    #     p = [1]
-    #     for o, s in self.dep:
-    #         if o.s == s:
-    #             n += 1
-    #             p[0] -= 0.1
-    #             p.append(0.1)
-    #     self.s = np.random.choice(range(n+1), p=p)
+    def init(self):
+        self.x, self.y = next(self.env.g)
+        n = 0
+        p = [1]
+        for o, s in self.dep:
+            if o.s == s:
+                n += 1
+                p[0] -= 0.1
+                p.append(0.1)
+        self.s = np.random.choice(range(n+1), p=p)
 
     # @property
     # def state(self):
@@ -163,16 +163,16 @@ class Chest(Obj):
         if dep_ok and a == Actions.TOUCH:
             self.s = np.random.choice([self.s, self.s + 1], p=self.prop)
 
-    # def init(self):
-    #     self.x, self.y = next(self.env.g)
-    #     n = 0
-    #     p = [1]
-    #     for o, s in self.dep[:-1]:
-    #         if o.s == s:
-    #             n += 1
-    #             p[0] -= 0.1
-    #             p.append(0.1)
-    #     self.s = np.random.choice(range(n+1), p=p)
+    def init(self):
+        self.x, self.y = next(self.env.g)
+        n = 0
+        p = [1]
+        for o, s in self.dep[:-1]:
+            if o.s == s:
+                n += 1
+                p[0] -= 0.1
+                p.append(0.1)
+        self.s = np.random.choice(range(n+1), p=p)
 
     # @property
     # def state(self):

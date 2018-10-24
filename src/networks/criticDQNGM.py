@@ -11,6 +11,7 @@ from keras.losses import mse
 
 class CriticDQNGM(object):
     def __init__(self, args, env):
+        self.args = args
         self.g_dim = env.goal_dim
         self.env = env
         self.tau = 0.001
@@ -18,18 +19,17 @@ class CriticDQNGM(object):
         self.a_dim = (1,)
         self.learning_rate = 0.001
         self.gamma = 0.99
+        self.w_i = float(self.args['--wimit'])
+        self.margin = float(self.args['--margin'])
         self.num_actions = env.action_dim
         self.optimizer = Adam(lr=self.learning_rate)
-        self.args = args
         self.initModels()
         self.initTargetModels()
 
     def initModels(self):
 
-        w = float(self.args['--wimit'])
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
-        PA = Input(shape=(1,))
         G = Input(shape=self.g_dim)
         M = Input(shape=self.g_dim)
         TARGETS = Input(shape=(1,))
@@ -43,60 +43,32 @@ class CriticDQNGM(object):
 
         actionFilter = K.squeeze(K.one_hot(A, self.num_actions), axis=1)
         qval = K.sum(actionFilter * qvals, axis=1, keepdims=True)
-        actionProb = K.sum(actionFilter * actionProbs, axis=1, keepdims=True)
         self.qval = K.function(inputs=[S, G, M, A], outputs=[qval], updates=None)
 
         val = K.max(qvals, axis=1, keepdims=True)
         self.val = K.function(inputs=[S, G, M], outputs=[val], updates=None)
 
-        # weights = PA / actionProb
-        losses = K.square(qval - TARGETS)
-        loss_dqn = K.mean(losses, axis=0)
+        loss_dqn = K.mean(K.square(qval - TARGETS), axis=0)
         inputs = [S, A, G, M, TARGETS]
         outputs = [loss_dqn, val, qval]
 
         updates_dqn = self.optimizer.get_updates(loss_dqn, self.model.trainable_weights)
         self.train_dqn = K.function(inputs, outputs, updates_dqn)
 
-        if w != 0:
-            margin = float(self.args['--margin'])
-            qvalWidth = K.max(qvals, axis=1, keepdims=True) - K.min(qvals, axis=1, keepdims=True)
-            onehot = 1 - K.squeeze(K.one_hot(A, self.num_actions), axis=1)
-            onehotMargin = K.repeat_elements(margin * qvalWidth, self.num_actions, axis=1) * onehot
-            imit = (K.max(qvals + onehotMargin, axis=1, keepdims=True) - qval)
+        qvalWidth = K.max(qvals, axis=1, keepdims=True) - K.min(qvals, axis=1, keepdims=True)
+        onehot = 1 - K.squeeze(K.one_hot(A, self.num_actions), axis=1)
+        onehotMargin = K.repeat_elements(self.margin * qvalWidth, self.num_actions, axis=1) * onehot
+        imit = (K.max(qvals + onehotMargin, axis=1, keepdims=True) - qval)
+        MCR = Input(shape=(1,), dtype='float32')
+        advClip = K.cast(K.greater(MCR, val), dtype='float32')
+        imitFiltered = imit * advClip
 
-            # imit = -K.log(actionProb)
+        loss_imit = K.mean(imitFiltered, axis=0)
+        inputs_i = inputs + [MCR]
+        outputs_i = outputs + [loss_imit, K.sum(advClip)]
 
-            MCR = Input(shape=(1,), dtype='float32')
-            # adv = K.maximum(E - val, 0)
-            advClip = K.cast(K.greater(MCR, val), dtype='float32')
-            good_exp = K.sum(advClip)
-            imit *= advClip
-
-            loss_imit = K.mean(imit, axis=0)
-            loss = loss_dqn + 0 * loss_imit
-            inputs += [MCR]
-            outputs += [loss_imit, imit, good_exp]
-            # inputs.append(E)
-            # outputs += [loss_imit, good_exp, adv]
-
-            updates_imit = self.optimizer.get_updates(loss, self.model.trainable_weights)
-            self.train_imit = K.function(inputs, outputs, updates_imit)
-
-        # if self.args['--imit'] == '1':
-        #     actionProb = K.sum(actionFilter * actionProbs, axis=1, keepdims=True)
-        #     imit = -K.log(actionProb)
-
-
-        # self.updatesDqn = self.optimizer.get_updates(params=self.model.trainable_weights, loss=loss_dqn)
-        # self.trainDqn = K.function(inputs=[S, A, G, M, TARGETS],
-        #                         outputs=[loss_dqn, val, qval],
-        #                         updates=self.updatesDqn)
-        #
-        # self.updatesAll = self.optimizer.get_updates(params=self.model.trainable_weights, loss=loss)
-        # self.trainAll = K.function(inputs=[S, A, G, M, T, E, TARGETS],
-        #                            outputs=[loss_dqn, loss_imit, good_exp, val, qval, adv0],
-        #                            updates=self.updatesAll)
+        updates_imit = self.optimizer.get_updates(loss_dqn + self.w_i * loss_imit, self.model.trainable_weights)
+        self.train_imit = K.function(inputs_i, outputs_i, updates_imit)
 
     def initTargetModels(self):
         S = Input(shape=self.s_dim)

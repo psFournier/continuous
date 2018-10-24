@@ -3,60 +3,51 @@ RENDER_TRAIN = False
 TARGET_CLIP = True
 INVERTED_GRADIENTS = True
 from networks import CriticDQNGM
-from agents import DQNG
+from agents.agent import Agent
 from buffers import ReplayBuffer, PrioritizedReplayBuffer
 import time
 
-class DQNGM(DQNG):
+class DQNGM(Agent):
     def __init__(self, args, env, env_test, logger):
         super(DQNGM, self).__init__(args, env, env_test, logger)
+        self.args = args
+        self.init(args, env)
 
     def init(self, args ,env):
-        names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'task', 'mcr']
-        metrics = ['loss_dqn', 'qval', 'val']
-        self.buffer = ReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
-        if self.args['--wimit'] != '0':
-            metrics += ['loss_dqn2', 'val2', 'qval2', 'loss_imit', 'good_exp']
-            self.bufferImit = ReplayBuffer(limit=int(1e6), names=names.copy(), args=args)
-            self.imitBatchsize = 32
+
+        metrics = ['l_dqn', 'qval', 'val', 'l_dqn_i', 'val_i', 'qval_i', 'l_imit', 'filter']
         self.critic = CriticDQNGM(args, env)
         for metric in metrics:
             self.metrics[metric] = 0
-        self.goalcounts = np.zeros((len(self.env.goals),))
+        self.rnd_demo = float(args['--rnd_demo'])
 
     def train(self):
 
-        if self.buffer.nb_entries > 100 * self.batch_size:
+        if len(self.env.buffer) > 100 * self.batch_size:
 
-            samples = self.buffer.sample(self.batch_size)
-            samples = self.env.augment_samples(samples)
+            samples = self.env.buffer.sample(self.batch_size)
             targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
             inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets]
             metrics = self.critic.train_dqn(inputs)
-            self.metrics['loss_dqn'] += np.squeeze(metrics[0])
+            self.metrics['l_dqn'] += np.squeeze(metrics[0])
             self.metrics['val'] += np.mean(metrics[1])
             self.metrics['qval'] += np.mean(metrics[2])
-            self.goalcounts += np.bincount(samples['task'], minlength=len(self.env.goals))
-
-            if self.args['--wimit'] != '0':
-                samples = self.bufferImit.sample(self.imitBatchsize)
-                samples = self.env.augment_tutor_samples(samples)
-                targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
-                inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets, samples['mcr']]
-                metrics = self.critic.train_imit(inputs)
-                self.metrics['loss_dqn2'] += np.squeeze(metrics[0])
-                self.metrics['val2'] += np.mean(metrics[1])
-                self.metrics['qval2'] += np.mean(metrics[2])
-                self.metrics['loss_imit'] += np.squeeze(metrics[3])
-                self.metrics['good_exp'] += np.squeeze(metrics[5])
-
             self.critic.target_train()
 
-    def get_stats(self):
-        sumsamples = np.sum(self.goalcounts)
-        if sumsamples != 0:
-            for i, goal in enumerate(self.env.goals):
-                self.stats['samplecount_{}'.format(goal)] = float("{0:.3f}".format(self.goalcounts[i] / sumsamples))
+    def train_i(self):
+
+        if len(self.env.buffer_i) > 10 * self.batch_size:
+
+            samples = self.env.buffer_i.sample(self.batch_size)
+            targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
+            inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets, samples['mcr']]
+            metrics = self.critic.train_imit(inputs)
+            self.metrics['l_dqn_i'] += np.squeeze(metrics[0])
+            self.metrics['val_i'] += np.mean(metrics[1])
+            self.metrics['qval_i'] += np.mean(metrics[2])
+            self.metrics['l_imit'] += np.squeeze(metrics[3])
+            self.metrics['filter'] += np.squeeze(metrics[4])
+            self.critic.target_train()
 
     def make_input(self, state, mode):
         if mode == 'train':
@@ -81,48 +72,61 @@ class DQNGM(DQNG):
     def reset(self):
 
         if self.trajectory:
-            augmented_episode = self.env.end_episode(self.trajectory)
-            for expe in augmented_episode:
-                self.buffer.append(expe)
-            # for expe in self.trajectory:
-            #     self.buffer.append(expe.copy())
-            # augmented_ep = self.env.augment_episode(self.trajectory)
-            # for e in augmented_ep:
-            #     self.buffer.append(e)
+            self.env.end_episode(self.trajectory)
             self.trajectory.clear()
-
         state = self.env.reset()
         self.episode_step = 0
 
         return state
 
-    def get_demo(self, rndprop):
+    def tutor_act(self, exp, task, goal):
+
+        if np.random.rand() < self.rnd_demo:
+            a = np.random.randint(self.env_test.action_dim)
+            done = False
+        else:
+            a, done = self.env_test.env.opt_action(task, goal)
+        exp['a'] = np.expand_dims(a, axis=1)
+        exp['t'] = done
+
+        return exp
+
+    def get_demo(self):
         demo = []
         exp = {}
         exp['s0'] = self.env_test.env.reset()
-        obj = np.random.choice(self.env_test.env.objects)
-        goal = np.random.randint(obj.high[2]+1)
-        # obj = self.env_test.env.light
-        # goal = 1
+        exp['t'] = False
+        task = self.env_test.env.chest1
+        goal = 2
+
         while True:
-            if np.random.rand() < rndprop:
-                a = np.random.randint(self.env_test.action_dim)
-                done = False
-            else:
-                a, done = self.env_test.env.opt_action(obj, goal)
-            if not done:
-                exp['a'] = np.expand_dims(a, axis=1)
-                exp['s1'] = self.env_test.env.step(exp['a'])[0]
-                demo.append(exp.copy())
-                exp['s0'] = exp['s1']
-            else:
+            exp = self.tutor_act(exp, task, goal)
+            exp['s1'] = self.env_test.env.step(exp['a'])[0]
+            demo.append(exp.copy())
+            self.train_i()
+
+            if exp['t']:
                 break
+            else:
+                exp['s0'] = exp['s1']
+
         return demo
 
     def demo(self):
         if self.env_step % self.demo_freq == 0:
-            for i in range(5):
-                demo = self.get_demo(rndprop=0.)
-                augmented_demo = self.env.augment_demo(demo)
-                for exp in augmented_demo:
-                    self.buffer.append(exp)
+            demo = self.get_demo()
+
+            goal = demo[-1]['s1']
+            task = 2
+            mask = self.env_test.task2mask(task)
+            mcr = 0
+            for i, exp in enumerate(reversed(demo)):
+                exp['g'] = goal
+                exp['m'] = mask
+                exp['task'] = task
+                exp = self.env_test.eval_exp(exp)
+                exp['tasks'] = [task]
+                mcr = mcr * self.env.gamma + exp['r']
+                exp['mcr'] = np.expand_dims(mcr, axis=1)
+                self.env.buffer_i.append(exp)
+

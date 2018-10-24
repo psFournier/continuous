@@ -20,20 +20,17 @@ Usage:
 Options:
   --seed SEED              Random seed
   --theta THETA            CP importance for goal selection [default: 0]
-  --shaping YES_NO         Reward shaping [default: 0]
   --inv_grad YES_NO        Gradient inversion near action limits [default: 1]
-  --opt_init YES_NO        Positive initialisation [default: 0]
   --max_steps VAL          Maximum total steps [default: 500000]
   --ep_steps VAL           Maximum episode steps [default: 50]
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
   --eval_freq VAL          Logging frequency [default: 2000]
-  --demo_freq VAL          Logging frequency [default: 500]
-  --her YES_NO             Hindsight Experience Replay [default: 0]
+  --demo_freq VAL          Demo frequency [default: 100]
   --margin VAL             Large margin loss margin [default: 0.1]
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]
   --wimit VAL              Weight for imitaiton loss with imitaiton [default: 0]
-  --filter VAL             Type of filter [default: 1]
+  --rnd_demo               Amount of stochasticity in the tutor's actions [default: 0]
 """
 
 def build_logger(args):
