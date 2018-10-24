@@ -9,9 +9,20 @@ from .criticDQNG import CriticDQNG
 import numpy as np
 from keras.losses import mse
 
-class CriticDQNGM(CriticDQNG):
+class CriticDQNGM(object):
     def __init__(self, args, env):
-        super(CriticDQNGM, self).__init__(args, env)
+        self.g_dim = env.goal_dim
+        self.env = env
+        self.tau = 0.001
+        self.s_dim = env.state_dim
+        self.a_dim = (1,)
+        self.learning_rate = 0.001
+        self.gamma = 0.99
+        self.num_actions = env.action_dim
+        self.optimizer = Adam(lr=self.learning_rate)
+        self.args = args
+        self.initModels()
+        self.initTargetModels()
 
     def initModels(self):
 
@@ -100,6 +111,18 @@ class CriticDQNGM(CriticDQNG):
         self.Tqval = K.function(inputs=[S, G, M, A], outputs=[Tqval], updates=None)
 
         self.target_train()
+
+    def target_train(self):
+        weights = self.model.get_weights()
+        target_weights = self.Tmodel.get_weights()
+        for i in range(len(weights)):
+            target_weights[i] = self.tau * weights[i] + (1 - self.tau)* target_weights[i]
+        self.Tmodel.set_weights(target_weights)
+
+    def compute_targets(self, r, t, q):
+        targets = r + (1 - t) * self.gamma * np.squeeze(q)
+        targets = np.clip(targets, self.env.minQ, self.env.maxQ)
+        return targets
 
     def get_targets_dqn(self, r, t, s, g=None, m=None):
         qvals = self.qvals([s, g, m])[0]
