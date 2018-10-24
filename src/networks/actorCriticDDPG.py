@@ -62,16 +62,16 @@ class ActorCriticDDPG(object):
                                      updates=self.updatesActor)
 
     def initTargetModels(self):
-        S = Input(shape=self.s_dim)
-        A = Input(shape=self.a_dim)
-        Tlayers, Tqval = self.create_critic_network(S, A)
-        self.TqvalModel = Model([S, A], Tqval)
-        self.Tqval = K.function(inputs=[S, A], outputs=[Tqval], updates=None)
+        S_c = Input(shape=self.s_dim)
+        A_c = Input(shape=self.a_dim)
+        Tlayers, Tqval = self.create_critic_network(S_c, A_c)
+        self.TqvalModel = Model([S_c, A_c], Tqval)
+        self.Tqval = K.function(inputs=[S_c, A_c], outputs=[Tqval], updates=None)
 
-        S = Input(shape=self.s_dim)
-        Taction = self.create_actor_network(S)
-        self.TactionModel = Model(S, Taction)
-        self.Taction = K.function(inputs=[S], outputs=[Taction], updates=None)
+        S_a = Input(shape=self.s_dim)
+        Taction = self.create_actor_network(S_a)
+        self.TactionModel = Model(S_a, Taction)
+        self.Taction = K.function(inputs=[S_a], outputs=[Taction], updates=None)
 
         self.target_train()
 
