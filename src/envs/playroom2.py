@@ -1,13 +1,6 @@
 import numpy as np
 from gym import Env
 from random import randint
-from collections import OrderedDict
-
-'''self.light = Light(self, 2, 3)
-        self.key1 = Key1(self, 0, 3)
-        self.chest1 = Chest1(self, 3, 2)
-        self.chest2 = Chest2(self, 5, 1)
-        self.chest3 = Chest3(self, 4, 6)'''
 
 MAP = [
     " _ _ _ _ _ _ _ _ ",
@@ -21,20 +14,6 @@ MAP = [
     "|_ _ _ _ _ _ _ _|",
 ]
 
-
-# class Moves:
-#     NOOP = 0
-#     UP = 1
-#     DOWN = 2
-#     LEFT = 3
-#     RIGHT = 4
-#
-# class Actions:
-#     NOOP = 0
-#     TOUCH = 1
-#     TAKE = 2
-#     DROP = 3
-
 class Actions:
     NOOP = 0
     UP = 1
@@ -42,17 +21,6 @@ class Actions:
     LEFT = 3
     RIGHT = 4
     TOUCH = 5
-
-# class Moves:
-#     UP = 0
-#     DOWN = 1
-#     LEFT = 2
-#     RIGHT =3
-    # TOUCHUP = 7
-    # TOUCHDOWN = 8
-    # TOUCHLEFT = 9
-    # TOUCHRIGHT = 10
-    # PUT = 10
 
 def gencoordinates(m, n):
     seen = set()
@@ -79,24 +47,20 @@ class Obj():
         self.x, self.y = next(self.env.g)
         self.s = 0
 
-
     def act(self, a):
         pass
 
     @property
     def state(self):
         return [self.x, self.y, self.s]
-        # return [self.x, self.y, self.s, self.inhand]
 
     @property
     def high(self):
         return [self.env.maxR, self.env.maxC, 1]
-        # return [self.env.maxR, self.env.maxC, 1, 1]
 
     @property
     def low(self):
         return [0, 0, 0]
-        # return [0, 0, 0, 0]
 
 class Light(Obj):
     def __init__(self, env, name, prop):
@@ -109,18 +73,6 @@ class Light(Obj):
     def init(self):
         self.x, self.y = next(self.env.g)
         self.s = np.random.choice([0, 1], p=[0.9, 0.1])
-
-    # @property
-    # def state(self):
-    #     return [self.x, self.y, self.s]
-    #
-    # @property
-    # def high(self):
-    #     return [self.env.maxR, self.env.maxC, 1]
-    #
-    # @property
-    # def low(self):
-    #     return [0, 0, 0]
 
 class Key(Obj):
     def __init__(self, env, name, prop, dep):
@@ -142,18 +94,6 @@ class Key(Obj):
                 p.append(0.1)
         self.s = np.random.choice(range(n+1), p=p)
 
-    # @property
-    # def state(self):
-    #     return [self.x, self.y, self.inhand]
-    #
-    # @property
-    # def high(self):
-    #     return [self.env.maxR, self.env.maxC, 1]
-    #
-    # @property
-    # def low(self):
-    #     return [0, 0, 0]
-
 class Chest(Obj):
     def __init__(self, env, name, prop, dep):
         super(Chest, self).__init__(env, name, prop, dep)
@@ -174,18 +114,9 @@ class Chest(Obj):
                 p.append(0.1)
         self.s = np.random.choice(range(n+1), p=p)
 
-    # @property
-    # def state(self):
-    #     return [self.x, self.y, self.s]
-
     @property
     def high(self):
         return [self.env.maxR, self.env.maxC, len(self.dep)]
-
-    # @property
-    # def low(self):
-    #     return [0, 0, 0]
-
 
 class Playroom2(Env):
     metadata = {'render.modes': ['human', 'ansi']}
@@ -200,35 +131,22 @@ class Playroom2(Env):
         self.g = gencoordinates(0, self.maxR)
         self.x, self.y = next(self.g)
         self.objects = []
-        prop = [0, 1]
-        self.light = Light(self, 'light', prop)
-        self.key1 = Key(self, 'key1', prop, dep=[(self.light, 1)])
-        # self.key2 = Key(self, next(self.g), 'key2', prop, dep=[self.light])
-        # self.key3 = Key(self, next(self.g), 'key3', prop, dep=[self.light])
-        # self.key4 = Key(self, next(self.g), 'key4', prop, dep=[self.light])
-        # self.chest0 = Chest(self, next(self.g), 'chest0', prop, dep=[self.light])
-        self.chest1 = Chest(self, 'chest1', prop, dep=[(self.light, 1), (self.key1, 1)])
-        # self.chest2 = Chest(self, next(self.g), 'chest2', prop, dep=[self.light, self.key1, self.key2])
-        # self.chest3 = Chest(self, next(self.g), 'chest3', prop, dep=[self.light, self.key1, self.key2, self.key3])
-        # self.chest4 = Chest(self, next(self.g), 'chest4', prop,
-        #                     dep=[self.light, self.key1, self.key2, self.key3, self.key4])
+        self.light = Light(self,
+                           name='light',
+                           prop=[0, 1])
+        self.key1 = Key(self,
+                        name='key1',
+                        prop=[0, 1],
+                        dep=[(self.light, 1)])
+        self.chest1 = Chest(self,
+                            name='chest1',
+                            prop=[0, 1],
+                            dep=[(self.light, 1), (self.key1, 1)])
         self.initstate = self.state.copy()
         self.lastaction = None
 
     def act(self, a):
-        # objinhand = self.inhand()
         objunder = self.underagent()
-
-        # if objinhand is not None:
-        #     objinhand.x = self.x
-        #     objinhand.y = self.y
-
-        # if objinhand is not None and objunder is None and a == Actions.DROP:
-        #     objinhand.inhand = 0
-        #
-        # if objinhand is None and objunder is not None and a == Actions.TAKE:
-        #     objunder.act(a)
-
         if objunder is not None and a == Actions.TOUCH:
             objunder.act(a)
 
@@ -241,7 +159,8 @@ class Playroom2(Env):
             self.y -= 1
         elif a == Actions.RIGHT and self.desc[1 + self.x, 2 * self.y + 2] == b" ":
             self.y += 1
-        self.act(a)
+        else:
+            self.act(a)
         self.lastaction = a
         return np.array(self.state),
 
@@ -250,12 +169,6 @@ class Playroom2(Env):
             if obj.x == self.x and obj.y == self.y:
                 return obj
         return None
-
-    # def inhand(self):
-    #     for obj in self.objects:
-    #         if obj.inhand == 1:
-    #             return obj
-    #     return None
 
     def reset(self):
         self.initialize()
