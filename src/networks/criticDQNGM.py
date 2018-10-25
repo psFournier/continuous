@@ -11,7 +11,6 @@ from keras.losses import mse
 
 class CriticDQNGM(object):
     def __init__(self, args, env):
-        self.args = args
         self.g_dim = env.goal_dim
         self.env = env
         self.tau = 0.001
@@ -19,8 +18,8 @@ class CriticDQNGM(object):
         self.a_dim = (1,)
         self.learning_rate = 0.001
         self.gamma = 0.99
-        self.w_i = float(self.args['--wimit'])
-        self.margin = float(self.args['--margin'])
+        self.w_i = float(args['--wimit'])
+        self.margin = float(args['--margin'])
         self.num_actions = env.action_dim
         self.optimizer = Adam(lr=self.learning_rate)
         self.initModels()

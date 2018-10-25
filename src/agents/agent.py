@@ -9,7 +9,7 @@ TARGET_CLIP = False
 INVERTED_GRADIENTS = False
 
 class Agent():
-    def __init__(self, args, env, env_test, logger, buffer=None):
+    def __init__(self, args, env, env_test, logger):
 
         self.env = env
         self.env_test = env_test
@@ -24,7 +24,6 @@ class Agent():
         self.episode_step = 0
         self.stats = {}
         self.exp = {}
-        self.metrics = {}
         self.trajectory = []
 
     def run(self):
@@ -55,7 +54,7 @@ class Agent():
                     self.exp['s0'] = self.exp['s1']
 
                 self.log()
-                self.demo()
+                self.imitate()
 
         except KeyboardInterrupt:
             print("Keybord interruption")

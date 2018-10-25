@@ -127,7 +127,7 @@ class Playroom2(Env):
         self.maxC = (self.desc.shape[1] - 1) // 2 - 1
         self.initialize()
 
-    def initialize(self):
+    def initialize(self, random=True):
         self.g = gencoordinates(0, self.maxR)
         self.x, self.y = next(self.g)
         self.objects = []
@@ -142,6 +142,11 @@ class Playroom2(Env):
                             name='chest1',
                             prop=[0, 1],
                             dep=[(self.light, 1), (self.key1, 1)])
+        if not random:
+            self.light.s = 0
+            self.key1.s = 0
+            self.chest1.s = 0
+
         self.initstate = self.state.copy()
         self.lastaction = None
 
@@ -170,8 +175,8 @@ class Playroom2(Env):
                 return obj
         return None
 
-    def reset(self):
-        self.initialize()
+    def reset(self, random=True):
+        self.initialize(random)
         return np.array(self.state)
 
     def go(self, x , y):

@@ -104,10 +104,10 @@ class CPBased(Base):
         exp = self.eval_exp(exp)
         return exp
 
-    def sample_task(self):
-        self.update_interests()
-        task = np.random.choice(len(self.goals), p=self.interests)
-        return task
+    # def sample_task(self):
+    #     self.update_interests()
+    #     task = np.random.choice(len(self.goals), p=self.interests)
+    #     return task
 
     def end_episode(self, trajectory):
         R = 0
@@ -121,15 +121,14 @@ class CPBased(Base):
         self.goal = np.array(self.goals[self.idx])
         return state
 
-    def get_stats(self):
-        stats = {}
-        for i, goal in enumerate(self.goals):
-            stats['step_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
-            stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
-            stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.CPs[i]))
-            stats['agentC_{}'.format(goal)] = float("{0:.3f}".format(self.Cs[i]))
-            # stats['agentT_{}'.format(goal)] = float("{0:.3f}".format(self.Ts[i]))
-        return stats
+    # def get_stats(self):
+    #     stats = {}
+    #     for i, goal in enumerate(self.goals):
+    #         stats['step_{}'.format(goal)] = float("{0:.3f}".format(self.steps[i]))
+    #         stats['I_{}'.format(goal)] = float("{0:.3f}".format(self.interests[i]))
+    #         stats['CP_{}'.format(goal)] = float("{0:.3f}".format(self.CPs[i]))
+    #         stats['C_{}'.format(goal)] = float("{0:.3f}".format(self.Cs[i]))
+    #     return stats
 
     def update_interests(self):
         minCP = min(self.CPs)

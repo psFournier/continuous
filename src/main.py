@@ -30,7 +30,8 @@ Options:
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]
   --wimit VAL              Weight for imitaiton loss with imitaiton [default: 0]
-  --rnd_demo               Amount of stochasticity in the tutor's actions [default: 0]
+  --rnd_demo VAL           Amount of stochasticity in the tutor's actions [default: 0]
+  --demo VAL               Type of imitation [default: 0]
 """
 
 def build_logger(args):
