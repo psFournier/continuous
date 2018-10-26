@@ -65,7 +65,7 @@ class Agent():
     def train(self):
         pass
 
-    def act(self, state, mode='train'):
+    def act(self, state):
         pass
 
     def demo(self):

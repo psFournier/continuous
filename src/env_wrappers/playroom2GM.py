@@ -20,6 +20,8 @@ class Playroom2GM(Wrapper):
         self.goal = None
         self.queues = [CompetenceQueue() for _ in self.tasks]
         self.steps = [0 for _ in self.tasks]
+        self.attempts = [0 for _ in self.tasks]
+        self.foreval = [False for _ in self.tasks]
         self.update_interests()
 
         self.state_low = self.env.low
@@ -61,8 +63,11 @@ class Playroom2GM(Wrapper):
 
     def end_episode(self, episode):
 
-        T = episode[-1]['t']
-        self.queues[self.task].append(T)
+        if self.foreval[self.task]:
+            T = episode[-1]['t']
+            self.queues[self.task].append(T)
+        self.attempts[self.task] += 1
+        self.foreval[self.task] = (self.attempts[self.task] % 10 == 0)
 
         goals = [self.goal]
         masks = [self.mask]
@@ -126,6 +131,7 @@ class Playroom2GM(Wrapper):
         stats = {}
         for i, task in enumerate(self.tasks):
             stats['step_{}'.format(task)] = float("{0:.3f}".format(self.steps[i]))
+            stats['attempts_{}'.format(task)] = float("{0:.3f}".format(self.attempts[i]))
             stats['I_{}'.format(task)] = float("{0:.3f}".format(self.interests[i]))
             stats['CP_{}'.format(task)] = float("{0:.3f}".format(self.CPs[i]))
             stats['C_{}'.format(task)] = float("{0:.3f}".format(self.Cs[i]))

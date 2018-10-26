@@ -24,6 +24,7 @@ class DQNGM(Agent):
         self.rnd_demo = float(args['--rnd_demo'])
         self.demo = int(args['--demo'])
         self.step_i = 0
+        self.mode = 'train'
 
     def train(self):
 
@@ -54,20 +55,17 @@ class DQNGM(Agent):
             self.step_i += 1
             self.critic.target_train()
 
-    def make_input(self, state, mode):
-        if mode == 'train':
-            input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, self.env.mask]]
-        else:
-            input = [np.expand_dims(i, axis=0) for i in [state, self.env_test.goal, self.env_test.mask]]
+    def make_input(self, state):
+        input = [np.expand_dims(i, axis=0) for i in [state, self.env.goal, self.env.mask]]
         return input
 
-    def act(self, exp, mode='train'):
-        input = self.make_input(exp['s0'], mode)
+    def act(self, exp):
+        input = self.make_input(exp['s0'])
         actionProbs = self.critic.actionProbs(input)[0].squeeze()
-        if mode=='train':
-            action = np.random.choice(range(self.env.action_dim), p=actionProbs)
+        if self.env.foreval[self.env.task]:
+            action = np.argmax(actionProbs)
         else:
-            action = np.argmax(actionProbs[0])
+            action = np.random.choice(range(self.env.action_dim), p=actionProbs)
         prob = actionProbs[action]
         action = np.expand_dims(action, axis=1)
         exp['a'] = action

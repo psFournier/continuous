@@ -6,7 +6,7 @@ from scipy.signal import lfilter
 
 
 class CompetenceQueue():
-    def __init__(self, window = 100, maxlen=200):
+    def __init__(self, window = 40, maxlen=200):
         self.window = window
         self.C = deque(maxlen=maxlen)
         self.C_avg = 0
@@ -18,7 +18,7 @@ class CompetenceQueue():
 
     def update(self):
         size = len(self.C)
-        if size % 10 == 0:
+        if size > 2:
             window = min(size, self.window)
             n = 20  # the larger n is, the smoother curve will be
             Cs = lfilter([1.0 / n] * n, 1, np.array(self.C))
