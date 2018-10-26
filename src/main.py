@@ -25,7 +25,7 @@ Options:
   --ep_steps VAL           Maximum episode steps [default: 50]
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
   --eval_freq VAL          Logging frequency [default: 2000]
-  --demo_freq VAL          Demo frequency [default: 500]
+  --demo_freq VAL          Demo frequency [default: 100]
   --margin VAL             Large margin loss margin [default: 0.8]
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]

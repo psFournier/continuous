@@ -34,16 +34,13 @@ class Playroom2GM(Wrapper):
         self.maxQ = self.r_done if self.terminal else self.r_done / (1 - self.gamma)
 
         self.names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'task']
-        self.names_i = self.names + ['mcr']
         self.buffer = ReplayBuffer(limit=int(1e6), names=self.names.copy())
-        self.buffer_i = ReplayBuffer(limit=int(1e6), names=self.names_i.copy())
 
     def step(self, exp):
         self.steps[self.task] += 1
         exp['g'] = self.goal
         exp['m'] = self.mask
         exp['task'] = self.task
-        # exp['tasks'] = [self.task]
         exp['s1'] = self.env.step(exp['a'])[0]
         exp = self.eval_exp(exp)
         return exp
