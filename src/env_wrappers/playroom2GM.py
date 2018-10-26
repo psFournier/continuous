@@ -50,8 +50,8 @@ class Playroom2GM(Wrapper):
         indices = np.where(exp['m'])
         goal = exp['g'][indices]
         s1_proj = exp['s1'][indices]
-        s0_proj = exp['s0'][indices]
-        if (s1_proj == goal).all() and (s0_proj != goal).any():
+        # s0_proj = exp['s0'][indices]
+        if (s1_proj == goal).all():
             exp['t'] = self.terminal
             exp['r'] = self.r_done
         else:
@@ -100,7 +100,7 @@ class Playroom2GM(Wrapper):
 
     def reset(self):
 
-        state = self.env.reset()
+        state = self.env.reset(random=False)
         self.update_interests()
         self.task, self.goal = self.sample_task_goal(state)
         self.mask = self.task2mask(self.task)

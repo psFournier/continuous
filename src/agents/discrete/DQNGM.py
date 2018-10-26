@@ -99,8 +99,10 @@ class DQNGM(Agent):
         demo = []
         exp = {}
         exp['s0'] = self.env_test.env.reset(random=False)
-        task = self.env_test.env.chest1
-        goal = 2
+        # task = self.env_test.env.chest1
+        # goal = 2
+        task = np.random.choice(self.env_test.env.objects)
+        goal = np.random.randint(task.high[2] + 1)
         while True:
             a, done = self.tutor_act(task, goal)
             if done:
@@ -109,42 +111,45 @@ class DQNGM(Agent):
                 exp['a'] = np.expand_dims(a, axis=1)
                 exp['s1'] = self.env_test.env.step(exp['a'])[0]
                 demo.append(exp.copy())
-                self.train_i()
+                # self.train_i()
                 exp['s0'] = exp['s1']
 
-        return demo, 2
+        return demo, task
 
     def imitate(self):
 
         if self.demo != 0 and self.env_step % self.demo_freq == 0:
+            for i in range(5):
+                trajectory, true_task = self.get_demo()
 
-            trajectory, true_task = self.get_demo()
+                if self.demo == 1:
+                    tasks = [true_task]
+                elif self.demo == 2:
+                    tasks = [np.random.randint(self.env.Ntasks)]
+                elif self.demo == 3:
+                    tasks = [self.env.sample_task_goal(trajectory[0]['s0'])[0]]
+                else:
+                    tasks = range(self.env.Ntasks)
 
-            if self.demo == 1:
-                task = true_task
-            elif self.demo == 2:
-                task = np.random.randint(self.env.Ntasks)
-            elif self.demo == 3:
-                task = self.env.sample_task_goal(trajectory[0]['s0'])
-            else:
-                raise RuntimeError
+                masks = [self.env_test.task2mask(task) for task in tasks]
+                mcrs = [np.zeros(1) for _ in tasks]
+                goals = [None for _ in tasks]
 
-            mask = self.env_test.task2mask(task)
-            mcr = 0
-            goal = None
+                for exp in reversed(trajectory):
 
-            for exp in reversed(trajectory):
+                    for i, task in enumerate(tasks):
 
-                if goal is None and (exp['s1'][np.where(mask)] != exp['s0'][np.where(mask)]).any():
-                    goal = exp['s1']
-                if goal is not None:
-                    exp['g'] = goal
-                    exp['m'] = mask
-                    exp['task'] = task
-                    exp = self.env_test.eval_exp(exp)
-                    mcr = mcr * self.env.gamma + exp['r']
-                    exp['mcr'] = np.expand_dims(mcr, axis=1)
-                    self.env.buffer_i.append(exp)
+                        if goals[i] is None and (exp['s1'][np.where(masks[i])] != exp['s0'][np.where(masks[i])]).any():
+                            goals[i] = exp['s1']
+                        if goals[i] is not None:
+                            exp['g'] = goals[i]
+                            exp['m'] = masks[i]
+                            exp['task'] = task
+                            exp = self.env_test.eval_exp(exp)
+                            mcrs[i] = mcrs[i] * self.env.gamma + exp['r']
+                            exp['mcr'] = mcrs[i]
+                            # self.env.buffer_i.append(exp)
+                            self.env.buffer.append(exp)
 
     def log(self):
 
