@@ -23,29 +23,28 @@ class Actions:
     TOUCH = 5
     TAKE = 6
 
-def gencoordinates(m, n):
-    seen = set()
-
-    x, y = randint(m, n), randint(m, n)
-
-    while True:
-        seen.add((x, y))
-        yield (x, y)
-        x, y = randint(m, n), randint(m, n)
-        while (x, y) in seen:
-            x, y = randint(m, n), randint(m, n)
-
 class Obj():
-    def __init__(self, env, name, prop, dep=None):
+    def __init__(self, env, name, pos, prop, dep=None):
         self.env = env
         self.name = name
+        self.ix, self.iy = pos
         self.prop = prop
         self.dep = dep
         self.env.objects.append(self)
+        self.g = self.gencoordinates()
         self.init()
 
+    def gencoordinates(self):
+
+        while True:
+            x, y = randint(-1, 1), randint(-1, 1)
+            while (self.ix+x, self.iy+y) in self.env.seenpos:
+                x, y = randint(-1, 1), randint(-1, 1)
+            self.env.seenpos.add((self.ix+x, self.iy+y))
+            yield (self.ix+x, self.iy+y)
+
     def init(self):
-        self.x, self.y = next(self.env.g)
+        self.x, self.y = next(self.g)
         self.s = 0
 
     def touch(self):
@@ -68,15 +67,15 @@ class Obj():
         return True
 
 class Light(Obj):
-    def __init__(self, env, name, prop):
-        super(Light, self).__init__(env, name, prop)
+    def __init__(self, env, name, pos, prop):
+        super(Light, self).__init__(env, name, pos, prop)
 
     def touch(self):
         if self.s == 0:
             self.s = np.random.choice([0, 1], p=self.prop)
 
     def init(self):
-        self.x, self.y = next(self.env.g)
+        self.x, self.y = next(self.g)
         self.s = np.random.choice([0, 1], p=[0.9, 0.1])
 
     @property
@@ -84,8 +83,8 @@ class Light(Obj):
         return False
 
 class Key(Obj):
-    def __init__(self, env, name, prop, dep):
-        super(Key, self).__init__(env, name, prop, dep)
+    def __init__(self, env, name, pos, prop, dep):
+        super(Key, self).__init__(env, name, pos, prop, dep)
 
     def touch(self):
         dep_ok = self.s < len(self.dep) and all([o.s == s for o, s in self.dep[:self.s+1]])
@@ -93,7 +92,7 @@ class Key(Obj):
             self.s = np.random.choice([0, 1], p=self.prop)
 
     def init(self):
-        self.x, self.y = next(self.env.g)
+        self.x, self.y = next(self.g)
         n = 0
         p = [1]
         for o, s in self.dep:
@@ -104,8 +103,8 @@ class Key(Obj):
         self.s = np.random.choice(range(n+1), p=p)
 
 class Chest(Obj):
-    def __init__(self, env, name, prop, dep):
-        super(Chest, self).__init__(env, name, prop, dep)
+    def __init__(self, env, name, pos, prop, dep):
+        super(Chest, self).__init__(env, name, pos, prop, dep)
 
     def touch(self):
         dep_ok = self.s < len(self.dep) and all([o.s == s for o, s in self.dep[:self.s+1]])
@@ -113,7 +112,7 @@ class Chest(Obj):
             self.s = np.random.choice([self.s, self.s + 1], p=self.prop)
 
     def init(self):
-        self.x, self.y = next(self.env.g)
+        self.x, self.y = next(self.g)
         n = 0
         p = [1]
         for o, s in self.dep[:-1]:
@@ -134,22 +133,35 @@ class Playroom(Env):
         self.desc = np.asarray(MAP, dtype='c')
         self.maxR = self.desc.shape[0] - 2
         self.maxC = (self.desc.shape[1] - 1) // 2 - 1
+        self.seenpos = set()
+        self.g = self.gencoordinates()
         self.initialize()
 
+    def gencoordinates(self):
+
+        while True:
+            x, y = randint(0, self.maxR), randint(0, self.maxC)
+            while (x, y) in self.seenpos:
+                x, y = randint(0, self.maxR), randint(0, self.maxC)
+            self.seenpos.add((x, y))
+            yield (x, y)
+
     def initialize(self, random=True):
-        self.g = gencoordinates(0, self.maxR)
         self.x, self.y = next(self.g)
         self.obj = 0
         self.objects = []
         self.light = Light(self,
                            name='light',
+                           pos=(1,1),
                            prop=[0, 1])
         self.key1 = Key(self,
                         name='key1',
+                        pos=(4,4),
                         prop=[0, 1],
                         dep=[(self.light, 1)])
         self.chest1 = Chest(self,
                             name='chest1',
+                            pos=(6,6),
                             prop=[0, 1],
                             dep=[(self.light, 1), (self.key1, 1)])
         if not random:

@@ -10,6 +10,7 @@ class PlayroomGM(Wrapper):
 
         self.gamma = float(args['--gamma'])
         self.theta = float(args['--theta'])
+        self.htr = int(args['--htr'])
 
         # self.tasks = [o.name for o in self.env.objects]
         self.tasks_feat = [[i] for i in range(12)]
@@ -19,6 +20,8 @@ class PlayroomGM(Wrapper):
         self.goal = None
         self.queues = [CompetenceQueue() for _ in self.tasks_feat]
         self.steps = [0 for _ in self.tasks_feat]
+        self.attempts = [0 for _ in self.tasks_feat]
+        self.foreval = [False for _ in self.tasks_feat]
         self.update_interests()
 
         self.state_low = self.env.low
@@ -30,95 +33,119 @@ class PlayroomGM(Wrapper):
         self.minQ = self.r_notdone / (1 - self.gamma)
         self.maxQ = self.r_done if self.terminal else self.r_done / (1 - self.gamma)
 
-        self.names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'task']
-        self.names_i = self.names + ['mcr']
-        self.buffer = ReplayBuffer(limit=int(1e6), names=self.names.copy())
-        self.buffer_i = ReplayBuffer(limit=int(1e6), names=self.names_i.copy())
+        self.names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'mcr', 'task']
+        self.buffer = MultiTaskReplayBuffer(limit=int(1e6), Ntasks=self.Ntasks, names=self.names)
 
     def step(self, exp):
         self.steps[self.task] += 1
-        exp['g'] = self.goal
-        exp['m'] = self.mask
-        exp['task'] = self.task
-        # exp['tasks'] = [self.task]
         exp['s1'] = self.env.step(exp['a'])[0]
-        exp = self.eval_exp(exp)
+        indices = np.where(self.mask)
+        goal = self.goal[indices]
+        s1_proj = exp['s1'][indices]
+        if (s1_proj == goal).all():
+            exp['t'] = self.terminal
+        else:
+            exp['t'] = False
         return exp
 
     def eval_exp(self, exp):
-        indices = np.where(exp['m'])
-        goal = exp['g'][indices]
-        s1_proj = exp['s1'][indices]
-        s0_proj = exp['s0'][indices]
-        if (s1_proj == goal).all() and (s0_proj != goal).any():
-            exp['t'] = self.terminal
-            exp['r'] = self.r_done
-        else:
-            exp['t'] = False
-            exp['r'] = self.r_notdone
+        exp['rs'], exp['ts'] = [], []
+        for g, m in zip(exp['goals'], exp['masks']):
+            indices = np.where(m)
+            goal = g[indices]
+            s1_proj = exp['s1'][indices]
+            if (s1_proj == goal).all():
+                exp['ts'].append(self.terminal)
+                exp['rs'].append(self.r_done)
+            else:
+                exp['ts'].append(False)
+                exp['rs'].append(self.r_notdone)
         return exp
+
 
     def end_episode(self, episode):
 
-        T = episode[-1]['t']
-        self.queues[self.task].append(T)
+        if self.foreval[self.task]:
+            T = episode[-1]['t']
+            self.queues[self.task].append(T)
+        self.attempts[self.task] += 1
+        self.foreval[self.task] = (self.attempts[self.task] % 10 == 0)
 
-        goals = [self.goal]
-        masks = [self.mask]
         tasks = [self.task]
+        goals = [self.goal]
+        othertasks = [i for i in range(self.Ntasks) if i != self.task]
 
-        for expe in reversed(episode):
+        if self.htr == 1:
+            tasks += [np.random.choice(othertasks)]
+            goals += [None]
+        elif self.htr == 2:
+            otherprobs = [self.interests[i] for i in othertasks]
+            tasks += [np.random.choice(othertasks, otherprobs)]
+            goals += [None]
+        elif self.htr == 3:
+            tasks += othertasks
+            goals += [None] * len(othertasks)
 
-            for j, (g, m, t) in enumerate(zip(goals, masks, tasks)):
+        masks = [self.task2mask(task) for task in tasks]
+        mcrs = [np.zeros(1) for _ in tasks]
 
-                if t != self.task:
-                    expe['g'] = g
-                    expe['m'] = m
-                    expe['task'] = t
-                    expe = self.eval_exp(expe)
-                self.buffer.append(expe.copy())
+        for exp in reversed(episode):
 
-            for task, _ in enumerate(self.tasks_feat):
+            exp['tasks'] = []
+            exp['mcrs'] = []
+            exp['goals'] = []
+            exp['masks'] = []
 
-                if all([task != t for t in tasks]):
+            for i, task in enumerate(tasks):
 
-                    mask = self.task2mask(task)
-                    s1m = expe['s1'][np.where(m)]
-                    s0m = expe['s0'][np.where(m)]
-                    if (s1m != s0m).any():
-                        goal = expe['s1']
-                        expe['g'] = goal
-                        expe['m'] = mask
-                        expe['task'] = task
-                        expe = self.eval_exp(expe)
-                        self.buffer.append(expe.copy())
-                        goals.append(goal)
-                        masks.append(mask)
-                        tasks.append(task)
+                if goals[i] is None and (exp['s1'][np.where(masks[i])] != exp['s0'][np.where(masks[i])]).any():
+                    goals[i] = exp['s1']
+                if goals[i] is not None:
+                    exp['tasks'].append(task)
+                    exp['goals'].append(goals[i])
+                    exp['masks'].append(masks[i])
+
+            if exp['tasks']:
+                exp = self.eval_exp(exp)
+                for i in range(len(exp['tasks'])):
+                    mcrs[i] = mcrs[i] * self.gamma + exp['rs'][i]
+                    exp['mcrs'].append(mcrs[i])
+                self.buffer.append(exp.copy())
 
     def reset(self):
 
-        state = self.env.reset()
+        state = self.env.reset(random=False)
         self.update_interests()
-        self.task, self.goal = self.sample_task_goal(state)
+        self.task = self.sample_task(state)
+        self.goal = self.sample_goal(self.task, state)
         self.mask = self.task2mask(self.task)
 
         return state
 
-    def sample_task_goal(self, state):
+    def sample_task(self, state):
 
         task = np.random.choice(self.Ntasks, p=self.interests)
         features = self.tasks_feat[task]
         while all([state[f] == self.state_high[f] for f in features]):
             task = np.random.choice(self.Ntasks, p=self.interests)
             features = self.tasks_feat[task]
+        return task
+
+    def sample_goal(self, task, state):
 
         goal = state.copy()
         while not (goal != state).any():
-            for f in features:
+            for f in self.tasks_feat[task]:
                 goal[f] = np.random.randint(state[f], self.state_high[f] + 1)
 
-        return task, goal
+        return goal
+
+    def sample(self, batchsize):
+
+        task = np.random.choice(self.Ntasks, p=self.interests)
+        samples = self.buffer.sample(batchsize, task)
+
+        return samples
 
     def get_stats(self):
         stats = {}
@@ -138,18 +165,24 @@ class PlayroomGM(Wrapper):
         return list(np.where(mask)[0])
 
     def update_interests(self):
+
         minCP = min(self.CPs)
         maxCP = max(self.CPs)
         widthCP = maxCP - minCP
-        CPs = [math.pow((cp - minCP) / (widthCP + 0.0001), self.theta) for cp in self.CPs]
-        sumCP = np.sum(CPs)
-        Ntasks = len(self.CPs)
         espilon = 0.4
-        if sumCP == 0:
-            self.interests = [1 / Ntasks for _ in CPs]
-        else:
-            self.interests = [espilon / Ntasks + (1 - espilon) * cp / sumCP for cp in CPs]
+        Ntasks = len(self.CPs)
 
+        if widthCP <= 0.01:
+            minC = min(self.Cs)
+            maxC = max(self.Cs)
+            widthC = maxC - minC
+            Cs = [math.pow(1 - (c - minC) / (widthC + 0.0001), self.theta) for c in self.Cs]
+            sumC = np.sum(Cs)
+            self.interests = [espilon / Ntasks + (1 - espilon) * c / sumC for c in Cs]
+        else:
+            CPs = [math.pow((cp - minCP) / widthCP, self.theta) for cp in self.CPs]
+            sumCP = np.sum(CPs)
+            self.interests = [espilon / Ntasks + (1 - espilon) * cp / sumCP for cp in CPs]
     @property
     def CPs(self):
         return [abs(q.CP) for q in self.queues]

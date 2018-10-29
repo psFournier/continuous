@@ -75,7 +75,7 @@ class DQNGM3(Agent):
         demo = []
         exp = {}
         exp['s0'] = self.env_test.env.reset(random=False)
-        task = self.env_test.env.chest1
+        task = 11
         goal = 2
         # task = np.random.choice(self.env_test.env.objects)
         # goal = np.random.randint(task.high[2] + 1)

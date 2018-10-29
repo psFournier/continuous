@@ -168,18 +168,24 @@ class Playroom3GM(Wrapper):
         return list(np.where(mask)[0])
 
     def update_interests(self):
+
         minCP = min(self.CPs)
         maxCP = max(self.CPs)
         widthCP = maxCP - minCP
-        CPs = [math.pow((cp - minCP) / (widthCP + 0.0001), self.theta) for cp in self.CPs]
-        sumCP = np.sum(CPs)
-        Ntasks = len(self.CPs)
         espilon = 0.4
-        if sumCP == 0:
-            self.interests = [1 / Ntasks for _ in CPs]
-        else:
-            self.interests = [espilon / Ntasks + (1 - espilon) * cp / sumCP for cp in CPs]
+        Ntasks = len(self.CPs)
 
+        if widthCP <= 0.01:
+            minC = min(self.Cs)
+            maxC = max(self.Cs)
+            widthC = maxC - minC
+            Cs = [math.pow(1 - (c - minC) / (widthC + 0.0001), self.theta) for c in self.Cs]
+            sumC = np.sum(Cs)
+            self.interests = [espilon / Ntasks + (1 - espilon) * c / sumC for c in Cs]
+        else:
+            CPs = [math.pow((cp - minCP) / widthCP, self.theta) for cp in self.CPs]
+            sumCP = np.sum(CPs)
+            self.interests = [espilon / Ntasks + (1 - espilon) * cp / sumCP for cp in CPs]
     @property
     def CPs(self):
         return [abs(q.CP) for q in self.queues]
