@@ -74,9 +74,11 @@ class DQNGM(Agent):
         demo = []
         exp = {}
         exp['s0'] = self.env_test.env.reset(random=False)
+        idx = 2
         task = self.env_test.env.chest1
         goal = 2
-        # task = np.random.choice(self.env_test.env.objects)
+        # idx = np.random.choice(len(self.env_test.env.objects))
+        # task = self.env_test.env.objects[idx]
         # goal = np.random.randint(task.high[2] + 1)
         while True:
             a, done = self.tutor_act(task, goal)
@@ -88,7 +90,7 @@ class DQNGM(Agent):
                 demo.append(exp.copy())
                 exp['s0'] = exp['s1']
 
-        return demo, task
+        return demo, idx
 
     def imitate(self):
 

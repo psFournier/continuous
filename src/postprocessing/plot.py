@@ -5,7 +5,7 @@ import os
 import numpy as np
 from scipy.signal import lfilter
 
-DIR = '../../log/cluster/2410'
+DIR = '../../log/cluster/2710'
 ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
@@ -39,32 +39,33 @@ params = ['--agent',
           '--eval_freq',
           '--gamma',
           '--demo_freq',
-          # '--rnd_demo',
+          '--rnd_demo',
           '--wimit',
           '--theta',
           '--inv_grad',
           '--margin',
-          # '--demo'
+          '--demo'
           ]
 
 
 df2 = df
 # df2 = df2[(df2['--agent'] == 'ddpgg')]
-# df2 = df2[(df2['--env'] == 'Playroom2GM0-v0')]
+df2 = df2[(df2['--env'] == 'Playroom2GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
 # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
-# df2 = df2[(df2['--wimit'] == 0)]
+# df2 = df2[(df2['--wimit'] == 1)]
 # df2 = df2[(df2['--opt_init'] == -20)]
-# # df2 = df2[(df2['--network'] == 2)]
+df2 = df2[(df2['--demo'] == 0) | (df2['--demo'] == 0)]
 # # df2 = df2[(df2['--clipping'] == 1)]
 # # df2 = df2[(df2['--explo'] == 1)]
 # df2 = df2[(df2['--margin'] == 0.5)]
-df2 = df2[(df2['--theta'] == 0)]
+df2 = df2[(df2['--theta'] == 4)]
 # y = ['R']
 # y = ['agentR']
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
 # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
-y = ['agentC'+s for s in ['_light','_key1', '_chest1']]
+y = ['C'+s for s in ['_light','_key1', '_chest1']]
+# x = ['attempts'+s for s in ['_light','_key1', '_chest1']]
 
 # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
 #    'R_light2', 'R_light3', 'R_light4', 'R_xy']
@@ -94,14 +95,14 @@ def quant_inf(x):
     return x.quantile(0.2)
 def quant_sup(x):
     return x.quantile(0.8)
-op_dict = {a:[np.median, np.mean, quant_inf, quant_sup] for a in y}
+op_dict = {a:[np.median, np.mean, np.std, quant_inf, quant_sup] for a in y}
 avg = 0
 if avg:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
 print(paramsStudied)
 a, b = 2,2
-fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
+fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=False)
 colors = ['b', 'r']
 p = 'num_run'
 if avg:
@@ -121,19 +122,22 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
         # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
         if avg:
-            ax2[i % a, i // a].plot(g['step'], g[valy]['median'], label=label)
+            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
         else:
             # n = 50  # the larger n is, the smoother curve will be
             # yy = lfilter([1.0 / n] * n, 1, g[valy])
             yy = g[valy]
             ax2[i % a, i // a].plot(g['step'], yy, label=None)
-        # ax2[i % a, i // a].scatter(g[x[i]], g[valy], s=1, c=['red', 'blue', 'green'][j])
+            # ax2[i % a, i // a].scatter(g[x[i]], g[valy], s=1)
         # ax2[i % a, i // a].plot(g['step'], abs(g[valy].rolling(window=20).mean().diff(10)))
         # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
         #                         label='CP_' + str(i) + "_smooth")
         # ax2[i % a, i // a].fill_between(g['step'],
         #                                 g[valy]['quant_inf'],
         #                                 g[valy]['quant_sup'], alpha=0.25, linewidth=0)
+        # ax2[i % a, i // a].fill_between(g['step'],
+        #                                 g[valy]['mean'] - 0.5*g[valy]['std'],
+        #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
         ax2[i % a, i // a].set_title(label=valy)
         ax2[i % a, i // a].legend()
         ax2[i % a, i // a].set_xlim([0, 100000])

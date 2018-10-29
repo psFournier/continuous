@@ -11,6 +11,7 @@ class Playroom3GM(Wrapper):
 
         self.gamma = float(args['--gamma'])
         self.theta = float(args['--theta'])
+        self.htr = int(args['--htr'])
 
         self.tasks = [o.name for o in self.env.objects]
         self.Ntasks = len(self.tasks)
@@ -39,25 +40,28 @@ class Playroom3GM(Wrapper):
 
     def step(self, exp):
         self.steps[self.task] += 1
-        exp['g'] = self.goal
-        exp['m'] = self.mask
-        exp['task'] = self.task
-        # exp['tasks'] = [self.task]
         exp['s1'] = self.env.step(exp['a'])[0]
-        exp = self.eval_exp(exp)
+        indices = np.where(self.mask)
+        goal = self.goal[indices]
+        s1_proj = exp['s1'][indices]
+        if (s1_proj == goal).all():
+            exp['t'] = self.terminal
+        else:
+            exp['t'] = False
         return exp
 
     def eval_exp(self, exp):
-        indices = np.where(exp['m'])
-        goal = exp['g'][indices]
-        s1_proj = exp['s1'][indices]
-        # s0_proj = exp['s0'][indices]
-        if (s1_proj == goal).all():
-            exp['t'] = self.terminal
-            exp['r'] = self.r_done
-        else:
-            exp['t'] = False
-            exp['r'] = self.r_notdone
+        exp['rs'], exp['ts'] = [], []
+        for g, m in zip(exp['goals'], exp['masks']):
+            indices = np.where(m)
+            goal = g[indices]
+            s1_proj = exp['s1'][indices]
+            if (s1_proj == goal).all():
+                exp['ts'].append(self.terminal)
+                exp['rs'].append(self.r_done)
+            else:
+                exp['ts'].append(False)
+                exp['rs'].append(self.r_notdone)
         return exp
 
     def end_episode(self, episode):
@@ -68,63 +72,82 @@ class Playroom3GM(Wrapper):
         self.attempts[self.task] += 1
         self.foreval[self.task] = (self.attempts[self.task] % 10 == 0)
 
-        goals = [self.goal]
-        masks = [self.mask]
         tasks = [self.task]
+        goals = [self.goal]
+        othertasks = [i for i in range(self.Ntasks) if i != self.task]
 
-        for expe in reversed(episode):
+        if self.htr == 1:
+            tasks += [np.random.choice(othertasks)]
+            goals += [None]
+        elif self.htr == 2:
+            otherprobs = [self.interests[i] for i in othertasks]
+            tasks += [np.random.choice(othertasks, otherprobs)]
+            goals += [None]
+        elif self.htr == 3:
+            tasks += othertasks
+            goals += [None] * len(othertasks)
 
-            for j, (g, m, t) in enumerate(zip(goals, masks, tasks)):
+        masks = [self.task2mask(task) for task in tasks]
+        mcrs = [np.zeros(1) for _ in tasks]
 
-                if t != self.task:
-                    expe['g'] = g
-                    expe['m'] = m
-                    expe['task'] = t
-                    expe = self.eval_exp(expe)
-                self.buffer.append(expe.copy())
+        for exp in reversed(episode):
 
-            for task, _ in enumerate(self.tasks):
+            exp['tasks'] = []
+            exp['mcrs'] = []
+            exp['goals'] = []
+            exp['masks'] = []
 
-                if all([task != t for t in tasks]):
+            for i, task in enumerate(tasks):
 
-                    mask = self.task2mask(task)
-                    s1m = expe['s1'][np.where(m)]
-                    s0m = expe['s0'][np.where(m)]
-                    if (s1m != s0m).any():
-                        goal = expe['s1']
-                        expe['g'] = goal
-                        expe['m'] = mask
-                        expe['task'] = task
-                        expe = self.eval_exp(expe)
-                        self.buffer.append(expe.copy())
-                        goals.append(goal)
-                        masks.append(mask)
-                        tasks.append(task)
+                if goals[i] is None and (exp['s1'][np.where(masks[i])] != exp['s0'][np.where(masks[i])]).any():
+                    goals[i] = exp['s1']
+                if goals[i] is not None:
+                    exp['tasks'].append(task)
+                    exp['goals'].append(goals[i])
+                    exp['masks'].append(masks[i])
+
+            if exp['tasks']:
+                exp = self.eval_exp(exp)
+                for i in range(len(exp['tasks'])):
+                    mcrs[i] = mcrs[i] * self.gamma + exp['rs'][i]
+                    exp['mcrs'].append(mcrs[i])
+                self.buffer.append(exp.copy())
 
 
     def reset(self):
 
         state = self.env.reset(random=False)
         self.update_interests()
-        self.task, self.goal = self.sample_task_goal(state)
+        self.task = self.sample_task(state)
+        self.goal = self.sample_goal(self.task, state)
         self.mask = self.task2mask(self.task)
 
         return state
 
-    def sample_task_goal(self, state):
+    def sample_task(self, state):
 
         task = np.random.choice(self.Ntasks, p=self.interests)
         features = self.tasks_feat[task]
         while all([state[f] == self.state_high[f] for f in features]):
             task = np.random.choice(self.Ntasks, p=self.interests)
             features = self.tasks_feat[task]
+        return task
+
+    def sample_goal(self, task, state):
 
         goal = state.copy()
         while not (goal != state).any():
-            for f in features:
+            for f in self.tasks_feat[task]:
                 goal[f] = np.random.randint(state[f], self.state_high[f] + 1)
 
-        return task, goal
+        return goal
+
+    def sample(self, batchsize):
+
+        task = np.random.choice(self.Ntasks, p=self.interests)
+        samples = self.buffer.sample(batchsize, task)
+
+        return samples
 
     def get_stats(self):
         stats = {}

@@ -20,9 +20,9 @@ class CompetenceQueue():
         size = len(self.C)
         if size > 2:
             window = min(size, self.window)
-            n = 20  # the larger n is, the smoother curve will be
-            Cs = lfilter([1.0 / n] * n, 1, np.array(self.C))
-            # Cs = list(self.C)
+            # n = 20  # the larger n is, the smoother curve will be
+            # Cs = lfilter([1.0 / n] * n, 1, np.array(self.C))
+            Cs = list(self.C)
             C1 = Cs[-window//2:]
             C2 = Cs[-window:-window//2]
             self.C_avg = np.mean(C1)

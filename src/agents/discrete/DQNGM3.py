@@ -2,7 +2,7 @@ import numpy as np
 RENDER_TRAIN = False
 TARGET_CLIP = True
 INVERTED_GRADIENTS = True
-from networks import CriticDQNGM
+from networks import CriticDQNGM3
 from agents.agent import Agent
 
 class DQNGM3(Agent):
@@ -12,47 +12,27 @@ class DQNGM3(Agent):
 
     def init(self, args ,env):
 
-        metrics = ['l_dqn', 'qval', 'val']
-        metrics_i = ['l_dqn_i', 'val_i', 'qval_i', 'l_imit', 'filter']
-        self.critic = CriticDQNGM(args, env)
+        metrics = ['loss1', 'qval', 'val', 'loss2', 'prop_good']
+        self.critic = CriticDQNGM3(args, env)
         self.metrics = {}
-        self.metrics_i = {}
         for metric in metrics:
             self.metrics[metric] = 0
-        for metric in metrics_i:
-            self.metrics_i[metric] = 0
         self.rnd_demo = float(args['--rnd_demo'])
         self.demo = int(args['--demo'])
-        self.step_i = 0
         self.mode = 'train'
 
     def train(self):
 
-        if len(self.env.buffer) > 100 * self.batch_size:
-
-            samples = self.env.buffer.sample(self.batch_size)
-            targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
-            inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets]
-            metrics = self.critic.train_dqn(inputs)
-            self.metrics['l_dqn'] += np.squeeze(metrics[0])
-            self.metrics['val'] += np.mean(metrics[1])
-            self.metrics['qval'] += np.mean(metrics[2])
-            self.critic.target_train()
-
-    def train_i(self):
-
-        if len(self.env.buffer_i) > 10 * self.batch_size:
-
-            samples = self.env.buffer_i.sample(self.batch_size)
+        samples = self.env.sample(self.batch_size)
+        if samples is not None:
             targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
             inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets, samples['mcr']]
-            metrics = self.critic.train_imit(inputs)
-            self.metrics_i['l_dqn_i'] += np.squeeze(metrics[0])
-            self.metrics_i['val_i'] += np.mean(metrics[1])
-            self.metrics_i['qval_i'] += np.mean(metrics[2])
-            self.metrics_i['l_imit'] += np.squeeze(metrics[3])
-            self.metrics_i['filter'] += np.squeeze(metrics[4])
-            self.step_i += 1
+            metrics = self.critic.train(inputs)
+            self.metrics['loss1'] += np.squeeze(metrics[0])
+            self.metrics['val'] += np.mean(metrics[1])
+            self.metrics['qval'] += np.mean(metrics[2])
+            self.metrics['loss2'] += np.squeeze(metrics[3])
+            self.metrics['prop_good'] += np.mean(metrics[4])
             self.critic.target_train()
 
     def make_input(self, state):
@@ -66,10 +46,8 @@ class DQNGM3(Agent):
             action = np.argmax(actionProbs)
         else:
             action = np.random.choice(range(self.env.action_dim), p=actionProbs)
-        prob = actionProbs[action]
         action = np.expand_dims(action, axis=1)
         exp['a'] = action
-        # exp['p_a'] = prob
         return exp
 
     def reset(self):
@@ -97,10 +75,10 @@ class DQNGM3(Agent):
         demo = []
         exp = {}
         exp['s0'] = self.env_test.env.reset(random=False)
-        # task = self.env_test.env.chest1
-        # goal = 2
-        task = np.random.choice(self.env_test.env.objects)
-        goal = np.random.randint(task.high[2] + 1)
+        task = self.env_test.env.chest1
+        goal = 2
+        # task = np.random.choice(self.env_test.env.objects)
+        # goal = np.random.randint(task.high[2] + 1)
         while True:
             a, done = self.tutor_act(task, goal)
             if done:
@@ -117,37 +95,44 @@ class DQNGM3(Agent):
     def imitate(self):
 
         if self.demo != 0 and self.env_step % self.demo_freq == 0:
-            for i in range(5):
-                trajectory, true_task = self.get_demo()
 
-                if self.demo == 1:
-                    tasks = [true_task]
-                elif self.demo == 2:
-                    tasks = [np.random.randint(self.env.Ntasks)]
-                elif self.demo == 3:
-                    tasks = [self.env.sample_task_goal(trajectory[0]['s0'])[0]]
-                else:
-                    tasks = range(self.env.Ntasks)
+            trajectory, true_task = self.get_demo()
 
-                masks = [self.env_test.task2mask(task) for task in tasks]
-                mcrs = [np.zeros(1) for _ in tasks]
-                goals = [None for _ in tasks]
+            if self.demo == 1:
+                tasks = [true_task]
+            elif self.demo == 2:
+                tasks = [np.random.randint(self.env.Ntasks)]
+            elif self.demo == 3:
+                tasks = [self.env.sample_task(trajectory[0]['s0'])]
+            else:
+                tasks = range(self.env.Ntasks)
 
-                for exp in reversed(trajectory):
+            masks = [self.env_test.task2mask(task) for task in tasks]
+            mcrs = [np.zeros(1) for _ in tasks]
+            goals = [None for _ in tasks]
 
-                    for i, task in enumerate(tasks):
+            for exp in reversed(trajectory):
 
-                        if goals[i] is None and (exp['s1'][np.where(masks[i])] != exp['s0'][np.where(masks[i])]).any():
-                            goals[i] = exp['s1']
-                        if goals[i] is not None:
-                            exp['g'] = goals[i]
-                            exp['m'] = masks[i]
-                            exp['task'] = task
-                            exp = self.env_test.eval_exp(exp)
-                            mcrs[i] = mcrs[i] * self.env.gamma + exp['r']
-                            exp['mcr'] = mcrs[i]
-                            # self.env.buffer_i.append(exp)
-                            self.env.buffer.append(exp)
+                exp['tasks'] = []
+                exp['mcrs'] = []
+                exp['goals'] = []
+                exp['masks'] = []
+
+                for i, task in enumerate(tasks):
+
+                    if goals[i] is None and (exp['s1'][np.where(masks[i])] != exp['s0'][np.where(masks[i])]).any():
+                        goals[i] = exp['s1']
+                    if goals[i] is not None:
+                        exp['tasks'].append(task)
+                        exp['goals'].append(goals[i])
+                        exp['masks'].append(masks[i])
+
+                if exp['tasks']:
+                    exp = self.env_test.eval_exp(exp)
+                    for i in range(len(exp['tasks'])):
+                        mcrs[i] = mcrs[i] * self.env.gamma + exp['rs'][i]
+                        exp['mcrs'].append(mcrs[i])
+                    self.env.buffer.append(exp.copy())
 
     def log(self):
 
@@ -161,11 +146,6 @@ class DQNGM3(Agent):
             for metric, val in self.metrics.items():
                 self.stats[metric] = val / self.eval_freq
                 self.metrics[metric] = 0
-            if self.step_i != 0:
-                for metric, val in self.metrics_i.items():
-                    self.stats[metric] = val / self.step_i
-                    self.metrics_i[metric] = 0
-                self.step_i = 0
 
             self.get_stats()
 
