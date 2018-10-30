@@ -78,11 +78,8 @@ class DQNGM3(Agent):
         demo = []
         exp = {}
         exp['s0'] = self.env_test.env.reset(random=False)
-        raise RuntimeError
-        task = 11
-        goal = 2
-        # task = np.random.choice(self.env_test.env.objects)
-        # goal = np.random.randint(task.high[2] + 1)
+        task = self.env_test.sample_tutor_task()
+        goal = self.env_test.sample_tutor_goal(task)
         while True:
             a, done = self.tutor_act(task, goal)
             if done:
@@ -90,8 +87,8 @@ class DQNGM3(Agent):
             else:
                 exp['a'] = np.expand_dims(a, axis=1)
                 exp['s1'] = self.env_test.env.step(exp['a'])[0]
-                demo.append(exp.copy())
                 exp['pa'] = 1
+                demo.append(exp.copy())
                 exp['s0'] = exp['s1']
 
         return demo, task
@@ -100,43 +97,13 @@ class DQNGM3(Agent):
 
         if self.demo != 0 and self.env_step % self.demo_freq == 0:
 
-            trajectory, true_task = self.get_demo()
-
+            demo, true_task = self.get_demo()
             if self.demo == 1:
-                tasks = [true_task]
-            elif self.demo == 2:
-                tasks = [np.random.randint(self.env.Ntasks)]
-            elif self.demo == 3:
-                tasks = [self.env.sample_task(trajectory[0]['s0'])]
-            else:
                 tasks = range(self.env.Ntasks)
-
-            masks = [self.env_test.task2mask(task) for task in tasks]
-            mcrs = [np.zeros(1) for _ in tasks]
+            else:
+                tasks = [true_task]
             goals = [None for _ in tasks]
-
-            for exp in reversed(trajectory):
-
-                exp['tasks'] = []
-                exp['mcrs'] = []
-                exp['goals'] = []
-                exp['masks'] = []
-
-                for i, task in enumerate(tasks):
-
-                    if goals[i] is None and (exp['s1'][np.where(masks[i])] != exp['s0'][np.where(masks[i])]).any():
-                        goals[i] = exp['s1']
-                    if goals[i] is not None:
-                        exp['tasks'].append(task)
-                        exp['goals'].append(goals[i])
-                        exp['masks'].append(masks[i])
-
-                if exp['tasks']:
-                    exp = self.env_test.eval_exp(exp)
-                    for i in range(len(exp['tasks'])):
-                        mcrs[i] = mcrs[i] * self.env.gamma + exp['rs'][i]
-                        exp['mcrs'].append(mcrs[i])
-                    self.env.buffer.append(exp.copy())
+            self.env_test.process_trajectory(demo, tasks, goals)
 
     def log(self):
 

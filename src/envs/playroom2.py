@@ -194,7 +194,8 @@ class Playroom2(Env):
             a = None
         return a
 
-    def opt_action(self, obj, goal):
+    def opt_action(self, task, goal):
+        obj = self.objects[task]
         if obj is None:
             a = self.go(goal[0], goal[1])
             if a is not None:

@@ -73,7 +73,7 @@ class MultiTaskReplayBuffer(object):
         exps = []
         res = None
         buffer = self._taskBuffers[task]
-        if buffer._numsamples >= 10 * batchsize:
+        if buffer._numsamples >= 100 * batchsize:
             infos = buffer.sample(batchsize)
             for info in infos:
                 triplet = self._storage[info['idx']]

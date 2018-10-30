@@ -11,7 +11,6 @@ class Playroom3GM(Wrapper):
 
         self.gamma = float(args['--gamma'])
         self.theta = float(args['--theta'])
-        self.htr = int(args['--htr'])
 
         self.tasks = [o.name for o in self.env.objects]
         self.Ntasks = len(self.tasks)
@@ -75,25 +74,16 @@ class Playroom3GM(Wrapper):
         self.attempts[self.task] += 1
         self.foreval[self.task] = (self.attempts[self.task] % 10 == 0)
 
-        tasks = [self.task]
-        goals = [self.goal]
-        othertasks = [i for i in range(self.Ntasks) if i != self.task]
+        tasks = range(self.Ntasks)
+        goals = [self.goal if t==self.task else None for t in tasks]
+        self.process_trajectory(episode, tasks, goals)
 
-        if self.htr == 1:
-            tasks += [np.random.choice(othertasks)]
-            goals += [None]
-        elif self.htr == 2:
-            otherprobs = [self.interests[i] for i in othertasks]
-            tasks += [np.random.choice(othertasks, otherprobs)]
-            goals += [None]
-        elif self.htr == 3:
-            tasks += othertasks
-            goals += [None] * len(othertasks)
+    def process_trajectory(self, trajectory, tasks, goals):
 
-        masks = [self.task2mask(task) for task in tasks]
         mcrs = [np.zeros(1) for _ in tasks]
+        masks = [self.task2mask(task) for task in tasks]
 
-        for exp in reversed(episode):
+        for exp in reversed(trajectory):
 
             exp['tasks'] = []
             exp['mcrs'] = []
@@ -116,7 +106,6 @@ class Playroom3GM(Wrapper):
                     exp['mcrs'].append(mcrs[i])
                 self.buffer.append(exp.copy())
 
-
     def reset(self):
 
         state = self.env.reset(random=False)
@@ -129,10 +118,10 @@ class Playroom3GM(Wrapper):
 
     def sample_task(self, state):
 
-        task = np.random.choice(self.Ntasks, p=self.interests)
+        task = np.random.choice(self.Ntasks, p=self.task_probs)
         features = self.tasks_feat[task]
         while all([state[f] == self.state_high[f] for f in features]):
-            task = np.random.choice(self.Ntasks, p=self.interests)
+            task = np.random.choice(self.Ntasks, p=self.task_probs)
             features = self.tasks_feat[task]
         return task
 
@@ -145,9 +134,21 @@ class Playroom3GM(Wrapper):
 
         return goal
 
+    def sample_tutor_task(self):
+
+        task = 2
+
+        return task
+
+    def sample_tutor_goal(self, task):
+
+        goal = 2
+
+        return goal
+
     def sample(self, batchsize):
 
-        task = np.random.choice(self.Ntasks, p=self.interests)
+        task = np.random.choice(self.Ntasks, p=self.task_probs)
         samples = self.buffer.sample(batchsize, task)
         if samples is not None:
             self.trainsteps[task] += 1
@@ -189,20 +190,22 @@ class Playroom3GM(Wrapper):
         minCP = min(self.CPs)
         maxCP = max(self.CPs)
         widthCP = maxCP - minCP
-        espilon = 0.4
-        Ntasks = len(self.CPs)
 
         if widthCP <= 0.01:
             minC = min(self.Cs)
             maxC = max(self.Cs)
             widthC = maxC - minC
-            Cs = [math.pow(1 - (c - minC) / (widthC + 0.0001), self.theta) for c in self.Cs]
-            sumC = np.sum(Cs)
-            self.interests = [espilon / Ntasks + (1 - espilon) * c / sumC for c in Cs]
+            self.interests = [math.pow(1 - (c - minC) / (widthC + 0.0001), self.theta) for c in self.Cs]
         else:
-            CPs = [math.pow((cp - minCP) / widthCP, self.theta) for cp in self.CPs]
-            sumCP = np.sum(CPs)
-            self.interests = [espilon / Ntasks + (1 - espilon) * cp / sumCP for cp in CPs]
+            self.interests = [math.pow((cp - minCP) / widthCP, self.theta) for cp in self.CPs]
+
+    @property
+    def task_probs(self):
+        espilon = 0.4
+        sumI = np.sum(self.interests)
+        probs = [espilon / self.Ntasks + (1 - espilon) * i / sumI for i in self.interests]
+        return probs
+
     @property
     def CPs(self):
         return [abs(abs(q.CP + 0.1/math.sqrt(2)) - 0.1/math.sqrt(2)) for q in self.queues]
