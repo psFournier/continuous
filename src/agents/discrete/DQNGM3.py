@@ -23,7 +23,7 @@ class DQNGM3(Agent):
 
     def train(self):
 
-        samples = self.env.sample(self.batch_size)
+        task, samples = self.env.sample(self.batch_size)
         if samples is not None:
             targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
             inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets, samples['mcr']]
@@ -33,6 +33,7 @@ class DQNGM3(Agent):
             self.metrics['qval'] += np.mean(metrics[2])
             self.metrics['loss2'] += np.squeeze(metrics[3])
             self.metrics['prop_good'] += np.mean(metrics[4])
+            self.env.offpolicyness[task] += np.mean(metrics[5] / samples['pa'])
             self.critic.target_train()
 
     def make_input(self, state):
@@ -46,8 +47,10 @@ class DQNGM3(Agent):
             action = np.argmax(actionProbs)
         else:
             action = np.random.choice(range(self.env.action_dim), p=actionProbs)
+        exp['pa'] = actionProbs[action]
         action = np.expand_dims(action, axis=1)
         exp['a'] = action
+
         return exp
 
     def reset(self):
@@ -75,6 +78,7 @@ class DQNGM3(Agent):
         demo = []
         exp = {}
         exp['s0'] = self.env_test.env.reset(random=False)
+        raise RuntimeError
         task = 11
         goal = 2
         # task = np.random.choice(self.env_test.env.objects)
@@ -87,7 +91,7 @@ class DQNGM3(Agent):
                 exp['a'] = np.expand_dims(a, axis=1)
                 exp['s1'] = self.env_test.env.step(exp['a'])[0]
                 demo.append(exp.copy())
-                # self.train_i()
+                exp['pa'] = 1
                 exp['s0'] = exp['s1']
 
         return demo, task

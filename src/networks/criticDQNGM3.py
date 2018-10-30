@@ -43,6 +43,7 @@ class CriticDQNGM3(object):
 
         actionFilter = K.squeeze(K.one_hot(A, self.num_actions), axis=1)
         qval = K.sum(actionFilter * qvals, axis=1, keepdims=True)
+        actionProb = K.sum(actionFilter * actionProbs, axis=1, keepdims=True)
         loss_dqn = K.mean(K.square(qval - TARGETS), axis=0)
         self.qval = K.function(inputs=[S, G, M, A], outputs=[qval], updates=None)
 
@@ -58,7 +59,7 @@ class CriticDQNGM3(object):
         loss_imit = K.mean(imitFiltered, axis=0)
 
         inputs = [S, A, G, M, TARGETS, MCR]
-        outputs = [loss_dqn, val, qval, loss_imit, K.sum(advClip)]
+        outputs = [loss_dqn, val, qval, loss_imit, K.sum(advClip), actionProb]
 
         updates = self.optimizer.get_updates(loss_dqn + self.w_i * loss_imit, self.model.trainable_weights)
         self.train = K.function(inputs, outputs, updates)

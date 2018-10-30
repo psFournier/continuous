@@ -44,22 +44,23 @@ params = ['--agent',
           '--theta',
           '--inv_grad',
           '--margin',
-          '--demo'
+          '--demo',
+          '--htr'
           ]
 
 
 df2 = df
 # df2 = df2[(df2['--agent'] == 'ddpgg')]
-df2 = df2[(df2['--env'] == 'Playroom2GM-v0')]
+# df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
 # # df2 = df2[(df2['--w1'] == 0) | (df2['--w1'] == 0.5) | (df2['--w1'] == 2)]
-# df2 = df2[(df2['--wimit'] == 1)]
+# df2 = df2[(df2['--wimit'] == 0)]
 # df2 = df2[(df2['--opt_init'] == -20)]
-df2 = df2[(df2['--demo'] == 0) | (df2['--demo'] == 0)]
+df2 = df2[(df2['--demo'] == 0)]
 # # df2 = df2[(df2['--clipping'] == 1)]
 # # df2 = df2[(df2['--explo'] == 1)]
 # df2 = df2[(df2['--margin'] == 0.5)]
-df2 = df2[(df2['--theta'] == 4)]
+df2 = df2[(df2['--theta'] == 0)]
 # y = ['R']
 # y = ['agentR']
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
@@ -70,7 +71,7 @@ y = ['C'+s for s in ['_light','_key1', '_chest1']]
 # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
 #    'R_light2', 'R_light3', 'R_light4', 'R_xy']
 
-# y = ['loss_dqn','qval', 'val']
+y = ['loss1','loss2', 'qval', 'prop_good']
 # y = ['good_exp', 'loss_dqn2', 'qval2', 'val2']
 # y = ['loss_imit']
 # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
@@ -96,13 +97,13 @@ def quant_inf(x):
 def quant_sup(x):
     return x.quantile(0.8)
 op_dict = {a:[np.median, np.mean, np.std, quant_inf, quant_sup] for a in y}
-avg = 0
+avg = 1
 if avg:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
 print(paramsStudied)
 a, b = 2,2
-fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=False)
+fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
 colors = ['b', 'r']
 p = 'num_run'
 if avg:
@@ -135,12 +136,12 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         # ax2[i % a, i // a].fill_between(g['step'],
         #                                 g[valy]['quant_inf'],
         #                                 g[valy]['quant_sup'], alpha=0.25, linewidth=0)
-        # ax2[i % a, i // a].fill_between(g['step'],
-        #                                 g[valy]['mean'] - 0.5*g[valy]['std'],
-        #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
+        ax2[i % a, i // a].fill_between(g['step'],
+                                        g[valy]['mean'] - 0.5*g[valy]['std'],
+                                        g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
         ax2[i % a, i // a].set_title(label=valy)
         ax2[i % a, i // a].legend()
-        ax2[i % a, i // a].set_xlim([0, 100000])
+        ax2[i % a, i // a].set_xlim([0, 500000])
     # break
 
 plt.show()

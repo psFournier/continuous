@@ -133,21 +133,12 @@ class Playroom(Env):
         self.desc = np.asarray(MAP, dtype='c')
         self.maxR = self.desc.shape[0] - 2
         self.maxC = (self.desc.shape[1] - 1) // 2 - 1
-        self.seenpos = set()
-        self.g = self.gencoordinates()
         self.initialize()
 
-    def gencoordinates(self):
-
-        while True:
-            x, y = randint(0, self.maxR), randint(0, self.maxC)
-            while (x, y) in self.seenpos:
-                x, y = randint(0, self.maxR), randint(0, self.maxC)
-            self.seenpos.add((x, y))
-            yield (x, y)
-
     def initialize(self, random=True):
-        self.x, self.y = next(self.g)
+        self.seenpos = set()
+        self.x, self.y = randint(0, self.maxR), randint(0, self.maxC)
+        self.seenpos.add((self.x, self.y))
         self.obj = 0
         self.objects = []
         self.light = Light(self,

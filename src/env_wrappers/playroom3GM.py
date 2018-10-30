@@ -20,7 +20,10 @@ class Playroom3GM(Wrapper):
         self.task = None
         self.goal = None
         self.queues = [CompetenceQueue() for _ in self.tasks]
-        self.steps = [0 for _ in self.tasks]
+        self.envsteps = [0 for _ in self.tasks]
+        self.trainsteps = [0 for _ in self.tasks]
+        self.offpolicyness = [0 for _ in self.tasks]
+        self.termstates = [0 for _ in self.tasks]
         self.attempts = [0 for _ in self.tasks]
         self.foreval = [False for _ in self.tasks]
         self.update_interests()
@@ -34,12 +37,12 @@ class Playroom3GM(Wrapper):
         self.minQ = self.r_notdone / (1 - self.gamma)
         self.maxQ = self.r_done if self.terminal else self.r_done / (1 - self.gamma)
 
-        self.names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'mcr', 'task']
+        self.names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'pa', 'mcr', 'task']
         self.buffer = MultiTaskReplayBuffer(limit=int(1e6), Ntasks=self.Ntasks, names=self.names)
 
 
     def step(self, exp):
-        self.steps[self.task] += 1
+        self.envsteps[self.task] += 1
         exp['s1'] = self.env.step(exp['a'])[0]
         indices = np.where(self.mask)
         goal = self.goal[indices]
@@ -146,17 +149,31 @@ class Playroom3GM(Wrapper):
 
         task = np.random.choice(self.Ntasks, p=self.interests)
         samples = self.buffer.sample(batchsize, task)
+        if samples is not None:
+            self.trainsteps[task] += 1
+            self.termstates[task] += np.mean(samples['t'])
 
-        return samples
+        return task, samples
 
     def get_stats(self):
         stats = {}
         for i, task in enumerate(self.tasks):
-            stats['step_{}'.format(task)] = float("{0:.3f}".format(self.steps[i]))
-            stats['attempts_{}'.format(task)] = float("{0:.3f}".format(self.attempts[i]))
             stats['I_{}'.format(task)] = float("{0:.3f}".format(self.interests[i]))
             stats['CP_{}'.format(task)] = float("{0:.3f}".format(self.CPs[i]))
             stats['C_{}'.format(task)] = float("{0:.3f}".format(self.Cs[i]))
+
+            stats['envstep_{}'.format(task)] = float("{0:.3f}".format(self.envsteps[i]))
+            stats['trainstep_{}'.format(task)] = float("{0:.3f}".format(self.trainsteps[i]))
+            stats['attempts_{}'.format(task)] = float("{0:.3f}".format(self.attempts[i]))
+            stats['offpolicyness_{}'.format(task)] = float("{0:.3f}".format(
+                self.offpolicyness[i] / (self.trainsteps[i] + 0.00001)))
+            stats['termstates_{}'.format(task)] = float("{0:.3f}".format(
+                self.termstates[i] / (self.trainsteps[i] + 0.00001)))
+            self.offpolicyness[i] = 0
+            self.envsteps[i] = 0
+            self.trainsteps[i] = 0
+            self.attempts[i] = 0
+            self.termstates[i] = 0
         return stats
 
     def task2mask(self, idx):
@@ -188,7 +205,7 @@ class Playroom3GM(Wrapper):
             self.interests = [espilon / Ntasks + (1 - espilon) * cp / sumCP for cp in CPs]
     @property
     def CPs(self):
-        return [abs(q.CP) for q in self.queues]
+        return [abs(abs(q.CP + 0.1/math.sqrt(2)) - 0.1/math.sqrt(2)) for q in self.queues]
 
     @property
     def Cs(self):

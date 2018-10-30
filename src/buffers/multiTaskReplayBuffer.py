@@ -50,7 +50,8 @@ class MultiTaskReplayBuffer(object):
         triplet = {'s0': item['s0'],
                    'a': item['a'],
                    's1': item['s1'],
-                   'tasks': item['tasks']}
+                   'tasks': item['tasks'],
+                   'pa': item['pa']}
         if self._next_idx >= len(self._storage):
             self._storage.append(triplet)
         else:
@@ -69,12 +70,11 @@ class MultiTaskReplayBuffer(object):
         self._next_idx = (self._next_idx + 1) % self._limit
 
     def sample(self, batchsize, task):
-
-        buffer = self._taskBuffers[task]
+        exps = []
         res = None
+        buffer = self._taskBuffers[task]
         if buffer._numsamples >= 10 * batchsize:
             infos = buffer.sample(batchsize)
-            exps = []
             for info in infos:
                 triplet = self._storage[info['idx']]
                 dict = merge_two_dicts(triplet, info)
