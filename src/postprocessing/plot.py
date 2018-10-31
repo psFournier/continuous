@@ -5,7 +5,7 @@ import os
 import numpy as np
 from scipy.signal import lfilter
 
-DIR = '../../log/cluster/2710'
+DIR = '../../log/cluster/last'
 ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
@@ -45,7 +45,7 @@ params = ['--agent',
           '--inv_grad',
           '--margin',
           '--demo',
-          '--htr'
+          # '--htr'
           ]
 
 
@@ -54,7 +54,7 @@ df2 = df
 df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
 # df2 = df2[(df2['--demo'] == 2) | (df2['--demo'] == 3)]
-# df2 = df2[(df2['--wimit'] == 0)]
+df2 = df2[(df2['--wimit'] == 0)]
 # df2 = df2[(df2['--opt_init'] == -20)]
 # df2 = df2[(df2['--demo'] == 3)]
 # # df2 = df2[(df2['--clipping'] == 1)]

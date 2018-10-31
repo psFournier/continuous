@@ -101,15 +101,15 @@ class DQNGM3(Agent):
 
             if self.demo == 1:
                 tasks = [true_task]
-            elif self.demo == 2:
-                tasks = [np.random.randint(self.env.Ntasks)]
-            elif self.demo == 3:
-                tasks = [self.env.sample_task(demo[0]['s0'])]
+            # elif self.demo == 2:
+            #     tasks = [np.random.randint(self.env.Ntasks)]
+            # elif self.demo == 3:
+            #     tasks = [self.env.sample_task(demo[0]['s0'])]
             else:
                 tasks = range(self.env.Ntasks)
 
             goals = [None for _ in tasks]
-            self.env_test.process_trajectory(demo, tasks, goals)
+            self.env.process_trajectory(demo, tasks, goals)
 
     def log(self):
 
