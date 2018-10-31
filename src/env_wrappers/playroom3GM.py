@@ -80,7 +80,7 @@ class Playroom3GM(Wrapper):
 
     def process_trajectory(self, trajectory, tasks, goals):
 
-        mcrs = [np.zeros(1) for _ in tasks]
+        mcrs = [np.zeros(1)] * self.Ntasks
         masks = [self.task2mask(task) for task in tasks]
 
         for exp in reversed(trajectory):
@@ -101,9 +101,9 @@ class Playroom3GM(Wrapper):
 
             if exp['tasks']:
                 exp = self.eval_exp(exp)
-                for i in range(len(exp['tasks'])):
-                    mcrs[i] = mcrs[i] * self.gamma + exp['rs'][i]
-                    exp['mcrs'].append(mcrs[i])
+                for i, task in enumerate(exp['tasks']):
+                    mcrs[task] = mcrs[task] * self.gamma + exp['rs'][i]
+                    exp['mcrs'].append(mcrs[task])
                 self.buffer.append(exp.copy())
 
     def reset(self):

@@ -54,12 +54,14 @@ class CriticDQNGM3(object):
         onehot = 1 - K.squeeze(K.one_hot(A, self.num_actions), axis=1)
         onehotMargin = K.repeat_elements(self.margin * qvalWidth, self.num_actions, axis=1) * onehot
         imit = (K.max(qvals + onehotMargin, axis=1, keepdims=True) - qval)
-        advantage = K.maximum(MCR - val, 0)
-        imitFiltered = imit * advantage
+        # advantage = K.maximum(MCR - val, 0)
+        advClip = K.cast(K.greater(MCR, val), dtype='float32')
+        # goodexp = K.cast(K.greater(advantage, 0), dtype='float32')
+        imitFiltered = imit * advClip
         loss_imit = K.mean(imitFiltered, axis=0)
 
         inputs = [S, A, G, M, TARGETS, MCR]
-        outputs = [loss_dqn, val, qval, loss_imit, K.sum(advantage), actionProb]
+        outputs = [loss_dqn, val, qval, loss_imit, K.sum(advClip), actionProb]
 
         updates = self.optimizer.get_updates(loss_dqn + self.w_i * loss_imit, self.model.trainable_weights)
         self.train = K.function(inputs, outputs, updates)
