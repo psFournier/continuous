@@ -208,7 +208,7 @@ class Playroom3GM(Wrapper):
 
     @property
     def CPs(self):
-        return [abs(abs(q.CP + 0.1/math.sqrt(2)) - 0.1/math.sqrt(2)) for q in self.queues]
+        return [np.maximum(abs(q.CP + 0.1/math.sqrt(2)) - 0.1/math.sqrt(2), 0) for q in self.queues]
 
     @property
     def Cs(self):
