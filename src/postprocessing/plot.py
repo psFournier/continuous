@@ -54,13 +54,13 @@ df2 = df
 df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
 # df2 = df2[(df2['--demo'] == 2) | (df2['--demo'] == 3)]
-df2 = df2[(df2['--wimit'] == 0)]
+# df2 = df2[(df2['--wimit'] == 1)]
 # df2 = df2[(df2['--opt_init'] == -20)]
-# df2 = df2[(df2['--demo'] == 3)]
+# df2 = df2[(df2['--demo'] == 2)]
 # # df2 = df2[(df2['--clipping'] == 1)]
 # # df2 = df2[(df2['--explo'] == 1)]
 # df2 = df2[(df2['--margin'] == 0.5)]
-# df2 = df2[(df2['--theta'] == 0)]
+df2 = df2[(df2['--theta'] == 4)]
 # y = ['R']
 # y = ['agentR']
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
@@ -83,6 +83,8 @@ y = ['C'+s for s in ['_light','_key1', '_chest1']]
 # y = ['R_'+str(i) for i in range(5)]
 # y = ['T']
 # y = ['R_0']
+# y2 = ['CP'+s for s in ['_light','_key1', '_chest1']]
+# y3 = ['trainstep'+s for s in ['_light','_key1', '_chest1']]
 
 paramsStudied = []
 for param in params:
@@ -103,7 +105,7 @@ if avg:
 
 print(paramsStudied)
 a, b = 2,2
-fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
+fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
 colors = ['b', 'r']
 p = 'num_run'
 if avg:
@@ -123,12 +125,15 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
         # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
         if avg:
-            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
+            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].rolling(10).mean(), label=label)
+
         else:
             # n = 50  # the larger n is, the smoother curve will be
             # yy = lfilter([1.0 / n] * n, 1, g[valy])
-            yy = g[valy]
-            ax2[i % a, i // a].plot(g['step'], yy, label=None)
+            ax2[i % a, i // a].plot(g['step'], g[valy].cumsum(), label=None)
+            # ax2[i % a, i // a].plot(g['step'], g[valy2], label=None)
+            # ax2[i % a, i // a].plot(g['step'], g[valy3], label=None)
+
             # ax2[i % a, i // a].scatter(g[x[i]], g[valy], s=1)
         # ax2[i % a, i // a].plot(g['step'], abs(g[valy].rolling(window=20).mean().diff(10)))
         # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
@@ -136,12 +141,13 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         # ax2[i % a, i // a].fill_between(g['step'],
         #                                 g[valy]['quant_inf'],
         #                                 g[valy]['quant_sup'], alpha=0.25, linewidth=0)
-        ax2[i % a, i // a].fill_between(g['step'],
-                                        g[valy]['mean'] - 0.5*g[valy]['std'],
-                                        g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
+        # ax2[i % a, i // a].fill_between(g['step'],
+        #                                 g[valy]['mean'] - 0.5*g[valy]['std'],
+        #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
         ax2[i % a, i // a].set_title(label=valy)
         ax2[i % a, i // a].legend()
         ax2[i % a, i // a].set_xlim([0, 500000])
+
     # break
 
 plt.show()

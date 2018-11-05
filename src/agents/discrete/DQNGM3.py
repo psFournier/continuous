@@ -109,7 +109,7 @@ class DQNGM3(Agent):
                 tasks = range(self.env.Ntasks)
 
             goals = [None for _ in tasks]
-            self.env.process_trajectory(demo, tasks, goals)
+            self.env.process_trajectory(demo, tasks, goals, with_mcr=True)
 
     def log(self):
 

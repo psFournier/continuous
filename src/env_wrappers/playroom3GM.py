@@ -11,6 +11,7 @@ class Playroom3GM(Wrapper):
 
         self.gamma = float(args['--gamma'])
         self.theta = float(args['--theta'])
+        self.selfImit = bool(int(args['--selfImit']))
 
         self.tasks = [o.name for o in self.env.objects]
         self.Ntasks = len(self.tasks)
@@ -76,9 +77,9 @@ class Playroom3GM(Wrapper):
 
         tasks = range(self.Ntasks)
         goals = [self.goal if t==self.task else None for t in tasks]
-        self.process_trajectory(episode, tasks, goals)
+        self.process_trajectory(episode, tasks, goals, with_mcr=self.selfImit)
 
-    def process_trajectory(self, trajectory, tasks, goals):
+    def process_trajectory(self, trajectory, tasks, goals, with_mcr=False):
 
         mcrs = [np.zeros(1)] * self.Ntasks
         masks = [self.task2mask(task) for task in tasks]
@@ -102,8 +103,11 @@ class Playroom3GM(Wrapper):
             if exp['tasks']:
                 exp = self.eval_exp(exp)
                 for i, task in enumerate(exp['tasks']):
-                    mcrs[task] = mcrs[task] * self.gamma + exp['rs'][i]
-                    exp['mcrs'].append(mcrs[task])
+                    if with_mcr:
+                        mcrs[task] = mcrs[task] * self.gamma + exp['rs'][i]
+                        exp['mcrs'].append(mcrs[task])
+                    else:
+                        exp['mcrs'].append(np.zeros(1))
                 self.buffer.append(exp.copy())
 
     def reset(self):
