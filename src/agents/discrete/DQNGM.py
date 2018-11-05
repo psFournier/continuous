@@ -12,7 +12,7 @@ class DQNGM(Agent):
 
     def init(self, args ,env):
 
-        metrics = ['l_dqn', 'qval', 'val']
+        metrics = ['loss1', 'qval', 'val', 'loss2', 'prop_good']
         self.critic = CriticDQNGM(args, env)
         self.metrics = {}
         for metric in metrics:
@@ -23,15 +23,17 @@ class DQNGM(Agent):
 
     def train(self):
 
-        if len(self.env.buffer) > 100 * self.batch_size:
-
-            samples = self.env.buffer.sample(self.batch_size)
+        task, samples = self.env.sample(self.batch_size)
+        if samples is not None:
             targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
-            inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets]
-            metrics = self.critic.train_dqn(inputs)
-            self.metrics['l_dqn'] += np.squeeze(metrics[0])
+            inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets, samples['mcr']]
+            metrics = self.critic.train(inputs)
+            self.metrics['loss1'] += np.squeeze(metrics[0])
             self.metrics['val'] += np.mean(metrics[1])
             self.metrics['qval'] += np.mean(metrics[2])
+            self.metrics['loss2'] += np.squeeze(metrics[3])
+            self.metrics['prop_good'] += np.mean(metrics[4])
+            self.env.offpolicyness[task] += np.mean(metrics[5] / samples['pa'])
             self.critic.target_train()
 
     def make_input(self, state):
@@ -45,8 +47,10 @@ class DQNGM(Agent):
             action = np.argmax(actionProbs)
         else:
             action = np.random.choice(range(self.env.action_dim), p=actionProbs)
+        exp['pa'] = actionProbs[action]
         action = np.expand_dims(action, axis=1)
         exp['a'] = action
+
         return exp
 
     def reset(self):
@@ -74,12 +78,8 @@ class DQNGM(Agent):
         demo = []
         exp = {}
         exp['s0'] = self.env_test.env.reset(random=False)
-        idx = 2
-        task = self.env_test.env.chest1
-        goal = 2
-        # idx = np.random.choice(len(self.env_test.env.objects))
-        # task = self.env_test.env.objects[idx]
-        # goal = np.random.randint(task.high[2] + 1)
+        task = self.env_test.sample_tutor_task()
+        goal = self.env_test.sample_tutor_goal(task)
         while True:
             a, done = self.tutor_act(task, goal)
             if done:
@@ -87,41 +87,29 @@ class DQNGM(Agent):
             else:
                 exp['a'] = np.expand_dims(a, axis=1)
                 exp['s1'] = self.env_test.env.step(exp['a'])[0]
+                exp['pa'] = 1
                 demo.append(exp.copy())
                 exp['s0'] = exp['s1']
 
-        return demo, idx
+        return demo, task
 
     def imitate(self):
 
         if self.demo != 0 and self.env_step % self.demo_freq == 0:
 
-            trajectory, true_task = self.get_demo()
+            demo, true_task = self.get_demo()
 
             if self.demo == 1:
                 tasks = [true_task]
-            elif self.demo == 2:
-                tasks = [np.random.randint(self.env.Ntasks)]
-            elif self.demo == 3:
-                tasks = [self.env.sample_task_goal(trajectory[0]['s0'])[0]]
+            # elif self.demo == 2:
+            #     tasks = [np.random.randint(self.env.Ntasks)]
+            # elif self.demo == 3:
+            #     tasks = [self.env.sample_task(demo[0]['s0'])]
             else:
                 tasks = range(self.env.Ntasks)
 
-            masks = [self.env_test.task2mask(task) for task in tasks]
             goals = [None for _ in tasks]
-
-            for exp in reversed(trajectory):
-
-                for i, task in enumerate(tasks):
-
-                    if goals[i] is None and (exp['s1'][np.where(masks[i])] != exp['s0'][np.where(masks[i])]).any():
-                        goals[i] = exp['s1']
-                    if goals[i] is not None:
-                        exp['g'] = goals[i]
-                        exp['m'] = masks[i]
-                        exp['task'] = task
-                        exp = self.env_test.eval_exp(exp)
-                        self.env.buffer.append(exp)
+            self.env.process_trajectory(demo, tasks, goals, with_mcr=True)
 
     def log(self):
 

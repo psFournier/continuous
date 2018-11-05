@@ -9,17 +9,21 @@ class PlayroomGM(Wrapper):
         super(PlayroomGM, self).__init__(env)
 
         self.gamma = float(args['--gamma'])
-        self.theta = float(args['--theta'])
-        self.htr = int(args['--htr'])
+        self.theta1 = float(args['--theta1'])
+        self.theta2 = float(args['--theta2'])
+        self.selfImit = bool(int(args['--selfImit']))
+        self.tutorTask = args['--tutorTask']
 
-        # self.tasks = [o.name for o in self.env.objects]
         self.tasks_feat = [[i] for i in range(12)]
         self.Ntasks = len(self.tasks_feat)
         self.mask = None
         self.task = None
         self.goal = None
         self.queues = [CompetenceQueue() for _ in self.tasks_feat]
-        self.steps = [0 for _ in self.tasks_feat]
+        self.envsteps = [0 for _ in self.tasks_feat]
+        self.trainsteps = [0 for _ in self.tasks_feat]
+        self.offpolicyness = [0 for _ in self.tasks_feat]
+        self.termstates = [0 for _ in self.tasks_feat]
         self.attempts = [0 for _ in self.tasks_feat]
         self.foreval = [False for _ in self.tasks_feat]
         self.update_interests()
@@ -33,11 +37,11 @@ class PlayroomGM(Wrapper):
         self.minQ = self.r_notdone / (1 - self.gamma)
         self.maxQ = self.r_done if self.terminal else self.r_done / (1 - self.gamma)
 
-        self.names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'mcr', 'task']
+        self.names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'pa', 'mcr', 'task']
         self.buffer = MultiTaskReplayBuffer(limit=int(1e6), Ntasks=self.Ntasks, names=self.names)
 
     def step(self, exp):
-        self.steps[self.task] += 1
+        self.envsteps[self.task] += 1
         exp['s1'] = self.env.step(exp['a'])[0]
         indices = np.where(self.mask)
         goal = self.goal[indices]
@@ -62,7 +66,6 @@ class PlayroomGM(Wrapper):
                 exp['rs'].append(self.r_notdone)
         return exp
 
-
     def end_episode(self, episode):
 
         if self.foreval[self.task]:
@@ -71,25 +74,16 @@ class PlayroomGM(Wrapper):
         self.attempts[self.task] += 1
         self.foreval[self.task] = (self.attempts[self.task] % 10 == 0)
 
-        tasks = [self.task]
-        goals = [self.goal]
-        othertasks = [i for i in range(self.Ntasks) if i != self.task]
+        tasks = range(self.Ntasks)
+        goals = [self.goal if t==self.task else None for t in tasks]
+        self.process_trajectory(episode, tasks, goals, with_mcr=self.selfImit)
 
-        if self.htr == 1:
-            tasks += [np.random.choice(othertasks)]
-            goals += [None]
-        elif self.htr == 2:
-            otherprobs = [self.interests[i] for i in othertasks]
-            tasks += [np.random.choice(othertasks, otherprobs)]
-            goals += [None]
-        elif self.htr == 3:
-            tasks += othertasks
-            goals += [None] * len(othertasks)
+    def process_trajectory(self, trajectory, tasks, goals, with_mcr=False):
 
+        mcrs = [np.zeros(1)] * self.Ntasks
         masks = [self.task2mask(task) for task in tasks]
-        mcrs = [np.zeros(1) for _ in tasks]
 
-        for exp in reversed(episode):
+        for exp in reversed(trajectory):
 
             exp['tasks'] = []
             exp['mcrs'] = []
@@ -107,9 +101,12 @@ class PlayroomGM(Wrapper):
 
             if exp['tasks']:
                 exp = self.eval_exp(exp)
-                for i in range(len(exp['tasks'])):
-                    mcrs[i] = mcrs[i] * self.gamma + exp['rs'][i]
-                    exp['mcrs'].append(mcrs[i])
+                for i, task in enumerate(exp['tasks']):
+                    if with_mcr:
+                        mcrs[task] = mcrs[task] * self.gamma + exp['rs'][i]
+                        exp['mcrs'].append(mcrs[task])
+                    else:
+                        exp['mcrs'].append(np.zeros(1))
                 self.buffer.append(exp.copy())
 
     def reset(self):
@@ -124,10 +121,10 @@ class PlayroomGM(Wrapper):
 
     def sample_task(self, state):
 
-        task = np.random.choice(self.Ntasks, p=self.interests)
+        task = np.random.choice(self.Ntasks, p=self.probs1)
         features = self.tasks_feat[task]
         while all([state[f] == self.state_high[f] for f in features]):
-            task = np.random.choice(self.Ntasks, p=self.interests)
+            task = np.random.choice(self.Ntasks, p=self.probs1)
             features = self.tasks_feat[task]
         return task
 
@@ -140,20 +137,53 @@ class PlayroomGM(Wrapper):
 
         return goal
 
+    def sample_tutor_task(self):
+
+        if self.tutorTask == '2':
+            task = 2
+        elif self.tutorTask == 'rnd':
+            task = np.random.randint(self.Ntasks)
+        else:
+            raise RuntimeError
+
+        return task
+
+    def sample_tutor_goal(self, task):
+
+        features = self.tasks_feat[task]
+        goal = self.state_high[features[0]]
+
+        return goal
+
     def sample(self, batchsize):
 
-        task = np.random.choice(self.Ntasks, p=self.interests)
+        task = np.random.choice(self.Ntasks, p=self.probs2)
         samples = self.buffer.sample(batchsize, task)
+        if samples is not None:
+            self.trainsteps[task] += 1
+            self.termstates[task] += np.mean(samples['t'])
 
-        return samples
+        return task, samples
 
     def get_stats(self):
         stats = {}
         for i, task in enumerate(self.tasks_feat):
-            stats['step_{}'.format(task)] = float("{0:.3f}".format(self.steps[i]))
             stats['I_{}'.format(task)] = float("{0:.3f}".format(self.interests[i]))
             stats['CP_{}'.format(task)] = float("{0:.3f}".format(self.CPs[i]))
             stats['C_{}'.format(task)] = float("{0:.3f}".format(self.Cs[i]))
+
+            stats['envstep_{}'.format(task)] = float("{0:.3f}".format(self.envsteps[i]))
+            stats['trainstep_{}'.format(task)] = float("{0:.3f}".format(self.trainsteps[i]))
+            stats['attempts_{}'.format(task)] = float("{0:.3f}".format(self.attempts[i]))
+            stats['offpolicyness_{}'.format(task)] = float("{0:.3f}".format(
+                self.offpolicyness[i] / (self.trainsteps[i] + 0.00001)))
+            stats['termstates_{}'.format(task)] = float("{0:.3f}".format(
+                self.termstates[i] / (self.trainsteps[i] + 0.00001)))
+            self.offpolicyness[i] = 0
+            self.envsteps[i] = 0
+            self.trainsteps[i] = 0
+            self.attempts[i] = 0
+            self.termstates[i] = 0
         return stats
 
     def task2mask(self, idx):
@@ -169,23 +199,30 @@ class PlayroomGM(Wrapper):
         minCP = min(self.CPs)
         maxCP = max(self.CPs)
         widthCP = maxCP - minCP
-        espilon = 0.4
-        Ntasks = len(self.CPs)
 
         if widthCP <= 0.01:
             minC = min(self.Cs)
             maxC = max(self.Cs)
             widthC = maxC - minC
-            Cs = [math.pow(1 - (c - minC) / (widthC + 0.0001), self.theta) for c in self.Cs]
-            sumC = np.sum(Cs)
-            self.interests = [espilon / Ntasks + (1 - espilon) * c / sumC for c in Cs]
+            self.interests = [1 - (c - minC) / (widthC + 0.0001) for c in self.Cs]
         else:
-            CPs = [math.pow((cp - minCP) / widthCP, self.theta) for cp in self.CPs]
-            sumCP = np.sum(CPs)
-            self.interests = [espilon / Ntasks + (1 - espilon) * cp / sumCP for cp in CPs]
+            self.interests = [(cp - minCP) / widthCP for cp in self.CPs]
+
+        espilon = 0.4
+
+        interests1 = [math.pow(i, self.theta1) for i in self.interests]
+        sumI1 = np.sum(interests1)
+        self.probs1 = [espilon / self.Ntasks + (1 - espilon) * i / sumI1 for i in interests1]
+
+        interests2 = [math.pow(i, self.theta2) for i in self.interests]
+        sumI2 = np.sum(interests2)
+        self.probs2 = [espilon / self.Ntasks + (1 - espilon) * i / sumI2 for i in interests2]
+
+
+
     @property
     def CPs(self):
-        return [abs(q.CP) for q in self.queues]
+        return [np.maximum(abs(q.CP + 0.1/math.sqrt(2)) - 0.1/math.sqrt(2), 0) for q in self.queues]
 
     @property
     def Cs(self):
