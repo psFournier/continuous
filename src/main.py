@@ -19,7 +19,8 @@ Usage:
 
 Options:
   --seed SEED              Random seed
-  --theta THETA            CP importance for goal selection [default: 0]
+  --theta1 THETA            CP importance for goal selection [default: 0]
+  --theta2 THETA            CP importance for goal selection [default: 0]
   --inv_grad YES_NO        Gradient inversion near action limits [default: 1]
   --max_steps VAL          Maximum total steps [default: 500000]
   --ep_steps VAL           Maximum episode steps [default: 50]

@@ -10,7 +10,8 @@ class Playroom3GM(Wrapper):
         super(Playroom3GM, self).__init__(env)
 
         self.gamma = float(args['--gamma'])
-        self.theta = float(args['--theta'])
+        self.theta1 = float(args['--theta1'])
+        self.theta2 = float(args['--theta2'])
         self.selfImit = bool(int(args['--selfImit']))
         self.tutorTask = args['--tutorTask']
 
@@ -123,10 +124,10 @@ class Playroom3GM(Wrapper):
 
     def sample_task(self, state):
 
-        task = np.random.choice(self.Ntasks, p=self.task_probs)
+        task = np.random.choice(self.Ntasks, p=self.probs1)
         features = self.tasks_feat[task]
         while all([state[f] == self.state_high[f] for f in features]):
-            task = np.random.choice(self.Ntasks, p=self.task_probs)
+            task = np.random.choice(self.Ntasks, p=self.probs1)
             features = self.tasks_feat[task]
         return task
 
@@ -159,7 +160,7 @@ class Playroom3GM(Wrapper):
 
     def sample(self, batchsize):
 
-        task = np.random.choice(self.Ntasks, p=self.task_probs)
+        task = np.random.choice(self.Ntasks, p=self.probs2)
         samples = self.buffer.sample(batchsize, task)
         if samples is not None:
             self.trainsteps[task] += 1
@@ -206,16 +207,21 @@ class Playroom3GM(Wrapper):
             minC = min(self.Cs)
             maxC = max(self.Cs)
             widthC = maxC - minC
-            self.interests = [math.pow(1 - (c - minC) / (widthC + 0.0001), self.theta) for c in self.Cs]
+            self.interests = [1 - (c - minC) / (widthC + 0.0001) for c in self.Cs]
         else:
-            self.interests = [math.pow((cp - minCP) / widthCP, self.theta) for cp in self.CPs]
+            self.interests = [(cp - minCP) / widthCP for cp in self.CPs]
 
-    @property
-    def task_probs(self):
         espilon = 0.4
-        sumI = np.sum(self.interests)
-        probs = [espilon / self.Ntasks + (1 - espilon) * i / sumI for i in self.interests]
-        return probs
+
+        interests1 = [math.pow(i, self.theta1) for i in self.interests]
+        sumI1 = np.sum(interests1)
+        self.probs1 = [espilon / self.Ntasks + (1 - espilon) * i / sumI1 for i in interests1]
+
+        interests2 = [math.pow(i, self.theta2) for i in self.interests]
+        sumI2 = np.sum(interests2)
+        self.probs2 = [espilon / self.Ntasks + (1 - espilon) * i / sumI2 for i in interests2]
+
+
 
     @property
     def CPs(self):
