@@ -12,6 +12,7 @@ class Playroom3GM(Wrapper):
         self.gamma = float(args['--gamma'])
         self.theta = float(args['--theta'])
         self.selfImit = bool(int(args['--selfImit']))
+        self.tutorTask = args['--tutorTask']
 
         self.tasks = [o.name for o in self.env.objects]
         self.Ntasks = len(self.tasks)
@@ -140,13 +141,19 @@ class Playroom3GM(Wrapper):
 
     def sample_tutor_task(self):
 
-        task = 2
+        if self.tutorTask == '2':
+            task = 2
+        elif self.tutorTask == 'rnd':
+            task = np.random.randint(self.Ntasks)
+        else:
+            raise RuntimeError
 
         return task
 
     def sample_tutor_goal(self, task):
 
-        goal = 2
+        features = self.tasks_feat[task]
+        goal = self.state_high[features[0]]
 
         return goal
 
