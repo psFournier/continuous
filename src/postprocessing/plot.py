@@ -41,11 +41,14 @@ params = ['--agent',
           '--demo_freq',
           '--rnd_demo',
           '--wimit',
-          '--theta',
+          # '--theta',
           '--inv_grad',
           '--margin',
           '--demo',
-          # '--htr'
+          '--tutorTask',
+          '--selfImit',
+          '--theta1',
+          '--theta2',
           ]
 
 
@@ -53,14 +56,14 @@ df2 = df
 # df2 = df2[(df2['--agent'] == 'ddpgg')]
 df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
-# df2 = df2[(df2['--demo'] == 2) | (df2['--demo'] == 3)]
-# df2 = df2[(df2['--wimit'] == 1)]
+df2 = df2[(df2['--tutorTask'] == 'rnd')]
+df2 = df2[(df2['--wimit'] == 1)]
 # df2 = df2[(df2['--opt_init'] == -20)]
 # df2 = df2[(df2['--demo'] == 2)]
 # # df2 = df2[(df2['--clipping'] == 1)]
 # # df2 = df2[(df2['--explo'] == 1)]
 # df2 = df2[(df2['--margin'] == 0.5)]
-df2 = df2[(df2['--theta'] == 4)]
+# df2 = df2[(df2['--theta'] == 0)]
 # y = ['R']
 # y = ['agentR']
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]

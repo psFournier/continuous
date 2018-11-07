@@ -40,7 +40,7 @@ class Playroom3GM(Wrapper):
         self.maxQ = self.r_done if self.terminal else self.r_done / (1 - self.gamma)
 
         self.names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'pa', 'mcr', 'task']
-        self.buffer = MultiTaskReplayBuffer(limit=int(1e6), Ntasks=self.Ntasks, names=self.names)
+        self.buffer = MultiTaskReplayBuffer(limit=int(1e5), Ntasks=self.Ntasks, names=self.names)
 
 
     def step(self, exp):

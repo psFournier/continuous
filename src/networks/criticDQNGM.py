@@ -57,7 +57,7 @@ class CriticDQNGM(object):
         advantage = K.maximum(MCR - val, 0)
         advClip = K.cast(K.greater(MCR, val), dtype='float32')
         # goodexp = K.cast(K.greater(advantage, 0), dtype='float32')
-        imitFiltered = imit * advantage
+        imitFiltered = imit * advClip
         loss_imit = K.mean(imitFiltered, axis=0)
 
         inputs = [S, A, G, M, TARGETS, MCR]
