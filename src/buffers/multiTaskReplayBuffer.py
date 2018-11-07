@@ -16,9 +16,9 @@ class TaskRingBuffer(object):
     def append(self, idx):
         if self._next_idx >= len(self._storage):
             self._storage.append(idx)
-            self._numsamples += 1
         else:
             self._storage[self._next_idx] = idx
+        self._numsamples += 1
         self._next_idx = (self._next_idx + 1) % self._limit
 
     def pop(self):
@@ -106,8 +106,7 @@ class ToyMultiTaskReplayBuffer(object):
                 self._taskBuffers[t].pop()
             self._storage[self._next_idx] = triplet
         for i, t in enumerate(item['tasks']):
-            info = {'idx': self._next_idx,
-                    'r': item['rs'][i]}
+            info = {'idx': self._next_idx}
             self._taskBuffers[t].append(info)
         self._next_idx = (self._next_idx + 1) % self._limit
 
@@ -133,7 +132,7 @@ if __name__ == '__main__':
             tasks = [0, 1]
         else:
             tasks = [1, 2]
-        B.append({'step': i, 'tasks': tasks, 'rs': [0, 0, 0]})
+        B.append({'step': i, 'tasks': tasks})
         print('step ', i)
         print(B._storage)
         print(B._taskBuffers[0]._storage, B._taskBuffers[0]._start, B._taskBuffers[0]._numsamples)
