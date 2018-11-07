@@ -100,8 +100,8 @@ class Chest(Obj):
 
     def act(self, a):
         dep_ok = self.s < len(self.dep) and all([o.s == s for o, s in self.dep[:self.s+1]])
-        if dep_ok and a == Actions.TOUCH and self.s == 0:
-            self.s = np.random.choice([0, 1], p=self.prop)
+        if dep_ok and a == Actions.TOUCH:
+            self.s = np.random.choice([self.s, self.s + 1], p=self.prop)
 
     def init(self):
         self.x, self.y = next(self.env.g)
@@ -141,7 +141,7 @@ class Playroom2(Env):
         self.chest1 = Chest(self,
                             name='chest1',
                             prop=[0, 1],
-                            dep=[(self.key1, 1)])
+                            dep=[(self.light, 1), (self.key1, 1)])
         if not random:
             self.light.s = 0
             self.key1.s = 0

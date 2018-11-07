@@ -58,8 +58,8 @@ class CriticDQNGM(object):
         advClip = K.cast(K.greater(MCR, val), dtype='float32')
         # goodexp = K.cast(K.greater(advantage, 0), dtype='float32')
         imitFiltered = imit * advClip
-        loss_imit = K.mean(imitFiltered, axis=0)
-
+        # loss_imit = K.mean(imitFiltered, axis=0)
+        loss_imit = K.sum(imitFiltered, axis=0) / (K.sum(advClip) + 0.0001)
         inputs = [S, A, G, M, TARGETS, MCR]
         outputs = [loss_dqn, val, qval, loss_imit, K.sum(advClip), actionProb]
 

@@ -56,14 +56,16 @@ df2 = df
 # df2 = df2[(df2['--agent'] == 'ddpgg')]
 df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
-df2 = df2[(df2['--tutorTask'] == 'rnd')]
+df2 = df2[(df2['--tutorTask'] == 2)]
 df2 = df2[(df2['--wimit'] == 1)]
 # df2 = df2[(df2['--opt_init'] == -20)]
-# df2 = df2[(df2['--demo'] == 2)]
+df2 = df2[(df2['--demo'] == 2)]
 # # df2 = df2[(df2['--clipping'] == 1)]
 # # df2 = df2[(df2['--explo'] == 1)]
 # df2 = df2[(df2['--margin'] == 0.5)]
-# df2 = df2[(df2['--theta'] == 0)]
+df2 = df2[(df2['--theta1'] == 0)]
+df2 = df2[(df2['--theta2'] == 0)]
+
 # y = ['R']
 # y = ['agentR']
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
@@ -102,13 +104,13 @@ def quant_inf(x):
 def quant_sup(x):
     return x.quantile(0.8)
 op_dict = {a:[np.median, np.mean, np.std, quant_inf, quant_sup] for a in y}
-avg = 1
+avg = 0
 if avg:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
 print(paramsStudied)
 a, b = 2,2
-fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
+fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
 colors = ['b', 'r']
 p = 'num_run'
 if avg:
@@ -133,7 +135,7 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         else:
             # n = 50  # the larger n is, the smoother curve will be
             # yy = lfilter([1.0 / n] * n, 1, g[valy])
-            ax2[i % a, i // a].plot(g['step'], g[valy].cumsum(), label=None)
+            ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy2], label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy3], label=None)
 
