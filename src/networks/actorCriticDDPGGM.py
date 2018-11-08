@@ -107,11 +107,11 @@ class ActorCriticDDPGGM(object):
             target_weights[i] = self.tau * weights[i] + (1 - self.tau) * target_weights[i]
         self.TactionModel.set_weights(target_weights)
 
-    def get_targets_dqn(self, r, t, s, g=None):
+    def get_targets_dqn(self, r, t, s, g=None, m=None):
 
-        a = self.Taction([s, g])[0]
+        a = self.Taction([s, g, m])[0]
         a = np.clip(a, self.env.action_space.low, self.env.action_space.high)
-        q = self.Tqval([s, a, g])[0]
+        q = self.Tqval([s, a, g, m])[0]
         targets = self.compute_targets(r, t, q)
         return np.expand_dims(targets, axis=1)
 
