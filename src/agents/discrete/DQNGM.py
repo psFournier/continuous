@@ -19,7 +19,6 @@ class DQNGM(Agent):
             self.metrics[metric] = 0
         self.rnd_demo = float(args['--rnd_demo'])
         self.demo = int(args['--demo'])
-        self.mode = 'train'
 
     def train(self):
 

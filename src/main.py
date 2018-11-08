@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import pprint as pp
-from agents import DQN, DQNG, TD3, DDPG, DQNGM, Qoff, DDPGG, ACDQNGM
+from agents import DQN, DQNG, TD3, DDPG, DQNGM, Qoff, DDPGG, ACDQNGM, DDPGGM
 from utils.logger import Logger
 import datetime
 from utils.util import load
@@ -82,6 +82,8 @@ if __name__ == '__main__':
         agent = DDPG(args, env, env_test, logger)
     elif args['--agent'] == 'ddpgg':
         agent = DDPGG(args, env, env_test, logger)
+    elif args['--agent'] == 'ddpggm':
+        agent = DDPGGM(args, env, env_test, logger)
     else:
         raise RuntimeError
     # elif args['agent'] == 'qlearning':
