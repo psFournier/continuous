@@ -201,14 +201,7 @@ class Playroom3GM(Wrapper):
         minCP = min(self.CPs)
         maxCP = max(self.CPs)
         widthCP = maxCP - minCP
-
-        if widthCP <= 0.01:
-            minC = min(self.Cs)
-            maxC = max(self.Cs)
-            widthC = maxC - minC
-            self.interests = [1 - (c - minC) / (widthC + 0.0001) for c in self.Cs]
-        else:
-            self.interests = [(cp - minCP) / widthCP for cp in self.CPs]
+        self.interests = [(cp - minCP) / (widthCP + 0.0001) for cp in self.CPs]
 
         espilon = 0.4
 

@@ -167,6 +167,7 @@ class PlayroomGM(Wrapper):
     def get_stats(self):
         stats = {}
         for i, task in enumerate(self.tasks_feat):
+            self.queues[i].update()
             stats['I_{}'.format(task)] = float("{0:.3f}".format(self.interests[i]))
             stats['CP_{}'.format(task)] = float("{0:.3f}".format(self.CPs[i]))
             stats['C_{}'.format(task)] = float("{0:.3f}".format(self.Cs[i]))
@@ -198,14 +199,7 @@ class PlayroomGM(Wrapper):
         minCP = min(self.CPs)
         maxCP = max(self.CPs)
         widthCP = maxCP - minCP
-
-        if widthCP <= 0.01:
-            minC = min(self.Cs)
-            maxC = max(self.Cs)
-            widthC = maxC - minC
-            self.interests = [1 - (c - minC) / (widthC + 0.0001) for c in self.Cs]
-        else:
-            self.interests = [(cp - minCP) / widthCP for cp in self.CPs]
+        self.interests = [(cp - minCP) / (widthCP + 0.0001) for cp in self.CPs]
 
         espilon = 0.4
 
