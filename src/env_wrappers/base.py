@@ -150,6 +150,6 @@ class CPBased(Base):
     @property
     def Cs(self):
         # return [q.MCR[-1] for q in self.queues]
-        return [q.C_avg for q in self.queues]
+        return [q.C_avg[-1] for q in self.queues]
 
 

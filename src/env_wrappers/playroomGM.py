@@ -205,12 +205,17 @@ class PlayroomGM(Wrapper):
 
         interests1 = [math.pow(i, self.theta1) for i in self.interests]
         sumI1 = np.sum(interests1)
-        self.probs1 = [espilon / self.Ntasks + (1 - espilon) * i / sumI1 for i in interests1]
+        if sumI1 != 0:
+            self.probs1 = [espilon / self.Ntasks + (1 - espilon) * i / sumI1 for i in interests1]
+        else:
+            self.probs1 = [1 / self.Ntasks] * self.Ntasks
 
         interests2 = [math.pow(i, self.theta2) for i in self.interests]
         sumI2 = np.sum(interests2)
-        self.probs2 = [espilon / self.Ntasks + (1 - espilon) * i / sumI2 for i in interests2]
-
+        if sumI2 != 0:
+            self.probs2 = [espilon / self.Ntasks + (1 - espilon) * i / sumI2 for i in interests2]
+        else:
+            self.probs2 = [1 / self.Ntasks] * self.Ntasks
 
 
     @property
@@ -219,7 +224,7 @@ class PlayroomGM(Wrapper):
 
     @property
     def Cs(self):
-        return [q.C_avg for q in self.queues]
+        return [q.C_avg[-1] for q in self.queues]
 
     @property
     def state_dim(self):

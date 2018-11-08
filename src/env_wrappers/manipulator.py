@@ -206,7 +206,7 @@ class Manipulator(Wrapper):
 
     @property
     def Cs(self):
-        return [q.C_avg for q in self.queues]
+        return [q.C_avg[-1] for q in self.queues]
 
     @property
     def state_dim(self):

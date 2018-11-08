@@ -13,77 +13,77 @@ from env_wrappers.registration import registry, register, make, spec
 #     wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
 # )
 #
-register(
-    id='ReacherS-v0',
-    entry_point='envs.reacher:ReacherEnv',
-    wrapper_entry_point='env_wrappers.reacher:ReacherWrapShaped'
-)
-
-register(
-    id='Reacher-v0',
-    entry_point='envs.reacher:ReacherEnv',
-    wrapper_entry_point='env_wrappers.reacher:ReacherWrap'
-)
-
-register(
-    id='ReacherDS-v0',
-    entry_point='envs.reacher:ReacherDEnv',
-    wrapper_entry_point='env_wrappers.reacher:ReacherWrapShaped'
-)
-
-register(
-    id='ReacherD-v0',
-    entry_point='envs.reacher:ReacherDEnv',
-    wrapper_entry_point='env_wrappers.reacher:ReacherWrap'
-)
-
-register(
-    id='Reacher1S-v0',
-    entry_point='envs.reacher:ReacherEnv',
-    wrapper_entry_point='env_wrappers.reacher1:Reacher1S'
-)
-
-register(
-    id='Reacher1-v0',
-    entry_point='envs.reacher:ReacherEnv',
-    wrapper_entry_point='env_wrappers.reacher1:Reacher1'
-)
-
-register(
-    id='Reacher1DS-v0',
-    entry_point='envs.reacher:ReacherDEnv',
-    wrapper_entry_point='env_wrappers.reacher1:Reacher1S'
-)
-
-register(
-    id='Reacher1D-v0',
-    entry_point='envs.reacher:ReacherDEnv',
-    wrapper_entry_point='env_wrappers.reacher1:Reacher1'
-)
-
-register(
-    id='Reacher1E-v0',
-    entry_point='envs.reacher:ReacherEnv',
-    wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
-)
-
-register(
-    id='Reacher1DE-v0',
-    entry_point='envs.reacher:ReacherDEnv',
-    wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
-)
-
-register(
-    id='Reacher1E2-v0',
-    entry_point='envs.reacher:ReacherEnv',
-    wrapper_entry_point='env_wrappers.reacher_e2:Reacher_e2'
-)
-
-register(
-    id='Reacher1DE2-v0',
-    entry_point='envs.reacher:ReacherDEnv',
-    wrapper_entry_point='env_wrappers.reacher_e2:Reacher_e2'
-)
+# register(
+#     id='ReacherS-v0',
+#     entry_point='envs.reacher:ReacherEnv',
+#     wrapper_entry_point='env_wrappers.reacher:ReacherWrapShaped'
+# )
+#
+# register(
+#     id='Reacher-v0',
+#     entry_point='envs.reacher:ReacherEnv',
+#     wrapper_entry_point='env_wrappers.reacher:ReacherWrap'
+# )
+#
+# register(
+#     id='ReacherDS-v0',
+#     entry_point='envs.reacher:ReacherDEnv',
+#     wrapper_entry_point='env_wrappers.reacher:ReacherWrapShaped'
+# )
+#
+# register(
+#     id='ReacherD-v0',
+#     entry_point='envs.reacher:ReacherDEnv',
+#     wrapper_entry_point='env_wrappers.reacher:ReacherWrap'
+# )
+#
+# register(
+#     id='Reacher1S-v0',
+#     entry_point='envs.reacher:ReacherEnv',
+#     wrapper_entry_point='env_wrappers.reacher1:Reacher1S'
+# )
+#
+# register(
+#     id='Reacher1-v0',
+#     entry_point='envs.reacher:ReacherEnv',
+#     wrapper_entry_point='env_wrappers.reacher1:Reacher1'
+# )
+#
+# register(
+#     id='Reacher1DS-v0',
+#     entry_point='envs.reacher:ReacherDEnv',
+#     wrapper_entry_point='env_wrappers.reacher1:Reacher1S'
+# )
+#
+# register(
+#     id='Reacher1D-v0',
+#     entry_point='envs.reacher:ReacherDEnv',
+#     wrapper_entry_point='env_wrappers.reacher1:Reacher1'
+# )
+#
+# register(
+#     id='Reacher1E-v0',
+#     entry_point='envs.reacher:ReacherEnv',
+#     wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
+# )
+#
+# register(
+#     id='Reacher1DE-v0',
+#     entry_point='envs.reacher:ReacherDEnv',
+#     wrapper_entry_point='env_wrappers.reacher_e:Reacher_e'
+# )
+#
+# register(
+#     id='Reacher1E2-v0',
+#     entry_point='envs.reacher:ReacherEnv',
+#     wrapper_entry_point='env_wrappers.reacher_e2:Reacher_e2'
+# )
+#
+# register(
+#     id='Reacher1DE2-v0',
+#     entry_point='envs.reacher:ReacherDEnv',
+#     wrapper_entry_point='env_wrappers.reacher_e2:Reacher_e2'
+# )
 #
 # register(
 #     id='HalfCheetah-v2',
@@ -256,8 +256,8 @@ register(
     wrapper_entry_point='env_wrappers.playroom3GM:Playroom3GM'
 )
 
-register(
-    id='Manipulator-v0',
-    entry_point='envs:ManipulatorEnv',
-    wrapper_entry_point='env_wrappers.manipulator:Manipulator'
-)
+# register(
+#     id='Manipulator-v0',
+#     entry_point='envs:ManipulatorEnv',
+#     wrapper_entry_point='env_wrappers.manipulator:Manipulator'
+# )

@@ -10,6 +10,7 @@ class CompetenceQueue():
         self.window = window
         self.C = deque(maxlen=maxlen)
         self.C_avg = deque(maxlen=10)
+        self.C_avg.append(0)
         self.CP = 0
 
     def append(self, C):
