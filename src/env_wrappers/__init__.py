@@ -255,3 +255,9 @@ register(
     entry_point='envs:Playroom2',
     wrapper_entry_point='env_wrappers.playroom3GM:Playroom3GM'
 )
+
+register(
+    id='Manipulator-v0',
+    entry_point='envs:ManipulatorEnv',
+    wrapper_entry_point='env_wrappers.manipulator:Manipulator'
+)
