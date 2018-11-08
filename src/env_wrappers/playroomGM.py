@@ -139,9 +139,9 @@ class PlayroomGM(Wrapper):
     def sample_tutor_task(self):
 
         if self.tutorTask == '2':
-            task = 2
+            task = 11
         elif self.tutorTask == 'rnd':
-            task = np.random.randint(self.Ntasks)
+            task = np.random.choice([0, 1, 5, 6, 7, 8, 9, 10, 11])
         else:
             raise RuntimeError
 
