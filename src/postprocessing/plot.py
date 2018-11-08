@@ -54,12 +54,12 @@ params = ['--agent',
 
 df2 = df
 # df2 = df2[(df2['--agent'] == 'ddpgg')]
-df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
+# df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
-df2 = df2[(df2['--tutorTask'] == 2)]
-df2 = df2[(df2['--wimit'] == 1)]
+# df2 = df2[(df2['--tutorTask'] == 2)]
+# df2 = df2[(df2['--wimit'] == 1)]
 # df2 = df2[(df2['--opt_init'] == -20)]
-df2 = df2[(df2['--demo'] == 2)]
+df2 = df2[(df2['--demo'] == 0)]
 # # df2 = df2[(df2['--clipping'] == 1)]
 # # df2 = df2[(df2['--explo'] == 1)]
 # df2 = df2[(df2['--margin'] == 0.5)]
@@ -70,7 +70,7 @@ df2 = df2[(df2['--theta2'] == 0)]
 # y = ['agentR']
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
 # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
-y = ['C'+s for s in ['_light','_key1', '_chest1']]
+y = ['C_[{}]'.format(s) for s in range(2)]
 # x = ['attempts'+s for s in ['_light','_key1', '_chest1']]
 
 # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
@@ -109,12 +109,13 @@ if avg:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
 print(paramsStudied)
-a, b = 2,2
-fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
+a, b = 2,1
+fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
 colors = ['b', 'r']
 p = 'num_run'
 if avg:
     p= paramsStudied
+# fig, ax = plt.subplots(1, 1, figsize=(18, 10), squeeze=False, sharey=True, sharex=True)
 
 for j, (name, g) in enumerate(df2.groupby(p)):
     if avg:
@@ -124,13 +125,17 @@ for j, (name, g) in enumerate(df2.groupby(p)):
             label = '{}:{}'.format(paramsStudied[0][2:], name)
     # ax2[0,0].plot(g['step'], g.iloc[:, g.columns.get_level_values(1) == 'mean'].mean(axis=1), label=label)
     # ax2[0,0].legend()
+
+    # g['alltasks'] = g[['C_[{}]'.format(s) for s in [9,10,11]]].apply(np.mean, axis=1)
+    # ax[0, 0].plot(g['step'], g['alltasks'],  label=label)
+
     for i, valy in enumerate(y):
         # ax2[i % a, i // a].plot(range(1500), range(1500), 'g-')
 
         # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
         # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
         if avg:
-            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].rolling(10).mean(), label=label)
+            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
 
         else:
             # n = 50  # the larger n is, the smoother curve will be
@@ -153,6 +158,6 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         ax2[i % a, i // a].legend()
         ax2[i % a, i // a].set_xlim([0, 500000])
 
-    # break
+    # ax[0,0].legend()
 
 plt.show()

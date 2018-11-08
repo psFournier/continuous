@@ -27,7 +27,7 @@ class Playroom3GM(Wrapper):
         self.offpolicyness = [0 for _ in self.tasks]
         self.termstates = [0 for _ in self.tasks]
         self.attempts = [0 for _ in self.tasks]
-        self.foreval = [False for _ in self.tasks]
+        # self.foreval = [False for _ in self.tasks]
         self.update_interests()
 
         self.state_low = self.env.low
@@ -40,7 +40,7 @@ class Playroom3GM(Wrapper):
         self.maxQ = self.r_done if self.terminal else self.r_done / (1 - self.gamma)
 
         self.names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'pa', 'mcr', 'task']
-        self.buffer = MultiTaskReplayBuffer(limit=int(1e5), Ntasks=self.Ntasks, names=self.names)
+        self.buffer = MultiTaskReplayBuffer(limit=int(1e6), Ntasks=self.Ntasks, names=self.names)
 
 
     def step(self, exp):
@@ -71,11 +71,10 @@ class Playroom3GM(Wrapper):
 
     def end_episode(self, episode):
 
-        if self.foreval[self.task]:
-            T = episode[-1]['t']
-            self.queues[self.task].append(T)
+        T = episode[-1]['t']
+        self.queues[self.task].append(T)
         self.attempts[self.task] += 1
-        self.foreval[self.task] = (self.attempts[self.task] % 10 == 0)
+        # self.foreval[self.task] = (self.attempts[self.task] % 10 == 0)
 
         tasks = range(self.Ntasks)
         goals = [self.goal if t==self.task else None for t in tasks]

@@ -6,7 +6,7 @@ from scipy.signal import lfilter
 
 
 class CompetenceQueue():
-    def __init__(self, window = 40, maxlen=200):
+    def __init__(self, window = 100, maxlen=250):
         self.window = window
         self.C = deque(maxlen=maxlen)
         self.C_avg = 0

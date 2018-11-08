@@ -27,7 +27,7 @@ Options:
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
   --eval_freq VAL          Logging frequency [default: 2000]
   --demo_freq VAL          Demo frequency [default: 100]
-  --margin VAL             Large margin loss margin [default: 0.8]
+  --margin VAL             Large margin loss margin [default: 0.1]
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]
   --wimit VAL              Weight for imitaiton loss with imitaiton [default: 0]

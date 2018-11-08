@@ -43,10 +43,10 @@ class DQNGM(Agent):
     def act(self, exp):
         input = self.make_input(exp['s0'])
         actionProbs = self.critic.actionProbs(input)[0].squeeze()
-        if self.env.foreval[self.env.task]:
-            action = np.argmax(actionProbs)
-        else:
-            action = np.random.choice(range(self.env.action_dim), p=actionProbs)
+        # if self.env.foreval[self.env.task]:
+        #     action = np.argmax(actionProbs)
+        # else:
+        action = np.random.choice(range(self.env.action_dim), p=actionProbs)
         exp['pa'] = actionProbs[action]
         action = np.expand_dims(action, axis=1)
         exp['a'] = action

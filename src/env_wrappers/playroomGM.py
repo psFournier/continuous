@@ -25,7 +25,7 @@ class PlayroomGM(Wrapper):
         self.offpolicyness = [0 for _ in self.tasks_feat]
         self.termstates = [0 for _ in self.tasks_feat]
         self.attempts = [0 for _ in self.tasks_feat]
-        self.foreval = [False for _ in self.tasks_feat]
+        # self.foreval = [False for _ in self.tasks_feat]
         self.update_interests()
 
         self.state_low = self.env.low
@@ -68,11 +68,10 @@ class PlayroomGM(Wrapper):
 
     def end_episode(self, episode):
 
-        if self.foreval[self.task]:
-            T = episode[-1]['t']
-            self.queues[self.task].append(T)
+        T = episode[-1]['t']
+        self.queues[self.task].append(T)
         self.attempts[self.task] += 1
-        self.foreval[self.task] = (self.attempts[self.task] % 10 == 0)
+        # self.foreval[self.task] = (self.attempts[self.task] % 10 == 0)
 
         tasks = range(self.Ntasks)
         goals = [self.goal if t==self.task else None for t in tasks]
