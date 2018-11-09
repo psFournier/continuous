@@ -9,11 +9,12 @@ TARGET_CLIP = False
 INVERTED_GRADIENTS = False
 
 class Agent():
-    def __init__(self, args, env, env_test, logger):
+    def __init__(self, args, env, env_test, logger, short_logger=None):
 
         self.env = env
         self.env_test = env_test
         self.logger = logger
+        self.short_logger = short_logger
         self.log_dir = args['--log_dir']
         self.ep_steps = int(args['--ep_steps'])
         self.eval_freq = int(args['--eval_freq'])
@@ -23,6 +24,7 @@ class Agent():
         self.env_step = 0
         self.episode_step = 0
         self.stats = {}
+        self.short_stats = {}
         self.exp = {}
         self.trajectory = []
 

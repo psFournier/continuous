@@ -51,7 +51,8 @@ class MultiTaskReplayBuffer(object):
                    'a': item['a'],
                    's1': item['s1'],
                    'tasks': item['tasks'],
-                   'pa': item['pa']}
+                   'pa': item['pa'],
+                   'o': item['o']}
         if self._next_idx >= len(self._storage):
             self._storage.append(triplet)
         else:
@@ -64,8 +65,7 @@ class MultiTaskReplayBuffer(object):
                     'm': item['masks'][i],
                     'r': item['rs'][i],
                     't': item['ts'][i],
-                    'mcr': item['mcrs'][i],
-                    'task': item['tasks'][i]}
+                    'mcr': item['mcrs'][i]}
             self._taskBuffers[t].append(info)
         self._next_idx = (self._next_idx + 1) % self._limit
 

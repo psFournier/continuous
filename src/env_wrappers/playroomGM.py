@@ -20,12 +20,13 @@ class PlayroomGM(Wrapper):
         self.task = None
         self.goal = None
         self.queues = [CompetenceQueue() for _ in self.tasks_feat]
-        self.envsteps = [0 for _ in self.tasks_feat]
-        self.trainsteps = [0 for _ in self.tasks_feat]
-        self.offpolicyness = [0 for _ in self.tasks_feat]
-        self.termstates = [0 for _ in self.tasks_feat]
-        self.attempts = [0 for _ in self.tasks_feat]
-        # self.foreval = [False for _ in self.tasks_feat]
+
+        self.run_metrics_names = ['envsteps', 'attempts', 'trainsteps']
+        self.run_metrics = {name: [0] * self.Ntasks for name in self.run_metrics_names}
+
+        self.samples_metrics_names = ['termstates', 'tutorsamples']
+        self.samples_metrics = {name: [0] * self.Ntasks for name in self.samples_metrics_names}
+
         self.update_interests()
 
         self.state_low = self.env.low
@@ -37,11 +38,12 @@ class PlayroomGM(Wrapper):
         self.minQ = self.r_notdone / (1 - self.gamma)
         self.maxQ = self.r_done if self.terminal else self.r_done / (1 - self.gamma)
 
-        self.names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'pa', 'mcr', 'task']
+        self.names = ['s0', 'a', 's1', 'r', 't', 'g', 'm', 'pa', 'mcr', 'o']
         self.buffer = MultiTaskReplayBuffer(limit=int(1e6), Ntasks=self.Ntasks, names=self.names)
 
     def step(self, exp):
-        self.envsteps[self.task] += 1
+        self.run_metrics['envsteps'][self.task] += 1
+        exp['o'] = 0
         exp['s1'] = self.env.step(exp['a'])[0]
         indices = np.where(self.mask)
         goal = self.goal[indices]
@@ -70,7 +72,7 @@ class PlayroomGM(Wrapper):
 
         T = episode[-1]['t']
         self.queues[self.task].append(T)
-        self.attempts[self.task] += 1
+        self.run_metrics['attempts'][self.task] += 1
         # self.foreval[self.task] = (self.attempts[self.task] % 10 == 0)
 
         tasks = range(self.Ntasks)
@@ -159,32 +161,32 @@ class PlayroomGM(Wrapper):
         task = np.random.choice(self.Ntasks, p=self.probs2)
         samples = self.buffer.sample(batchsize, task)
         if samples is not None:
-            self.trainsteps[task] += 1
-            self.termstates[task] += np.mean(samples['t'])
+            self.run_metrics['trainsteps'][task] += 1
+            self.samples_metrics['termstates'][task] += np.mean(samples['t'])
+            self.samples_metrics['tutorsamples'][task] += np.mean(samples['o'])
 
         return task, samples
 
     def get_stats(self):
         stats = {}
+        short_stats = {}
         for i, task in enumerate(self.tasks_feat):
             self.queues[i].update()
-            stats['I_{}'.format(task)] = float("{0:.3f}".format(self.interests[i]))
-            stats['CP_{}'.format(task)] = float("{0:.3f}".format(self.CPs[i]))
-            stats['C_{}'.format(task)] = float("{0:.3f}".format(self.Cs[i]))
+            short_stats['I_{}'.format(task)] = float("{0:.3f}".format(self.interests[i]))
+            short_stats['CP_{}'.format(task)] = float("{0:.3f}".format(self.CPs[i]))
+            short_stats['C_{}'.format(task)] = float("{0:.3f}".format(self.Cs[i]))
 
-            stats['envstep_{}'.format(task)] = float("{0:.3f}".format(self.envsteps[i]))
-            stats['trainstep_{}'.format(task)] = float("{0:.3f}".format(self.trainsteps[i]))
-            stats['attempts_{}'.format(task)] = float("{0:.3f}".format(self.attempts[i]))
-            stats['offpolicyness_{}'.format(task)] = float("{0:.3f}".format(
-                self.offpolicyness[i] / (self.trainsteps[i] + 0.00001)))
-            stats['termstates_{}'.format(task)] = float("{0:.3f}".format(
-                self.termstates[i] / (self.trainsteps[i] + 0.00001)))
-            self.offpolicyness[i] = 0
-            self.envsteps[i] = 0
-            self.trainsteps[i] = 0
-            self.attempts[i] = 0
-            self.termstates[i] = 0
-        return stats
+            for name, metric in self.samples_metrics.items():
+                stats[name+'_{}'.format(task)] = float("{0:.3f}".format(
+                    metric[i] / (self.run_metrics['trainsteps'][i] + 0.00001)
+                ))
+                metric[i] = 0
+
+            for name, metric in self.run_metrics.items():
+                stats[name+'_{}'.format(task)] = float("{0:.3f}".format(metric[i]))
+                metric[i] = 0
+
+        return stats, short_stats
 
     def task2mask(self, idx):
         res = np.zeros(shape=self.state_dim)

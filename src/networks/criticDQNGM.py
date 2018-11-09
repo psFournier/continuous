@@ -56,15 +56,16 @@ class CriticDQNGM(object):
         imit = (K.max(qvals + onehotMargin, axis=1, keepdims=True) - qval)
         advantage = K.maximum(MCR - val, 0)
         advClip = K.cast(K.greater(MCR, val), dtype='float32')
-        # goodexp = K.cast(K.greater(advantage, 0), dtype='float32')
+        goodexp = K.sum(advClip)
         imitFiltered = imit * advClip
         # loss_imit = K.mean(imitFiltered, axis=0)
         loss_imit = K.sum(imitFiltered, axis=0) / (K.sum(advClip) + 0.0001)
         inputs = [S, A, G, M, TARGETS, MCR]
-        outputs = [loss_dqn, val, qval, loss_imit, K.sum(advClip), actionProb]
+        self.metrics_names = ['loss_dqn', 'val', 'qval', 'loss_imit', 'goodexp']
+        metrics = [loss_dqn, val, qval, loss_imit, goodexp]
 
         updates = self.optimizer.get_updates(loss_dqn + self.w_i * loss_imit, self.model.trainable_weights)
-        self.train = K.function(inputs, outputs, updates)
+        self.train = K.function(inputs, metrics, updates)
 
     def initTargetModels(self):
         S = Input(shape=self.s_dim)

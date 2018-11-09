@@ -47,13 +47,15 @@ def build_logger(args):
     with open(os.path.join(log_dir, 'config.txt'), 'w') as config_file:
         config_file.write(json.dumps(args, default=str))
     logger = Logger(dir=os.path.join(log_dir,'log_steps'),
-                         format_strs=['stdout', 'json', 'tensorboard_{}'.format(int(args['--eval_freq']))])
+                         format_strs=['json', 'tensorboard_{}'.format(int(args['--eval_freq']))])
+    short_logger = Logger(dir=os.path.join(log_dir,'log_steps'),
+                         format_strs=['stdout'.format(int(args['--eval_freq']))])
 
-    return logger
+    return logger, short_logger
 
 if __name__ == '__main__':
     args = docopt(help)
-    logger = build_logger(args)
+    logger, short_logger = build_logger(args)
     env = make(args['--env'], args)
     env_test = make(args['--env'], args)
     seed = args['--seed']
@@ -75,7 +77,7 @@ if __name__ == '__main__':
     elif args['--agent'] == 'dqng':
         agent = DQNG(args, env, env_test, logger)
     elif args['--agent'] == 'dqngm':
-        agent = DQNGM(args, env, env_test, logger)
+        agent = DQNGM(args, env, env_test, logger, short_logger)
     elif args['--agent'] == 'acdqngm':
         agent = ACDQNGM(args, env, env_test, logger)
     elif args['--agent'] == 'ddpg':

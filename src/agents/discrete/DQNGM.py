@@ -6,17 +6,14 @@ from networks import CriticDQNGM
 from agents.agent import Agent
 
 class DQNGM(Agent):
-    def __init__(self, args, env, env_test, logger):
-        super(DQNGM, self).__init__(args, env, env_test, logger)
+    def __init__(self, args, env, env_test, logger, short_logger):
+        super(DQNGM, self).__init__(args, env, env_test, logger, short_logger)
         self.init(args, env)
 
     def init(self, args ,env):
 
-        metrics = ['loss1', 'qval', 'val', 'loss2', 'prop_good']
         self.critic = CriticDQNGM(args, env)
-        self.metrics = {}
-        for metric in metrics:
-            self.metrics[metric] = 0
+        self.env.train_metrics = {name: [0]*self.env.Ntasks for name in self.critic.metrics_names}
         self.rnd_demo = float(args['--rnd_demo'])
         self.demo = int(args['--demo'])
 
@@ -27,12 +24,9 @@ class DQNGM(Agent):
             targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
             inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets, samples['mcr']]
             metrics = self.critic.train(inputs)
-            self.metrics['loss1'] += np.squeeze(metrics[0])
-            self.metrics['val'] += np.mean(metrics[1])
-            self.metrics['qval'] += np.mean(metrics[2])
-            self.metrics['loss2'] += np.squeeze(metrics[3])
-            self.metrics['prop_good'] += np.mean(metrics[4])
-            self.env.offpolicyness[task] += np.mean(metrics[5] / samples['pa'])
+            for i, name in enumerate(self.critic.metrics_names):
+                self.env.train_metrics[name][task] += np.mean(np.squeeze(metrics[i]))
+            # self.env.offpolicyness[task] += np.mean(metrics[5] / samples['pa'])
             self.critic.target_train()
 
     def make_input(self, state):
@@ -87,6 +81,7 @@ class DQNGM(Agent):
                 exp['a'] = np.expand_dims(a, axis=1)
                 exp['s1'] = self.env_test.env.step(exp['a'])[0]
                 exp['pa'] = 1
+                exp['o'] = 1
                 demo.append(exp.copy())
                 exp['s0'] = exp['s1']
 
@@ -114,21 +109,29 @@ class DQNGM(Agent):
 
         if self.env_step % self.eval_freq == 0:
 
-            wrapper_stats = self.env.get_stats()
+            self.stats['step'] = self.env_step
+            self.short_stats['step'] = self.env_step
+
+            wrapper_stats, wrapper_short_stats = self.env.get_stats()
             for key, val in wrapper_stats.items():
                 self.stats[key] = val
+            for key, val in wrapper_short_stats.items():
+                self.stats[key] = val
+                self.short_stats[key] = val
 
-            self.stats['step'] = self.env_step
-            for metric, val in self.metrics.items():
-                self.stats[metric] = val / self.eval_freq
-                self.metrics[metric] = 0
-
-            self.get_stats()
+            for i, task in enumerate(self.env.tasks_feat):
+                for name, metric in self.env.train_metrics.items():
+                    self.stats[name + '_{}'.format(task)] = float("{0:.3f}".format(metric[i] / self.eval_freq))
+                    metric[i] = 0
 
             for key in sorted(self.stats.keys()):
                 self.logger.logkv(key, self.stats[key])
 
+            for key in sorted(self.short_stats.keys()):
+                self.short_logger.logkv(key, self.short_stats[key])
+
             self.logger.dumpkvs()
+            self.short_logger.dumpkvs()
 
             self.save_model()
 
