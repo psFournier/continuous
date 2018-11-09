@@ -59,7 +59,7 @@ df2 = df
 # df2 = df2[(df2['--tutorTask'] == 2)]
 # df2 = df2[(df2['--wimit'] == 1)]
 # df2 = df2[(df2['--opt_init'] == -20)]
-df2 = df2[(df2['--demo'] == 0)]
+# df2 = df2[(df2['--demo'] == 0)]
 # # df2 = df2[(df2['--clipping'] == 1)]
 # # df2 = df2[(df2['--explo'] == 1)]
 # df2 = df2[(df2['--margin'] == 0.5)]
@@ -76,7 +76,7 @@ y = ['C_[{}]'.format(s) for s in range(12)]
 # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
 #    'R_light2', 'R_light3', 'R_light4', 'R_xy']
 
-# y = ['loss1','loss2', 'qval', 'prop_good']
+y = ['loss1','loss2', 'qval', 'prop_good']
 # y = ['good_exp', 'loss_dqn2', 'qval2', 'val2']
 # y = ['loss_imit']
 # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
@@ -104,13 +104,13 @@ def quant_inf(x):
 def quant_sup(x):
     return x.quantile(0.8)
 op_dict = {a:[np.median, np.mean, np.std, quant_inf, quant_sup] for a in y}
-avg = 0
+avg = 1
 if avg:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
 print(paramsStudied)
-a, b = 3,4
-fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
+a, b = 2,2
+fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
 colors = ['b', 'r']
 p = 'num_run'
 if avg:
@@ -157,7 +157,7 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         ax2[i % a, i // a].set_title(label=valy)
         ax2[i % a, i // a].legend()
         ax2[i % a, i // a].set_xlim([0, 500000])
-    break
+    # break
     # ax[0,0].legend()
 
 plt.show()
