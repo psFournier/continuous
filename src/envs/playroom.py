@@ -238,53 +238,6 @@ class Playroom(Env):
         else:
             return a, False
 
-    def opt_action(self, f, g):
-        if f in [5, 8, 11]:
-            obj = self.objects[(f - 5) // 3]
-            if obj.dep is not None:
-                for o, s in obj.dep[:g]:
-                    if o.s != s:
-                        return self.touch(o)
-            if obj.s < g:
-                return self.touch(obj)
-            else:
-                return Actions.NOOP, True
-        elif f == 0:
-            a = self.go(g, self.y)
-            if a is not None:
-                return a, False
-            else:
-                return Actions.NOOP, True
-        elif f == 1:
-            a = self.go(self.x, g)
-            if a is not None:
-                return a, False
-            else:
-                return Actions.NOOP, True
-        elif f == 2:
-            if self.obj == g:
-                return Actions.NOOP, True
-            elif g > 1:
-                return self.take(g-1)
-            else:
-                raise RuntimeError
-        elif f in [6, 7, 9, 10]:
-            i = f // 3
-            if self.obj != i:
-                return self.take(i-1)
-            else:
-                if f % 3 == 0:
-                    a = self.go(g, self.y)
-                else:
-                    a = self.go(self.x, g)
-                if a is not None:
-                    return a, False
-                else:
-                    return Actions.NOOP, True
-        elif f in [3, 4]:
-            raise RuntimeError
-
-
     @property
     def high(self):
         res = [self.maxR, self.maxC, len(self.objects)]

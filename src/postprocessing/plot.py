@@ -5,12 +5,12 @@ import os
 import numpy as np
 from scipy.signal import lfilter
 
-DIR = '../../log/cluster/last'
+DIR = '../../log/local/dqngm_PlayroomGM-v0/'
 ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
-if 0:
+if 1:
     for run in runs:
 
         config = pd.read_json(os.path.join(run, 'config.txt'), lines=True)
@@ -63,8 +63,8 @@ df2 = df
 # # df2 = df2[(df2['--clipping'] == 1)]
 # # df2 = df2[(df2['--explo'] == 1)]
 # df2 = df2[(df2['--margin'] == 0.5)]
-df2 = df2[(df2['--theta1'] == 4)]
-df2 = df2[(df2['--theta2'] == 4)]
+# df2 = df2[(df2['--theta1'] == 4)]
+# df2 = df2[(df2['--theta2'] == 4)]
 
 # y = ['R']
 # y = ['agentR']

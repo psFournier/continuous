@@ -62,7 +62,7 @@ class DQNGM(Agent):
             a = np.random.randint(self.env_test.action_dim)
             done = False
         else:
-            a, done = self.env_test.env.opt_action(task, goal)
+            a, done = self.env_test.opt_action(task, goal)
 
         return a, done
 
@@ -85,13 +85,13 @@ class DQNGM(Agent):
                 demo.append(exp.copy())
                 exp['s0'] = exp['s1']
 
-        return demo, task
+        return demo, task, goal
 
     def imitate(self):
 
         if self.demo != 0 and self.env_step % self.demo_freq == 0:
 
-            demo, true_task = self.get_demo()
+            demo, true_task, true_goal = self.get_demo()
 
             if self.demo == 1:
                 tasks = [true_task]
@@ -112,17 +112,19 @@ class DQNGM(Agent):
             self.stats['step'] = self.env_step
             self.short_stats['step'] = self.env_step
 
+            for i, task in enumerate(self.env.tasks_feat):
+                for name, metric in self.env.train_metrics.items():
+                    self.stats[name + '_{}'.format(task)] = float("{0:.3f}".format(
+                        metric[i] / (self.env.run_metrics['trainsteps'][i] + 0.00001)
+                    ))
+                    metric[i] = 0
+
             wrapper_stats, wrapper_short_stats = self.env.get_stats()
             for key, val in wrapper_stats.items():
                 self.stats[key] = val
             for key, val in wrapper_short_stats.items():
                 self.stats[key] = val
                 self.short_stats[key] = val
-
-            for i, task in enumerate(self.env.tasks_feat):
-                for name, metric in self.env.train_metrics.items():
-                    self.stats[name + '_{}'.format(task)] = float("{0:.3f}".format(metric[i] / self.eval_freq))
-                    metric[i] = 0
 
             for key in sorted(self.stats.keys()):
                 self.logger.logkv(key, self.stats[key])

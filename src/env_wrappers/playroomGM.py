@@ -4,6 +4,8 @@ from samplers.competenceQueue import CompetenceQueue
 from buffers import MultiTaskReplayBuffer, ReplayBuffer
 import math
 
+from envs.playroom import Actions
+
 class PlayroomGM(Wrapper):
     def __init__(self, env, args):
         super(PlayroomGM, self).__init__(env)
@@ -14,7 +16,9 @@ class PlayroomGM(Wrapper):
         self.selfImit = bool(int(args['--selfImit']))
         self.tutorTask = args['--tutorTask']
 
-        self.tasks_feat = [[i] for i in range(12)]
+        # self.tasks_feat = [[i] for i in range(12)]
+        self.tasks_feat = [[0, 1], [2], [3,4], [5], [6,7], [8], [9,10], [11]]
+
         self.Ntasks = len(self.tasks_feat)
         self.mask = None
         self.task = None
@@ -140,10 +144,11 @@ class PlayroomGM(Wrapper):
 
     def sample_tutor_task(self):
 
-        if self.tutorTask == '2':
-            task = 11
-        elif self.tutorTask == 'rnd':
-            task = np.random.choice([0, 1, 5, 6, 7, 8, 9, 10, 11])
+        if self.tutorTask == 'rnd':
+            task = np.random.choice([0, 3, 4, 5, 6, 7])
+            # task = 4
+        elif self.tutorTask == 'hard':
+            task = np.random.choice([4, 6, 7])
         else:
             raise RuntimeError
 
@@ -152,9 +157,47 @@ class PlayroomGM(Wrapper):
     def sample_tutor_goal(self, task):
 
         features = self.tasks_feat[task]
-        goal = self.state_high[features[0]]
+        goal = [np.random.randint(self.state_low[f] + 1, self.state_high[f] + 1) for f in features]
 
         return goal
+
+    def opt_action(self, f, g):
+        if f == 0:
+            a = self.env.go(g[0], g[1])
+            if a is not None:
+                return a, False
+            else:
+                return Actions.NOOP, True
+        elif f in [3, 5, 7]:
+            if f == 3:
+                obj = self.env.objects[0]
+            elif f==5:
+                obj = self.env.objects[1]
+            else:
+                obj = self.env.objects[2]
+            if obj.dep is not None:
+                for o, s in obj.dep[:g[0]]:
+                    if o.s != s:
+                        return self.env.touch(o)
+            if obj.s < g[0]:
+                return self.env.touch(obj)
+            else:
+                return Actions.NOOP, True
+        elif f in [4,6]:
+            if f==4:
+                i = 2
+            else:
+                i = 3
+            if self.env.obj != i:
+                return self.env.take(i - 1)
+            else:
+                a = self.env.go(g[0], g[1])
+                if a is not None:
+                    return a, False
+                else:
+                    return Actions.NOOP, True
+        else:
+            raise RuntimeError
 
     def sample(self, batchsize):
 
