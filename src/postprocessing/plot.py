@@ -5,12 +5,12 @@ import os
 import numpy as np
 from scipy.signal import lfilter
 
-DIR = '../../log/local/dqngm_PlayroomGM-v0/'
+DIR = '../../log/cluster/last/'
 ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
-if 1:
+if 0:
     for run in runs:
 
         config = pd.read_json(os.path.join(run, 'config.txt'), lines=True)
@@ -56,10 +56,10 @@ df2 = df
 # df2 = df2[(df2['--agent'] == 'ddpgg')]
 # df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
-# df2 = df2[(df2['--tutorTask'] == 2)]
+df2 = df2[(df2['--tutorTask'] == 'hard')]
 # df2 = df2[(df2['--wimit'] == 1)]
 # df2 = df2[(df2['--opt_init'] == -20)]
-# df2 = df2[(df2['--demo'] == 0)]
+df2 = df2[(df2['--demo'] == 2)]
 # # df2 = df2[(df2['--clipping'] == 1)]
 # # df2 = df2[(df2['--explo'] == 1)]
 # df2 = df2[(df2['--margin'] == 0.5)]
@@ -70,7 +70,7 @@ df2 = df
 # y = ['agentR']
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
 # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
-y = ['envstep_[{}]'.format(s) for s in range(12)]
+y = ['goodexp_{}'.format(str(s)) for s in [[0, 1], [2], [3,4], [5], [6,7], [8], [9,10], [11]]]
 # x = ['attempts'+s for s in ['_light','_key1', '_chest1']]
 
 # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
@@ -109,7 +109,7 @@ if avg:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
 print(paramsStudied)
-a, b = 3,4
+a, b = 3,3
 fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
 colors = ['b', 'r']
 p = 'num_run'
@@ -140,7 +140,7 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         else:
             # n = 50  # the larger n is, the smoother curve will be
             # yy = lfilter([1.0 / n] * n, 1, g[valy])
-            ax2[i % a, i // a].plot(g['step'], abs(g[valy].diff(10)), label=None)
+            ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy2], label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy3], label=None)
 
@@ -157,6 +157,7 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         ax2[i % a, i // a].set_title(label=valy)
         ax2[i % a, i // a].legend()
         ax2[i % a, i // a].set_xlim([0, 500000])
+        # ax2[i % a, i // a].set_ylim([200000, 500000])
     # break
     # ax[0,0].legend()
 

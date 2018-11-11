@@ -1,7 +1,7 @@
 from keras.models import Model
 from keras.initializers import RandomUniform, lecun_uniform
 from keras.regularizers import l2
-from keras.layers import Dense, Input, Lambda, Reshape
+from keras.layers import Dense, Input, Lambda, Reshape, Dropout
 from keras.optimizers import Adam
 import keras.backend as K
 from keras.layers.merge import concatenate, multiply, add, subtract, maximum
@@ -20,6 +20,7 @@ class CriticDQNGM(object):
         self.gamma = 0.99
         self.w_i = float(args['--wimit'])
         self.margin = float(args['--margin'])
+        self.dropout = float(args['--dropout'])
         self.num_actions = env.action_dim
         self.optimizer = Adam(lr=self.learning_rate)
         self.initModels()
@@ -105,12 +106,14 @@ class CriticDQNGM(object):
         L2 = Dense(400, activation="relu",
                    kernel_initializer=lecun_uniform(),
                    kernel_regularizer=l2(0.01))(L1)
+        L2d = Dropout(self.dropout)(L2)
         L3 = Dense(300, activation="relu",
                    kernel_initializer=lecun_uniform(),
-                   kernel_regularizer=l2(0.01))(L2)
+                   kernel_regularizer=l2(0.01))(L2d)
+        L3d = Dropout(self.dropout)(L3)
         Q_values = Dense(self.env.action_dim,
                          activation='linear',
                          kernel_initializer=RandomUniform(minval=-3e-4, maxval=3e-4),
                          kernel_regularizer=l2(0.01),
-                         bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))(L3)
+                         bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))(L3d)
         return Q_values
