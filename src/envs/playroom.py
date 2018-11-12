@@ -15,36 +15,35 @@ MAP = [
 ]
 
 class Actions:
-    NOOP = 0
-    UP = 1
-    DOWN = 2
-    LEFT = 3
-    RIGHT = 4
-    TOUCH = 5
-    TAKE = 6
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
+    TOUCH = 4
+    TAKE = 5
 
 class Obj():
     def __init__(self, env, name, pos, prop, dep=None):
         self.env = env
         self.name = name
-        self.ix, self.iy = pos
+        self.x, self.y = pos
         self.prop = prop
         self.dep = dep
         self.env.objects.append(self)
-        self.g = self.gencoordinates()
+        # self.g = self.gencoordinates()
         self.init()
 
-    def gencoordinates(self):
-
-        while True:
-            x, y = randint(-1, 1), randint(-1, 1)
-            while (self.ix+x, self.iy+y) in self.env.seenpos:
-                x, y = randint(-1, 1), randint(-1, 1)
-            self.env.seenpos.add((self.ix+x, self.iy+y))
-            yield (self.ix+x, self.iy+y)
+    # def gencoordinates(self):
+    #
+    #     while True:
+    #         x, y = 0, 0
+    #         while (self.ix+x, self.iy+y) in self.env.seenpos:
+    #             x, y = 0, 0
+    #         self.env.seenpos.add((self.ix+x, self.iy+y))
+    #         yield (self.ix+x, self.iy+y)
 
     def init(self):
-        self.x, self.y = next(self.g)
+        # self.x, self.y = next(self.g)
         self.s = 0
 
     def touch(self):
@@ -74,57 +73,51 @@ class Light(Obj):
         if self.s == 0:
             self.s = np.random.choice([0, 1], p=self.prop)
 
-    def init(self):
-        self.x, self.y = next(self.g)
-        self.s = np.random.choice([0, 1], p=[0.9, 0.1])
-
-    @property
-    def takeable(self):
-        return False
+    # def init(self):
+    #     self.x, self.y = next(self.g)
+    #     self.s = np.random.choice([0, 1], p=[0.9, 0.1])
 
 class Key(Obj):
     def __init__(self, env, name, pos, prop, dep):
         super(Key, self).__init__(env, name, pos, prop, dep)
 
     def touch(self):
-        dep_ok = self.s < len(self.dep) and all([o.s == s for o, s in self.dep[:self.s+1]])
-        if dep_ok and self.s == 0:
+        if self.s == 0 and all([o.s == s for o, s in self.dep]):
             self.s = np.random.choice([0, 1], p=self.prop)
 
-    def init(self):
-        self.x, self.y = next(self.g)
-        n = 0
-        p = [1]
-        for o, s in self.dep:
-            if o.s == s:
-                n += 1
-                p[0] -= 0.1
-                p.append(0.1)
-        self.s = np.random.choice(range(n+1), p=p)
+    # def init(self):
+    #     self.x, self.y = next(self.g)
+    #     n = 0
+    #     p = [1]
+    #     for o, s in self.dep:
+    #         if o.s == s:
+    #             n += 1
+    #             p[0] -= 0.1
+    #             p.append(0.1)
+    #     self.s = np.random.choice(range(n+1), p=p)
 
 class Chest(Obj):
     def __init__(self, env, name, pos, prop, dep):
         super(Chest, self).__init__(env, name, pos, prop, dep)
 
     def touch(self):
-        dep_ok = self.s < len(self.dep) and all([o.s == s for o, s in self.dep[:self.s+1]])
-        if dep_ok:
-            self.s = np.random.choice([self.s, self.s + 1], p=self.prop)
+        if self.s == 0 and all([o.s == s for o, s in self.dep]):
+            self.s = np.random.choice([0, 1], p=self.prop)
 
-    def init(self):
-        self.x, self.y = next(self.g)
-        n = 0
-        p = [1]
-        for o, s in self.dep[:-1]:
-            if o.s == s:
-                n += 1
-                p[0] -= 0.1
-                p.append(0.1)
-        self.s = np.random.choice(range(n+1), p=p)
+    # def init(self):
+    #     self.x, self.y = next(self.g)
+    #     n = 0
+    #     p = [1]
+    #     for o, s in self.dep[:-1]:
+    #         if o.s == s:
+    #             n += 1
+    #             p[0] -= 0.1
+    #             p.append(0.1)
+    #     self.s = np.random.choice(range(n+1), p=p)
 
-    @property
-    def high(self):
-        return [self.env.maxR, self.env.maxC, len(self.dep)]
+    # @property
+    # def high(self):
+    #     return [self.env.maxR, self.env.maxC, len(self.dep)]
 
 class Playroom(Env):
     metadata = {'render.modes': ['human', 'ansi']}
@@ -178,7 +171,7 @@ class Playroom(Env):
                 self.y += 1
         elif a == Actions.TAKE:
             obj = self.underagent()
-            if self.obj == 0 and obj != 0 and self.objects[obj - 1].takeable:
+            if self.obj == 0 and obj != 0:
                 self.obj = obj
             elif obj == 0:
                 self.obj = 0

@@ -35,7 +35,7 @@ Options:
   --demo VAL               Type of imitation [default: 0]
   --selfImit VAL           Self imitation [default: 0]
   --tutorTask VAL          Tutor task [default: rnd]
-  --dropout VAL            Dropout prob [default: 0.5]
+  --network VAL            network type [default: 0]
 """
 
 def build_logger(args):

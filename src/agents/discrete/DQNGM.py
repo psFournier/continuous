@@ -72,7 +72,8 @@ class DQNGM(Agent):
         exp = {}
         exp['s0'] = self.env_test.env.reset(random=False)
         task = self.env_test.sample_tutor_task()
-        goal = self.env_test.sample_tutor_goal(task)
+        goal_array = self.env_test.sample_goal(task, exp['s0'])
+        goal = [goal_array[f] for f in self.env_test.tasks_feat[task]]
         while True:
             a, done = self.tutor_act(task, goal)
             if done:

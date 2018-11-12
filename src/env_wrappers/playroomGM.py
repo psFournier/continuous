@@ -17,7 +17,7 @@ class PlayroomGM(Wrapper):
         self.tutorTask = args['--tutorTask']
 
         # self.tasks_feat = [[i] for i in range(12)]
-        self.tasks_feat = [[0, 1], [2], [3,4], [5], [6,7], [8], [9,10], [11]]
+        self.tasks_feat = [[2], [3,4], [5], [6,7], [8], [9,10], [11]]
 
         self.Ntasks = len(self.tasks_feat)
         self.mask = None
@@ -118,19 +118,15 @@ class PlayroomGM(Wrapper):
 
         state = self.env.reset(random=False)
         self.update_interests()
-        self.task = self.sample_task(state)
+        self.task = self.sample_task()
         self.goal = self.sample_goal(self.task, state)
         self.mask = self.task2mask(self.task)
-
         return state
 
-    def sample_task(self, state):
+    def sample_task(self):
 
         task = np.random.choice(self.Ntasks, p=self.probs1)
-        features = self.tasks_feat[task]
-        while all([state[f] == self.state_high[f] for f in features]):
-            task = np.random.choice(self.Ntasks, p=self.probs1)
-            features = self.tasks_feat[task]
+
         return task
 
     def sample_goal(self, task, state):
@@ -138,64 +134,49 @@ class PlayroomGM(Wrapper):
         goal = state.copy()
         while not (goal != state).any():
             for f in self.tasks_feat[task]:
-                goal[f] = np.random.randint(state[f], self.state_high[f] + 1)
+                goal[f] = np.random.randint(self.state_low[f], self.state_high[f] + 1)
 
         return goal
 
     def sample_tutor_task(self):
 
         if self.tutorTask == 'rnd':
-            task = np.random.choice([0, 3, 4, 5, 6, 7])
+            task = np.random.choice([0, 1, 2, 3, 4, 5, 6])
             # task = 4
         elif self.tutorTask == 'hard':
-            task = np.random.choice([4, 6, 7])
+            task = np.random.choice([0, 6])
         else:
             raise RuntimeError
 
         return task
 
-    def sample_tutor_goal(self, task):
-
-        features = self.tasks_feat[task]
-        goal = [np.random.randint(self.state_low[f] + 1, self.state_high[f] + 1) for f in features]
-
-        return goal
-
-    def opt_action(self, f, g):
-        if f == 0:
-            a = self.env.go(g[0], g[1])
-            if a is not None:
-                return a, False
+    def opt_action(self, t, g):
+        if t == 0:
+            if self.env.obj == g[0]:
+                return -1, True
             else:
-                return Actions.NOOP, True
-        elif f in [3, 5, 7]:
-            if f == 3:
-                obj = self.env.objects[0]
-            elif f==5:
-                obj = self.env.objects[1]
+                return self.env.take(g[0] - 1)
+        elif t in [2, 4, 6]:
+            obj = self.env.objects[t // 2 - 1]
+            if obj.s == 1:
+                return -1, True
             else:
-                obj = self.env.objects[2]
-            if obj.dep is not None:
-                for o, s in obj.dep[:g[0]]:
-                    if o.s != s:
-                        return self.env.touch(o)
-            if obj.s < g[0]:
+                if obj.dep is not None:
+                    for o, s in obj.dep:
+                        if o.s != s:
+                            return self.env.touch(o)
                 return self.env.touch(obj)
-            else:
-                return Actions.NOOP, True
-        elif f in [4,6]:
-            if f==4:
-                i = 2
-            else:
-                i = 3
-            if self.env.obj != i:
-                return self.env.take(i - 1)
+
+        elif t in [1, 3, 5]:
+            objnum = t//2 + 1
+            if self.env.obj != objnum:
+                return self.env.take(objnum - 1)
             else:
                 a = self.env.go(g[0], g[1])
                 if a is not None:
                     return a, False
                 else:
-                    return Actions.NOOP, True
+                    return -1, True
         else:
             raise RuntimeError
 
@@ -281,4 +262,4 @@ class PlayroomGM(Wrapper):
 
     @property
     def action_dim(self):
-        return 7
+        return 6

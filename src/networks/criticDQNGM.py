@@ -20,7 +20,7 @@ class CriticDQNGM(object):
         self.gamma = 0.99
         self.w_i = float(args['--wimit'])
         self.margin = float(args['--margin'])
-        self.dropout = float(args['--dropout'])
+        self.network = float(args['--network'])
         self.num_actions = env.action_dim
         self.optimizer = Adam(lr=self.learning_rate)
         self.initModels()
@@ -102,18 +102,32 @@ class CriticDQNGM(object):
         return np.expand_dims(targets_dqn, axis=1)
 
     def create_critic_network(self, S, G=None, M=None):
-        L1 = concatenate([multiply([subtract([S, G]), M]), S])
-        L2 = Dense(400, activation="relu",
-                   kernel_initializer=lecun_uniform(),
-                   kernel_regularizer=l2(0.01))(L1)
-        L2d = Dropout(self.dropout)(L2)
-        L3 = Dense(300, activation="relu",
-                   kernel_initializer=lecun_uniform(),
-                   kernel_regularizer=l2(0.01))(L2d)
-        L3d = Dropout(self.dropout)(L3)
-        Q_values = Dense(self.env.action_dim,
-                         activation='linear',
-                         kernel_initializer=RandomUniform(minval=-3e-4, maxval=3e-4),
-                         kernel_regularizer=l2(0.01),
-                         bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))(L3d)
+        if self.network == '0':
+            L1 = concatenate([multiply([subtract([S, G]), M]), S])
+            L2 = Dense(400, activation="relu",
+                       kernel_initializer=lecun_uniform(),
+                       kernel_regularizer=l2(0.01))(L1)
+            L3 = Dense(300, activation="relu",
+                       kernel_initializer=lecun_uniform(),
+                       kernel_regularizer=l2(0.01))(L2)
+            Q_values = Dense(self.env.action_dim,
+                             activation='linear',
+                             kernel_initializer=RandomUniform(minval=-3e-4, maxval=3e-4),
+                             kernel_regularizer=l2(0.01),
+                             bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))(L3)
+        else:
+            L1 = concatenate([subtract([S, G]), S])
+            L2 = Dense(400, activation="relu",
+                       kernel_initializer=lecun_uniform(),
+                       kernel_regularizer=l2(0.01))(L1)
+            L2 = concatenate([L2, M])
+            L3 = Dense(300, activation="relu",
+                       kernel_initializer=lecun_uniform(),
+                       kernel_regularizer=l2(0.01))(L2)
+            L3 = concatenate([L3, M])
+            Q_values = Dense(self.env.action_dim,
+                             activation='linear',
+                             kernel_initializer=RandomUniform(minval=-3e-4, maxval=3e-4),
+                             kernel_regularizer=l2(0.01),
+                             bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))(L3)
         return Q_values
