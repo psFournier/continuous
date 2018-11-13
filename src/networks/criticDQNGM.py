@@ -116,18 +116,28 @@ class CriticDQNGM(object):
                              kernel_regularizer=l2(0.01),
                              bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))(L3)
         else:
-            L1 = concatenate([subtract([S, G]), S])
-            L2 = Dense(400, activation="relu",
+            L1 = Dense(200, activation="relu",
                        kernel_initializer=lecun_uniform(),
-                       kernel_regularizer=l2(0.01))(L1)
-            L2 = concatenate([L2, M])
+                       kernel_regularizer=l2(0.01))
+            h1 = L1(S)
+
+            L2 = Dense(200, activation="relu",
+                       kernel_initializer=lecun_uniform(),
+                       kernel_regularizer=l2(0.01))
+            h2 = L2(multiply([G, M]))
+
             L3 = Dense(300, activation="relu",
                        kernel_initializer=lecun_uniform(),
-                       kernel_regularizer=l2(0.01))(L2)
-            L3 = concatenate([L3, M])
-            Q_values = Dense(self.env.action_dim,
+                       kernel_regularizer=l2(0.01))
+            h3 = L3(concatenate([h1,h2]))
+
+            L4 = Dense(self.env.action_dim,
                              activation='linear',
                              kernel_initializer=RandomUniform(minval=-3e-4, maxval=3e-4),
                              kernel_regularizer=l2(0.01),
-                             bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))(L3)
+                             bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))
+
+
+            Q_values = L4(h3)
+
         return Q_values

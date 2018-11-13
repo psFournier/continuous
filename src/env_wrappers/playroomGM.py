@@ -11,13 +11,12 @@ class PlayroomGM(Wrapper):
         super(PlayroomGM, self).__init__(env)
 
         self.gamma = float(args['--gamma'])
-        self.theta1 = float(args['--theta1'])
-        self.theta2 = float(args['--theta2'])
+        self.eps1 = float(args['--eps1'])
+        self.eps2 = float(args['--eps2'])
         self.selfImit = bool(int(args['--selfImit']))
-        self.tutorTask = args['--tutorTask']
 
         # self.tasks_feat = [[i] for i in range(12)]
-        self.tasks_feat = [[2], [3,4], [5], [6,7], [8], [9,10], [11]]
+        self.tasks_feat = [[i] for i in range(2, 11)]
 
         self.Ntasks = len(self.tasks_feat)
         self.mask = None
@@ -138,45 +137,58 @@ class PlayroomGM(Wrapper):
 
         return goal
 
-    def sample_tutor_task(self):
+    def get_demo(self):
 
-        if self.tutorTask == 'rnd':
-            task = np.random.choice([0, 1, 2, 3, 4, 5, 6])
-            # task = 4
-        elif self.tutorTask == 'hard':
-            task = np.random.choice([0, 6])
-        else:
-            raise RuntimeError
-
-        return task
-
-    def opt_action(self, t, g):
-        if t == 0:
-            if self.env.obj == g[0]:
-                return -1, True
+        demo = []
+        exp = {}
+        exp['s0'] = self.env.reset(random=False)
+        task = np.random.choice([6, 7, 8])
+        while True:
+            a, done = self.opt_action(task)
+            if done:
+                break
             else:
-                return self.env.take(g[0] - 1)
-        elif t in [2, 4, 6]:
-            obj = self.env.objects[t // 2 - 1]
+                exp['a'] = np.expand_dims(a, axis=1)
+                exp['s1'] = self.env.step(exp['a'], True)[0]
+                exp['pa'] = 1
+                exp['o'] = 1
+                demo.append(exp.copy())
+                exp['s0'] = exp['s1']
+
+        return demo, task
+
+    def opt_action(self, t):
+
+        if t == 6:
+            obj = self.env.chest1
             if obj.s == 1:
                 return -1, True
             else:
-                if obj.dep is not None:
-                    for o, s in obj.dep:
-                        if o.s != s:
-                            return self.env.touch(o)
                 return self.env.touch(obj)
 
-        elif t in [1, 3, 5]:
-            objnum = t//2 + 1
-            if self.env.obj != objnum:
-                return self.env.take(objnum - 1)
+        elif t== 7:
+            obj = self.env.chest2
+            if obj.s == 1:
+                return -1, True
             else:
-                a = self.env.go(g[0], g[1])
-                if a is not None:
-                    return a, False
+                if self.env.door1.s == 1:
+                    return self.env.touch(obj)
+                elif self.env.keyDoor1.s == 1:
+                    return self.env.touch(self.env.door1)
                 else:
-                    return -1, True
+                    return self.env.touch(self.env.keyDoor1)
+
+        elif t == 8:
+            obj = self.env.chest3
+            if obj.s == 1:
+                return -1, True
+            else:
+                if self.env.door3.s == 1:
+                    return self.env.touch(obj)
+                elif self.env.keyDoor3.s == 1:
+                    return self.env.touch(self.env.door3)
+                else:
+                    return self.env.touch(self.env.keyDoor3)
         else:
             raise RuntimeError
 
@@ -227,19 +239,15 @@ class PlayroomGM(Wrapper):
         widthCP = maxCP - minCP
         self.interests = [(cp - minCP) / (widthCP + 0.0001) for cp in self.CPs]
 
-        espilon = 0.4
-
-        interests1 = [math.pow(i, self.theta1) for i in self.interests]
-        sumI1 = np.sum(interests1)
+        sumI1 = np.sum(self.interests)
         if sumI1 != 0:
-            self.probs1 = [espilon / self.Ntasks + (1 - espilon) * i / sumI1 for i in interests1]
+            self.probs1 = [self.eps1 / self.Ntasks + (1 - self.eps1) * i / sumI1 for i in self.interests]
         else:
             self.probs1 = [1 / self.Ntasks] * self.Ntasks
 
-        interests2 = [math.pow(i, self.theta2) for i in self.interests]
-        sumI2 = np.sum(interests2)
+        sumI2 = np.sum(self.interests)
         if sumI2 != 0:
-            self.probs2 = [espilon / self.Ntasks + (1 - espilon) * i / sumI2 for i in interests2]
+            self.probs2 = [self.eps2 / self.Ntasks + (1 - self.eps2) * i / sumI2 for i in self.interests]
         else:
             self.probs2 = [1 / self.Ntasks] * self.Ntasks
 
@@ -254,12 +262,12 @@ class PlayroomGM(Wrapper):
 
     @property
     def state_dim(self):
-        return 12,
+        return 11,
 
     @property
     def goal_dim(self):
-        return 12,
+        return 11,
 
     @property
     def action_dim(self):
-        return 6
+        return 5

@@ -4,14 +4,14 @@ from random import randint
 
 MAP = [
     " _ _ _ _ _ _ _ _ ",
-    "|               |",
-    "|               |",
-    "|               |",
-    "|               |",
-    "|               |",
-    "|               |",
-    "|               |",
-    "|_ _ _ _ _ _ _ _|",
+    "|       |       |",
+    "|       1       |",
+    "|       |       |",
+    "|       |_ _ 2 _|",
+    "|       |       |",
+    "|       |       |",
+    "|       |       |",
+    "|_ _ _ _|_ _ _ _|",
 ]
 
 class Actions:
@@ -20,10 +20,10 @@ class Actions:
     LEFT = 2
     RIGHT = 3
     TOUCH = 4
-    TAKE = 5
+    # TAKE = 5
 
 class Obj():
-    def __init__(self, env, name, pos, prop, dep=None):
+    def __init__(self, env, name, pos, prop, dep, tutor_only=False):
         self.env = env
         self.name = name
         self.x, self.y = pos
@@ -32,6 +32,7 @@ class Obj():
         self.env.objects.append(self)
         # self.g = self.gencoordinates()
         self.init()
+        self.tutor_only = tutor_only
 
     # def gencoordinates(self):
     #
@@ -46,63 +47,21 @@ class Obj():
         # self.x, self.y = next(self.g)
         self.s = 0
 
-    def touch(self):
-        pass
+    def touch(self, tutor):
+        if self.s == 0 and all([o.s == s for o, s in self.dep]) and (not self.tutor_only or tutor):
+            self.s = np.random.choice([0, 1], p=self.prop)
 
     @property
     def state(self):
-        return [self.x, self.y, self.s]
+        return [self.s]
 
     @property
     def high(self):
-        return [self.env.maxR, self.env.maxC, 1]
+        return [1]
 
     @property
     def low(self):
-        return [0, 0, 0]
-
-    @property
-    def takeable(self):
-        return True
-
-class Light(Obj):
-    def __init__(self, env, name, pos, prop):
-        super(Light, self).__init__(env, name, pos, prop)
-
-    def touch(self):
-        if self.s == 0:
-            self.s = np.random.choice([0, 1], p=self.prop)
-
-    # def init(self):
-    #     self.x, self.y = next(self.g)
-    #     self.s = np.random.choice([0, 1], p=[0.9, 0.1])
-
-class Key(Obj):
-    def __init__(self, env, name, pos, prop, dep):
-        super(Key, self).__init__(env, name, pos, prop, dep)
-
-    def touch(self):
-        if self.s == 0 and all([o.s == s for o, s in self.dep]):
-            self.s = np.random.choice([0, 1], p=self.prop)
-
-    # def init(self):
-    #     self.x, self.y = next(self.g)
-    #     n = 0
-    #     p = [1]
-    #     for o, s in self.dep:
-    #         if o.s == s:
-    #             n += 1
-    #             p[0] -= 0.1
-    #             p.append(0.1)
-    #     self.s = np.random.choice(range(n+1), p=p)
-
-class Chest(Obj):
-    def __init__(self, env, name, pos, prop, dep):
-        super(Chest, self).__init__(env, name, pos, prop, dep)
-
-    def touch(self):
-        if self.s == 0 and all([o.s == s for o, s in self.dep]):
-            self.s = np.random.choice([0, 1], p=self.prop)
+        return [0]
 
     # def init(self):
     #     self.x, self.y = next(self.g)
@@ -115,88 +74,131 @@ class Chest(Obj):
     #             p.append(0.1)
     #     self.s = np.random.choice(range(n+1), p=p)
 
-    # @property
-    # def high(self):
-    #     return [self.env.maxR, self.env.maxC, len(self.dep)]
 
 class Playroom(Env):
     metadata = {'render.modes': ['human', 'ansi']}
 
     def __init__(self):
-        self.desc = np.asarray(MAP, dtype='c')
-        self.maxR = self.desc.shape[0] - 2
-        self.maxC = (self.desc.shape[1] - 1) // 2 - 1
+        self.maxX = 10
+        self.maxY = 10
+        self.walls = np.zeros((11, 11))
+        for i in range(11):
+            if i != 3 and i != 8:
+                self.walls[5, i] = 1
+        for i in range(5, 11):
+            if i != 8:
+                self.walls[i, 5] = 1
         self.initialize()
 
-    def initialize(self, random=True):
-        self.seenpos = set()
-        self.x, self.y = randint(0, self.maxR), randint(0, self.maxC)
-        self.seenpos.add((self.x, self.y))
-        self.obj = 0
+    def initialize(self):
+        # self.seenpos = set()
+        self.x, self.y = randint(0, 4), randint(0, self.maxY)
+        # self.seenpos.add((self.x, self.y))
         self.objects = []
-        self.light = Light(self,
-                           name='light',
-                           pos=(1,1),
-                           prop=[0, 1])
-        self.key1 = Key(self,
-                        name='key1',
-                        pos=(4,4),
-                        prop=[0, 1],
-                        dep=[(self.light, 1)])
-        self.chest1 = Chest(self,
-                            name='chest1',
-                            pos=(6,6),
+
+        self.keyDoor1 = Obj(self,
+                            name='keyDoor1',
+                            pos=(0, 10),
                             prop=[0, 1],
-                            dep=[(self.light, 1), (self.key1, 1)])
-        if not random:
-            self.light.s = 0
-            self.key1.s = 0
-            self.chest1.s = 0
+                            dep=[])
+
+        self.door1 = Obj(self,
+                         name='door1',
+                         pos=(5, 8),
+                         prop=[0, 1],
+                         dep=[(self.keyDoor1, 1)])
+
+        self.keyDoor2 = Obj(self,
+                            name='keyDoor2',
+                            pos=(10, 10),
+                            prop=[0, 1],
+                            dep=[])
+
+        self.door2 = Obj(self,
+                         name='door2',
+                         pos=(8, 5),
+                         prop=[0, 1],
+                         dep=[(self.keyDoor2, 1)])
+
+        self.keyDoor3 = Obj(self,
+                            name='keyDoor3',
+                            pos=(0, 0),
+                            prop=[0, 1],
+                            dep=[],
+                            tutor_only=True)
+
+        self.door3 = Obj(self,
+                         name='door3',
+                         pos=(5, 3),
+                         prop=[0, 1],
+                         dep=[(self.keyDoor3, 1)],
+                         tutor_only=True)
+
+        self.chest1 = Obj(self,
+                          name='chest1',
+                          pos=(4, 10),
+                          prop=[0, 1],
+                          dep=[],
+                          tutor_only=True)
+
+        self.chest2 = Obj(self,
+                          name='chest2',
+                          pos=(10, 6),
+                          prop=[0, 1],
+                          dep=[],
+                          tutor_only=True)
+
+        self.chest3 = Obj(self,
+                          name='chest3',
+                          pos=(10, 0),
+                          prop=[0, 1],
+                          dep=[])
 
         self.initstate = self.state.copy()
         self.lastaction = None
 
-    def step(self, a):
-        if a == Actions.UP:
-            if self.desc[1 + self.x, 1 + 2 * self.y] == b" ":
-                self.x += 1
-        elif a == Actions.DOWN:
-            if self.desc[self.x, 1 + 2 * self.y] == b" ":
-                self.x -= 1
-        elif a == Actions.LEFT:
-            if self.desc[1 + self.x, 2 * self.y] == b" ":
-                self.y -= 1
-        elif a == Actions.RIGHT:
-            if self.desc[1 + self.x, 2 * self.y + 2] == b" ":
-                self.y += 1
-        elif a == Actions.TAKE:
-            obj = self.underagent()
-            if self.obj == 0 and obj != 0:
-                self.obj = obj
-            elif obj == 0:
-                self.obj = 0
-        elif a == Actions.TOUCH:
-            if self.obj != 0:
-                self.objects[self.obj - 1].touch()
-            else:
-                obj = self.underagent()
-                if obj != 0:
-                    self.objects[obj - 1].touch()
+    def check_door(self):
+        obj = self.underagent()
+        if obj <= 0 or self.objects[obj - 1] not in [self.door1, self.door2, self.door3] or \
+                        self.objects[obj - 1].s == 1:
+            return True
+        else:
+            return False
 
-        if self.obj != 0:
-            self.objects[self.obj - 1].x, self.objects[self.obj - 1].y = self.x, self.y
+    def step(self, a, tutor=False):
+
+        if a == Actions.UP:
+            if self.y < self.maxY and not self.walls[self.x, self.y + 1] and self.check_door():
+                self.y += 1
+
+        elif a == Actions.DOWN:
+            if self.y > 0 and not self.walls[self.x, self.y - 1] and self.check_door():
+                self.y -= 1
+
+        elif a == Actions.RIGHT:
+            if self.x < self.maxX and not self.walls[self.x + 1, self.y] and self.check_door():
+                self.x += 1
+
+        elif a == Actions.LEFT:
+            if self.x > 0 and not self.walls[self.x - 1, self.y] and self.check_door():
+                self.x -= 1
+
+        elif a == Actions.TOUCH:
+            obj = self.underagent()
+            if obj != 0:
+                self.objects[obj - 1].touch(tutor)
 
         self.lastaction = a
         return np.array(self.state),
 
     def underagent(self):
         for i, obj in enumerate(self.objects):
-            if obj.x == self.x and obj.y == self.y and self.obj != i+1:
+            if obj.x == self.x and obj.y == self.y:
                 return i+1
         return 0
 
     def reset(self, random=True):
-        self.initialize(random)
+        self.initialize()
         return np.array(self.state)
 
     def go(self, x , y):
@@ -204,25 +206,25 @@ class Playroom(Env):
         dy = y - self.y
         possible_act = []
         if dx > 0:
-            possible_act.append(Actions.UP)
-        elif dx < 0:
-            possible_act.append(Actions.DOWN)
-        elif dy > 0:
             possible_act.append(Actions.RIGHT)
-        elif dy < 0:
+        elif dx < 0:
             possible_act.append(Actions.LEFT)
+        if dy > 0:
+            possible_act.append(Actions.UP)
+        elif dy < 0:
+            possible_act.append(Actions.DOWN)
         if possible_act:
             return np.random.choice(possible_act)
         else:
             return None
 
-    def take(self, i):
-        obj = self.objects[i]
-        a = self.go(obj.x, obj.y)
-        if a is None:
-            return Actions.TAKE, False
-        else:
-            return a, False
+    # def take(self, i):
+    #     obj = self.objects[i]
+    #     a = self.go(obj.x, obj.y)
+    #     if a is None:
+    #         return Actions.TAKE, False
+    #     else:
+    #         return a, False
 
     def touch(self, o):
         a = self.go(o.x, o.y)
@@ -233,21 +235,21 @@ class Playroom(Env):
 
     @property
     def high(self):
-        res = [self.maxR, self.maxC, len(self.objects)]
+        res = [self.maxX, self.maxY]
         for obj in self.objects:
             res += obj.high
         return res
 
     @property
     def state(self):
-        res = [self.x, self.y, self.obj]
+        res = [self.x, self.y]
         for obj in self.objects:
             res += obj.state
         return res
 
     @property
     def low(self):
-        res = [0, 0, 0]
+        res = [0, 0]
         for obj in self.objects:
             res += obj.low
         return res
@@ -256,12 +258,13 @@ if __name__ == '__main__':
     env = Playroom()
     env.reset()
     print(env.state)
-    while True:
-        a, done = env.opt_action(6, 4)
-        if not done:
-            env.step(a)
-        else:
-            break
+    while env.keyDoor1.s == 0:
+        a, done = env.touch(env.keyDoor1)
+        env.step(a)
+        print(a, env.state)
+    while env.door1.s == 0:
+        a, done = env.touch(env.door1)
+        env.step(a)
         print(a, env.state)
 
 

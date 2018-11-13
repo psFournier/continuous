@@ -56,43 +56,11 @@ class DQNGM(Agent):
 
         return state
 
-    def tutor_act(self, task, goal):
-
-        if np.random.rand() < self.rnd_demo:
-            a = np.random.randint(self.env_test.action_dim)
-            done = False
-        else:
-            a, done = self.env_test.opt_action(task, goal)
-
-        return a, done
-
-    def get_demo(self):
-
-        demo = []
-        exp = {}
-        exp['s0'] = self.env_test.env.reset(random=False)
-        task = self.env_test.sample_tutor_task()
-        goal_array = self.env_test.sample_goal(task, exp['s0'])
-        goal = [goal_array[f] for f in self.env_test.tasks_feat[task]]
-        while True:
-            a, done = self.tutor_act(task, goal)
-            if done:
-                break
-            else:
-                exp['a'] = np.expand_dims(a, axis=1)
-                exp['s1'] = self.env_test.env.step(exp['a'])[0]
-                exp['pa'] = 1
-                exp['o'] = 1
-                demo.append(exp.copy())
-                exp['s0'] = exp['s1']
-
-        return demo, task, goal
-
     def imitate(self):
 
         if self.demo != 0 and self.env_step % self.demo_freq == 0:
 
-            demo, true_task, true_goal = self.get_demo()
+            demo, true_task = self.env_test.get_demo()
 
             if self.demo == 1:
                 tasks = [true_task]

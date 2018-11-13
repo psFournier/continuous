@@ -19,8 +19,8 @@ Usage:
 
 Options:
   --seed SEED              Random seed
-  --theta1 THETA            CP importance for goal selection [default: 0]
-  --theta2 THETA            CP importance for goal selection [default: 0]
+  --eps1 VAL            CP importance for goal selection [default: 0]
+  --eps2 VAL            CP importance for goal selection [default: 0]
   --inv_grad YES_NO        Gradient inversion near action limits [default: 1]
   --max_steps VAL          Maximum total steps [default: 500000]
   --ep_steps VAL           Maximum episode steps [default: 50]
@@ -34,7 +34,6 @@ Options:
   --rnd_demo VAL           Amount of stochasticity in the tutor's actions [default: 0]
   --demo VAL               Type of imitation [default: 0]
   --selfImit VAL           Self imitation [default: 0]
-  --tutorTask VAL          Tutor task [default: rnd]
   --network VAL            network type [default: 0]
 """
 
