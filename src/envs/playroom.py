@@ -92,7 +92,7 @@ class Playroom(Env):
 
     def initialize(self):
         # self.seenpos = set()
-        self.x, self.y = randint(0, 4), randint(0, self.maxY)
+        self.x, self.y = 0, 0
         # self.seenpos.add((self.x, self.y))
         self.objects = []
 
@@ -122,7 +122,7 @@ class Playroom(Env):
 
         self.keyDoor3 = Obj(self,
                             name='keyDoor3',
-                            pos=(0, 0),
+                            pos=(4, 0),
                             prop=[0, 1],
                             dep=[],
                             tutor_only=True)

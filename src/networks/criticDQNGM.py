@@ -4,7 +4,7 @@ from keras.regularizers import l2
 from keras.layers import Dense, Input, Lambda, Reshape, Dropout
 from keras.optimizers import Adam
 import keras.backend as K
-from keras.layers.merge import concatenate, multiply, add, subtract, maximum
+from keras.layers.merge import concatenate, multiply, add, subtract, maximum, Dot
 from .criticDQNG import CriticDQNG
 import numpy as np
 from keras.losses import mse
@@ -116,28 +116,28 @@ class CriticDQNGM(object):
                              kernel_regularizer=l2(0.01),
                              bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))(L3)
         else:
-            L1 = Dense(200, activation="relu",
+            L1 = Dense(100, activation="relu",
                        kernel_initializer=lecun_uniform(),
                        kernel_regularizer=l2(0.01))
-            h1 = L1(S)
 
-            L2 = Dense(200, activation="relu",
+            L2 = Dense(100, activation="relu",
                        kernel_initializer=lecun_uniform(),
                        kernel_regularizer=l2(0.01))
-            h2 = L2(multiply([G, M]))
 
-            L3 = Dense(300, activation="relu",
+            h1 = L1(L2(S))
+            h2 = L1(L2(G))
+
+            L3 = Dense(100, activation="relu",
                        kernel_initializer=lecun_uniform(),
                        kernel_regularizer=l2(0.01))
-            h3 = L3(concatenate([h1,h2]))
+            h3 = L3(M)
+            mult = multiply([subtract([h1, h2]), h3])
 
-            L4 = Dense(self.env.action_dim,
+            Q_values = Dense(self.env.action_dim,
                              activation='linear',
                              kernel_initializer=RandomUniform(minval=-3e-4, maxval=3e-4),
                              kernel_regularizer=l2(0.01),
-                             bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))
+                             bias_initializer=RandomUniform(minval=-3e-4, maxval=3e-4))(mult)
 
-
-            Q_values = L4(h3)
 
         return Q_values
