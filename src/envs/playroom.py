@@ -92,7 +92,7 @@ class Playroom(Env):
 
     def initialize(self):
         # self.seenpos = set()
-        self.x, self.y = 0, 0
+        self.x, self.y = 0, 5
         # self.seenpos.add((self.x, self.y))
         self.objects = []
 
@@ -108,48 +108,28 @@ class Playroom(Env):
                          prop=[0, 1],
                          dep=[(self.keyDoor1, 1)])
 
+        self.chest1 = Obj(self,
+                          name='chest1',
+                          pos=(10, 10),
+                          prop=[0, 1],
+                          dep=[])
+
         self.keyDoor2 = Obj(self,
                             name='keyDoor2',
-                            pos=(10, 10),
-                            prop=[0, 1],
-                            dep=[])
-
-        self.door2 = Obj(self,
-                         name='door2',
-                         pos=(8, 5),
-                         prop=[0, 1],
-                         dep=[(self.keyDoor2, 1)])
-
-        self.keyDoor3 = Obj(self,
-                            name='keyDoor3',
-                            pos=(4, 0),
+                            pos=(0, 0),
                             prop=[0, 1],
                             dep=[],
                             tutor_only=True)
 
-        self.door3 = Obj(self,
-                         name='door3',
+        self.door2 = Obj(self,
+                         name='door2',
                          pos=(5, 3),
                          prop=[0, 1],
-                         dep=[(self.keyDoor3, 1)],
+                         dep=[(self.keyDoor2, 1)],
                          tutor_only=True)
-
-        self.chest1 = Obj(self,
-                          name='chest1',
-                          pos=(4, 10),
-                          prop=[0, 1],
-                          dep=[],
-                          tutor_only=True)
 
         self.chest2 = Obj(self,
                           name='chest2',
-                          pos=(10, 6),
-                          prop=[0, 1],
-                          dep=[],
-                          tutor_only=True)
-
-        self.chest3 = Obj(self,
-                          name='chest3',
                           pos=(10, 0),
                           prop=[0, 1],
                           dep=[])
@@ -159,7 +139,7 @@ class Playroom(Env):
 
     def check_door(self):
         obj = self.underagent()
-        if obj <= 0 or self.objects[obj - 1] not in [self.door1, self.door2, self.door3] or \
+        if obj <= 0 or self.objects[obj - 1] not in [self.door1, self.door2] or \
                         self.objects[obj - 1].s == 1:
             return True
         else:

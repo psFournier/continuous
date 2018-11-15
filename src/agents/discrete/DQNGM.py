@@ -17,6 +17,48 @@ class DQNGM(Agent):
         self.rnd_demo = float(args['--rnd_demo'])
         self.demo = int(args['--demo'])
 
+    def run(self):
+
+        self.exp['s0'] = self.env.reset()
+        self.episode_step = 0
+
+        self.env.sample_task(self.exp['s0'])
+        self.episode_task = 0
+
+        try:
+            while self.env_step < self.max_steps:
+
+                # self.env.render(mode='human')
+                # self.env.unwrapped.viewer._record_video = True
+                # self.env.unwrapped.viewer._video_path = os.path.join(self.logger.get_dir(), "video_%07d.mp4")
+                # self.env.unwrapped.viewer._run_speed = 0.125
+                self.exp = self.act(self.exp)
+                self.exp = self.env.step(self.exp)
+                self.trajectory.append(self.exp.copy())
+                self.train()
+                self.env_step += 1
+                self.episode_step += 1
+
+                if self.exp['t'] or self.episode_step >= self.ep_steps:
+                    self.env.end_episode(self.trajectory)
+                    self.trajectory.clear()
+                    if self.env.done or self.episode_task >= 10:
+                        self.exp['s0'] = self.env.reset()
+                    else:
+                        self.exp['s0'] = self.exp['s1']
+                    self.env.sample_task(self.exp['s0'])
+                    self.episode_step = 0
+                    self.episode_task += 1
+                    self.exp['t'] = False
+                else:
+                    self.exp['s0'] = self.exp['s1']
+
+                self.log()
+                self.imitate()
+
+        except KeyboardInterrupt:
+            print("Keybord interruption")
+
     def train(self):
 
         task, samples = self.env.sample(self.batch_size)

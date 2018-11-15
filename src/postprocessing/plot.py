@@ -41,7 +41,7 @@ params = ['--agent',
           '--demo_freq',
           '--rnd_demo',
           '--wimit',
-          # '--theta',
+          '--ep_steps',
           '--inv_grad',
           '--margin',
           '--demo',
@@ -57,27 +57,27 @@ df2 = df
 # df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
 # df2 = df2[(df2['--tutorTask'] == 'hard')]
-df2 = df2[(df2['--wimit'] == 0)]
+# df2 = df2[(df2['--wimit'] == 0)]
 # df2 = df2[(df2['--opt_init'] == -20)]
 df2 = df2[(df2['--demo'] == 2)]
-df2 = df2[(df2['--network'] == 0)]
+# df2 = df2[(df2['--network'] == 0)]
 # # df2 = df2[(df2['--clipping'] == 1)]
 # # df2 = df2[(df2['--explo'] == 1)]
-df2 = df2[(df2['--margin'] == 0.5)]
-# df2 = df2[(df2['--theta1'] == 4)]
+# df2 = df2[(df2['--margin'] == 0.1)]
+# df2 = df2[(df2['--eps1'] == 0.3)]
 # df2 = df2[(df2['--theta2'] == 4)]
 
 # y = ['R']
 # y = ['agentR']
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
 # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
-y = ['C_{}'.format(str(s)) for s in [[i] for i in range(2, 11)]]
+y = ['loss_imit_{}'.format(str(s)) for s in [[i] for i in [5, 4, 3, 2, 10]]]
 # x = ['attempts'+s for s in ['_light','_key1', '_chest1']]
 
 # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
 #    'R_light2', 'R_light3', 'R_light4', 'R_xy']
 
-# y = ['loss1','loss2', 'qval', 'prop_good']
+# y = ['loss_dqn', 'val', 'qval', 'loss_imit', 'goodexp']
 # y = ['good_exp', 'loss_dqn2', 'qval2', 'val2']
 # y = ['loss_imit']
 # y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
@@ -105,13 +105,13 @@ def quant_inf(x):
 def quant_sup(x):
     return x.quantile(0.8)
 op_dict = {a:[np.median, np.mean, np.std, quant_inf, quant_sup] for a in y}
-avg = 0
+avg = 1
 if avg:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
 print(paramsStudied)
-a, b = 3,3
-fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
+a, b = 2, 3
+fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
 colors = ['b', 'r']
 p = 'num_run'
 if avg:
@@ -127,8 +127,8 @@ for j, (name, g) in enumerate(df2.groupby(p)):
     # ax2[0,0].plot(g['step'], g.iloc[:, g.columns.get_level_values(1) == 'mean'].mean(axis=1), label=label)
     # ax2[0,0].legend()
 
-    # g['alltasks'] = g[['C_[{}]'.format(s) for s in [9,10,11]]].apply(np.mean, axis=1)
-    # ax[0, 0].plot(g['step'], g['alltasks'],  label=label)
+    # g['alltasks'] = g[['trainsteps_[{}]'.format(s) for s in [2, 3, 4]]].apply(np.sum, axis=1)
+    # ax[0, 0].plot(g['step'], g['alltasks'].cumsum())
 
     for i, valy in enumerate(y):
         # ax2[i % a, i // a].plot(range(1500), range(1500), 'g-')
@@ -141,7 +141,7 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         else:
             # n = 50  # the larger n is, the smoother curve will be
             # yy = lfilter([1.0 / n] * n, 1, g[valy])
-            ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
+            ax2[i % a, i // a].plot(g['step'], g[valy].cumsum(), label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy2], label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy3], label=None)
 
@@ -156,8 +156,8 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         #                                 g[valy]['mean'] - 0.5*g[valy]['std'],
         #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
         ax2[i % a, i // a].set_title(label=valy)
-        ax2[i % a, i // a].legend()
-        ax2[i % a, i // a].set_xlim([0, 500000])
+        if i == 0: ax2[i % a, i // a].legend()
+        ax2[i % a, i // a].set_xlim([0, 600000])
         # ax2[i % a, i // a].set_ylim([200000, 500000])
     # break
     # ax[0,0].legend()

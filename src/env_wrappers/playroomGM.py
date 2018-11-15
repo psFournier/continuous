@@ -16,7 +16,7 @@ class PlayroomGM(Wrapper):
         self.selfImit = bool(int(args['--selfImit']))
 
         # self.tasks_feat = [[i] for i in range(12)]
-        self.tasks_feat = [[i] for i in range(2, 11)]
+        self.tasks_feat = [[i] for i in range(2, 8)]
 
         self.Ntasks = len(self.tasks_feat)
         self.mask = None
@@ -29,8 +29,6 @@ class PlayroomGM(Wrapper):
 
         self.samples_metrics_names = ['termstates', 'tutorsamples']
         self.samples_metrics = {name: [0] * self.Ntasks for name in self.samples_metrics_names}
-
-        self.update_interests()
 
         self.state_low = self.env.low
         self.state_high = self.env.high
@@ -76,7 +74,6 @@ class PlayroomGM(Wrapper):
         T = episode[-1]['t']
         self.queues[self.task].append(T)
         self.run_metrics['attempts'][self.task] += 1
-        # self.foreval[self.task] = (self.attempts[self.task] % 10 == 0)
 
         tasks = range(self.Ntasks)
         goals = [self.goal if t==self.task else None for t in tasks]
@@ -114,19 +111,15 @@ class PlayroomGM(Wrapper):
                 self.buffer.append(exp.copy())
 
     def reset(self):
-
         state = self.env.reset(random=False)
-        self.update_interests()
-        self.task = self.sample_task()
-        self.goal = self.sample_goal(self.task, state)
-        self.mask = self.task2mask(self.task)
         return state
 
-    def sample_task(self):
-
-        task = np.random.choice(self.Ntasks, p=self.probs1)
-
-        return task
+    def sample_task(self, state):
+        remaining_tasks = [i for i in range(self.Ntasks) if state[self.tasks_feat[i]] != 1]
+        probs = self.get_probs(idxs=remaining_tasks, eps=self.eps1)
+        self.task = np.random.choice(remaining_tasks, p=probs)
+        self.goal = self.sample_goal(self.task, state)
+        self.mask = self.task2mask(self.task)
 
     def sample_goal(self, task, state):
 
@@ -142,7 +135,7 @@ class PlayroomGM(Wrapper):
         demo = []
         exp = {}
         exp['s0'] = self.env.reset(random=False)
-        task = np.random.choice([6, 7, 8])
+        task = np.random.choice([4,7])
         while True:
             a, done = self.opt_action(task)
             if done:
@@ -159,42 +152,43 @@ class PlayroomGM(Wrapper):
 
     def opt_action(self, t):
 
-        if t == 6:
-            obj = self.env.chest1
-            if obj.s == 1:
-                return -1, True
-            else:
-                return self.env.touch(obj)
-
-        elif t== 7:
-            obj = self.env.chest2
-            if obj.s == 1:
-                return -1, True
-            else:
-                if self.env.door1.s == 1:
-                    return self.env.touch(obj)
-                elif self.env.keyDoor1.s == 1:
-                    return self.env.touch(self.env.door1)
-                else:
-                    return self.env.touch(self.env.keyDoor1)
-
-        elif t == 8:
-            obj = self.env.chest3
-            if obj.s == 1:
-                return -1, True
-            else:
-                if self.env.door3.s == 1:
-                    return self.env.touch(obj)
-                elif self.env.keyDoor3.s == 1:
-                    return self.env.touch(self.env.door3)
-                else:
-                    return self.env.touch(self.env.keyDoor3)
-        else:
-            raise RuntimeError
+        # if t == 4:
+        #     obj = self.env.chest1
+        #     if obj.s == 1:
+        #         return -1, True
+        #     else:
+        #         return self.env.touch(obj)
+        #
+        # elif t== 4:
+        #     obj = self.env.chest1
+        #     if obj.s == 1:
+        #         return -1, True
+        #     else:
+        #         if self.env.door1.s == 1:
+        #             return self.env.touch(obj)
+        #         elif self.env.keyDoor1.s == 1:
+        #             return self.env.touch(self.env.door1)
+        #         else:
+        #             return self.env.touch(self.env.keyDoor1)
+        #
+        # elif t == 7:
+        #     obj = self.env.chest3
+        #     if obj.s == 1:
+        #         return -1, True
+        #     else:
+        #         if self.env.door3.s == 1:
+        #             return self.env.touch(obj)
+        #         elif self.env.keyDoor3.s == 1:
+        #             return self.env.touch(self.env.door3)
+        #         else:
+        #             return self.env.touch(self.env.keyDoor3)
+        # else:
+        #     raise RuntimeError
+        pass
 
     def sample(self, batchsize):
-
-        task = np.random.choice(self.Ntasks, p=self.probs2)
+        probs = self.get_probs(idxs=range(self.Ntasks), eps=self.eps2)
+        task = np.random.choice(self.Ntasks, p=probs)
         samples = self.buffer.sample(batchsize, task)
         if samples is not None:
             self.run_metrics['trainsteps'][task] += 1
@@ -208,7 +202,6 @@ class PlayroomGM(Wrapper):
         short_stats = {}
         for i, task in enumerate(self.tasks_feat):
             self.queues[i].update()
-            short_stats['I_{}'.format(task)] = float("{0:.3f}".format(self.interests[i]))
             short_stats['CP_{}'.format(task)] = float("{0:.3f}".format(self.CPs[i]))
             short_stats['C_{}'.format(task)] = float("{0:.3f}".format(self.Cs[i]))
 
@@ -232,41 +225,35 @@ class PlayroomGM(Wrapper):
     def mask2task(self, mask):
         return list(np.where(mask)[0])
 
-    def update_interests(self):
-
-        minCP = min(self.CPs)
-        maxCP = max(self.CPs)
-        widthCP = maxCP - minCP
-        self.interests = [(cp - minCP) / (widthCP + 0.0001) for cp in self.CPs]
-
-        sumI1 = np.sum(self.interests)
-        if sumI1 != 0:
-            self.probs1 = [self.eps1 / self.Ntasks + (1 - self.eps1) * i / sumI1 for i in self.interests]
+    def get_probs(self, idxs, eps):
+        cps = self.CPs
+        vals = [cps[idx] for idx in idxs]
+        l = len(vals)
+        s = np.sum(vals)
+        if s == 0:
+            probs = [1 / l] * l
         else:
-            self.probs1 = [1 / self.Ntasks] * self.Ntasks
-
-        sumI2 = np.sum(self.interests)
-        if sumI2 != 0:
-            self.probs2 = [self.eps2 / self.Ntasks + (1 - self.eps2) * i / sumI2 for i in self.interests]
-        else:
-            self.probs2 = [1 / self.Ntasks] * self.Ntasks
-
+            probs = [eps / l + (1 - eps) * v / s for v in vals]
+        return probs
 
     @property
     def CPs(self):
-        return [np.maximum(abs(q.CP + 0.1/math.sqrt(2)) - 0.1/math.sqrt(2), 0) for q in self.queues]
+        return [np.maximum(abs(q.CP + 0.05) - 0.05, 0) for q in self.queues]
 
     @property
     def Cs(self):
         return [q.C_avg[-1] for q in self.queues]
 
+    def done(self, exp):
+        return all([exp['s1'][f] == 1 for f in self.tasks_feat])
+
     @property
     def state_dim(self):
-        return 11,
+        return 8,
 
     @property
     def goal_dim(self):
-        return 11,
+        return 8,
 
     @property
     def action_dim(self):
