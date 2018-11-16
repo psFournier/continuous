@@ -33,7 +33,7 @@ class TaskRingBuffer(object):
             res.append(self._storage[idx])
         return res
 
-class MultiTaskReplayBuffer(object):
+class MultiReplayBuffer(object):
     def __init__(self, limit, Ntasks, names):
         self._storage = []
         self._next_idx = 0
@@ -47,26 +47,14 @@ class MultiTaskReplayBuffer(object):
         return len(self._storage)
 
     def append(self, item):
-        triplet = {'s0': item['s0'],
-                   'a': item['a'],
-                   's1': item['s1'],
-                   'tasks': item['tasks'],
-                   'pa': item['pa'],
-                   'o': item['o']}
         if self._next_idx >= len(self._storage):
-            self._storage.append(triplet)
+            self._storage.append(item)
         else:
-            for t in self._storage[self._next_idx]['tasks']:
+            for t in np.where(self._storage[self._next_idx]['u']):
                 self._taskBuffers[t].pop()
-            self._storage[self._next_idx] = triplet
-        for i, t in enumerate(item['tasks']):
-            info = {'idx': self._next_idx,
-                    'g': item['goals'][i],
-                    'm': item['masks'][i],
-                    'r': item['rs'][i],
-                    't': item['ts'][i],
-                    'mcr': item['mcrs'][i]}
-            self._taskBuffers[t].append(info)
+            self._storage[self._next_idx] = item
+        for i in np.where(item['u'])[0]:
+            self._taskBuffers[i].append(self._next_idx)
         self._next_idx = (self._next_idx + 1) % self._limit
 
     def sample(self, batchsize, task):
@@ -74,11 +62,10 @@ class MultiTaskReplayBuffer(object):
         res = None
         buffer = self._taskBuffers[task]
         if buffer._numsamples >= 100 * batchsize:
-            infos = buffer.sample(batchsize)
-            for info in infos:
-                triplet = self._storage[info['idx']]
-                dict = merge_two_dicts(triplet, info)
-                exps.append(dict)
+            idxs = buffer.sample(batchsize)
+            for idx in idxs:
+                triplet = self._storage[idx]
+                exps.append(triplet)
             res = {name: np.array([exp[name] for exp in exps]) for name in self._names}
 
         return res

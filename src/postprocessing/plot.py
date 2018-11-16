@@ -59,19 +59,19 @@ df2 = df
 # df2 = df2[(df2['--tutorTask'] == 'hard')]
 # df2 = df2[(df2['--wimit'] == 0)]
 # df2 = df2[(df2['--opt_init'] == -20)]
-df2 = df2[(df2['--demo'] == 2)]
-# df2 = df2[(df2['--network'] == 0)]
+df2 = df2[(df2['--demo'] == 0)]
+df2 = df2[(df2['--network'] == 0)]
 # # df2 = df2[(df2['--clipping'] == 1)]
 # # df2 = df2[(df2['--explo'] == 1)]
 # df2 = df2[(df2['--margin'] == 0.1)]
-# df2 = df2[(df2['--eps1'] == 0.3)]
-# df2 = df2[(df2['--theta2'] == 4)]
+# df2 = df2[(df2['--eps1'] == 0.2)]
+# df2 = df2[(df2['--eps2'] == 0.2)]
 
 # y = ['R']
 # y = ['agentR']
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
 # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
-y = ['loss_imit_{}'.format(str(s)) for s in [[i] for i in [5, 4, 3, 2, 10]]]
+y = ['C_{}'.format(str(s)) for s in [[i] for i in [2, 3, 4, 7, 5, 6]]]
 # x = ['attempts'+s for s in ['_light','_key1', '_chest1']]
 
 # y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
@@ -111,7 +111,7 @@ if avg:
 
 print(paramsStudied)
 a, b = 2, 3
-fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
+fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
 colors = ['b', 'r']
 p = 'num_run'
 if avg:
@@ -141,7 +141,7 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         else:
             # n = 50  # the larger n is, the smoother curve will be
             # yy = lfilter([1.0 / n] * n, 1, g[valy])
-            ax2[i % a, i // a].plot(g['step'], g[valy].cumsum(), label=None)
+            ax2[i % a, i // a].plot(g['step'], g[valy], label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy2], label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy3], label=None)
 

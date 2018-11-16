@@ -177,7 +177,7 @@ class Playroom(Env):
                 return i+1
         return 0
 
-    def reset(self, random=True):
+    def reset(self):
         self.initialize()
         return np.array(self.state)
 
