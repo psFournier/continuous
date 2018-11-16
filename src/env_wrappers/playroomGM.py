@@ -72,9 +72,11 @@ class PlayroomGM(Wrapper):
         else:
             u = base_util
         for exp in reversed(trajectory):
-            u[np.where(exp['r1'] > exp['r0'])] += 1
-            exp['u'] = u
-            if any(u!=0):
+            u_idx = np.where(exp['r1'] > exp['r0'])
+            u[u_idx] += 1
+            u_c = u.copy()
+            exp['u'] = u_c
+            if any(u_c!=0):
                 self.buffer.append(exp.copy())
 
     def sample(self, batchsize):

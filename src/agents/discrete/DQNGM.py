@@ -27,7 +27,6 @@ class DQNGM(Agent):
 
         try:
             while self.env_step < self.max_steps:
-
                 # self.env.render(mode='human')
                 # self.env.unwrapped.viewer._record_video = True
                 # self.env.unwrapped.viewer._video_path = os.path.join(self.logger.get_dir(), "video_%07d.mp4")
@@ -65,13 +64,15 @@ class DQNGM(Agent):
 
     def train(self):
 
-        task, samples = self.env.sample(self.batch_size)
+        idx, samples = self.env.sample(self.batch_size)
+        v = np.repeat(np.expand_dims(self.env.vs[idx],0), self.batch_size, axis=0)
+        mcr = np.zeros((self.batch_size,1))
         if samples is not None:
-            targets = self.critic.get_targets_dqn(samples['r'], samples['t'], samples['s1'], samples['g'], samples['m'])
-            inputs = [samples['s0'], samples['a'], samples['g'], samples['m'], targets, samples['mcr']]
+            targets = self.critic.get_targets_dqn(samples['r1'][:,idx], samples['t'], samples['s1'], v, v)
+            inputs = [samples['s0'], samples['a'], v, v, targets, mcr]
             metrics = self.critic.train(inputs)
             for i, name in enumerate(self.critic.metrics_names):
-                self.env.train_metrics[name][task] += np.mean(np.squeeze(metrics[i]))
+                self.env.train_metrics[name][idx] += np.mean(np.squeeze(metrics[i]))
             self.critic.target_train()
 
     def make_input(self, state):
@@ -86,16 +87,6 @@ class DQNGM(Agent):
         action = np.expand_dims(action, axis=1)
         exp['a'] = action
         return exp
-
-    def reset(self):
-
-        if self.trajectory:
-            self.env.end_episode(self.trajectory)
-            self.trajectory.clear()
-        state = self.env.reset()
-        self.episode_step = 0
-
-        return state
 
     def imitate(self):
 

@@ -91,7 +91,7 @@ class CriticDQNGM(object):
 
     def compute_targets(self, r, t, q):
         targets = r + (1 - t) * self.gamma * np.squeeze(q)
-        targets = np.clip(targets, self.env.minQ, self.env.maxQ)
+        # targets = np.clip(targets, self.env.minQ, self.env.maxQ)
         return targets
 
     def get_targets_dqn(self, r, t, s, g=None, m=None):
