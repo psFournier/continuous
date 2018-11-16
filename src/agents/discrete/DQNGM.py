@@ -23,7 +23,7 @@ class DQNGM(Agent):
         self.episode_step = 0
 
         self.env.sample_task(self.exp['s0'])
-        self.episode_task = 0
+        self.episode_task = 1
 
         try:
             while self.env_step < self.max_steps:
@@ -42,8 +42,9 @@ class DQNGM(Agent):
                 if self.exp['t'] or self.episode_step >= self.ep_steps:
                     self.env.end_episode(self.trajectory)
                     self.trajectory.clear()
-                    if self.env.done or self.episode_task >= 10:
+                    if self.env.done(self.exp) or self.episode_task >= 10:
                         self.exp['s0'] = self.env.reset()
+                        self.episode_task = 0
                     else:
                         self.exp['s0'] = self.exp['s1']
                     self.env.sample_task(self.exp['s0'])

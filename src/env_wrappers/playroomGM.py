@@ -61,6 +61,7 @@ class PlayroomGM(Wrapper):
             indices = np.where(m)
             goal = g[indices]
             s1_proj = exp['s1'][indices]
+
             if (s1_proj == goal).all():
                 exp['ts'].append(self.terminal)
                 exp['rs'].append(self.r_done)
