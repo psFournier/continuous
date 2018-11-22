@@ -186,17 +186,14 @@ class Playroom(Env):
     def go(self, x , y):
         dx = x - self.x
         dy = y - self.y
-        possible_act = []
         if dx > 0:
-            possible_act.append(Actions.RIGHT)
+            return Actions.RIGHT
         elif dx < 0:
-            possible_act.append(Actions.LEFT)
-        if dy > 0:
-            possible_act.append(Actions.UP)
+            return Actions.LEFT
+        elif dy > 0:
+                return Actions.UP
         elif dy < 0:
-            possible_act.append(Actions.DOWN)
-        if possible_act:
-            return np.random.choice(possible_act)
+            return Actions.DOWN
         else:
             return None
 
