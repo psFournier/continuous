@@ -3,16 +3,20 @@ from gym import Env
 from random import randint
 
 MAP = [
-    " _ _ _ _ _ _ _ _ ",
-    "|       |       |",
-    "|       1       |",
-    "|       |       |",
-    "|       |_ _ 2 _|",
-    "|       |       |",
-    "|       |       |",
-    "|       |       |",
-    "|_ _ _ _|_ _ _ _|",
-]
+    "00000100000",
+    "00000100000",
+    "00000100000",
+    "00000100000",
+    "00000100000",
+    "00000111111",
+    "00000100000",
+    "01010100000",
+    "01100100000",
+    "00110100000",
+    "00110100000"
+    ]
+
+walls = np.asarray(MAP)
 
 class Actions:
     UP = 0
@@ -79,38 +83,37 @@ class Playroom(Env):
     metadata = {'render.modes': ['human', 'ansi']}
 
     def __init__(self):
-        self.maxX = 10
-        self.maxY = 10
-        self.walls = np.zeros((11, 11))
-        for i in range(11):
-            if i != 3 and i != 8:
-                self.walls[5, i] = 1
-        for i in range(5, 11):
-            if i != 8:
-                self.walls[i, 5] = 1
+        self.nR = 13
+        self.nC = 13
+        self.walls = np.zeros((13, 13))
+        for i in range(13):
+            if i != 3 and i != 10:
+                self.walls[6, i] = 1
+        for i in range(7, 13):
+            self.walls[i, 6] = 1
         self.initialize()
 
     def initialize(self):
         # self.seenpos = set()
-        self.x, self.y = 0, 5
+        self.x, self.y = randint(0, 5), randint(0, self.nC - 1)
         # self.seenpos.add((self.x, self.y))
         self.objects = []
 
         self.keyDoor1 = Obj(self,
                             name='keyDoor1',
-                            pos=(0, 10),
+                            pos=(0, 12),
                             prop=[0, 1],
                             dep=[])
 
         self.door1 = Obj(self,
                          name='door1',
-                         pos=(5, 8),
+                         pos=(6, 10),
                          prop=[0, 1],
                          dep=[(self.keyDoor1, 1)])
 
         self.chest1 = Obj(self,
                           name='chest1',
-                          pos=(10, 10),
+                          pos=(12, 12),
                           prop=[0, 1],
                           dep=[])
 
@@ -118,19 +121,18 @@ class Playroom(Env):
                             name='keyDoor2',
                             pos=(0, 0),
                             prop=[0, 1],
-                            dep=[],
-                            tutor_only=True)
+                            dep=[])
 
         self.door2 = Obj(self,
                          name='door2',
-                         pos=(5, 3),
+                         pos=(6, 3),
                          prop=[0, 1],
                          dep=[(self.keyDoor2, 1)],
                          tutor_only=True)
 
         self.chest2 = Obj(self,
                           name='chest2',
-                          pos=(10, 0),
+                          pos=(12, 0),
                           prop=[0, 1],
                           dep=[])
 
@@ -148,7 +150,7 @@ class Playroom(Env):
     def step(self, a, tutor=False):
 
         if a == Actions.UP:
-            if self.y < self.maxY and not self.walls[self.x, self.y + 1] and self.check_door():
+            if self.y < self.nR - 1 and not self.walls[self.x, self.y + 1] and self.check_door():
                 self.y += 1
 
         elif a == Actions.DOWN:
@@ -156,7 +158,7 @@ class Playroom(Env):
                 self.y -= 1
 
         elif a == Actions.RIGHT:
-            if self.x < self.maxX and not self.walls[self.x + 1, self.y] and self.check_door():
+            if self.x < self.nC - 1 and not self.walls[self.x + 1, self.y] and self.check_door():
                 self.x += 1
 
         elif a == Actions.LEFT:
@@ -215,7 +217,7 @@ class Playroom(Env):
 
     @property
     def high(self):
-        res = [self.maxX, self.maxY]
+        res = [self.nC - 1, self.nR - 1]
         for obj in self.objects:
             res += obj.high
         return res

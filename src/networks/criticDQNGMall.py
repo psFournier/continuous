@@ -9,76 +9,69 @@ from .criticDQNG import CriticDQNG
 import numpy as np
 from keras.losses import mse
 
-class CriticDQNGM(object):
+class CriticDQNGMall(object):
     def __init__(self, args, env):
         self.g_dim = env.goal_dim
         self.env = env
         self.tau = 0.001
         self.s_dim = env.state_dim
         self.a_dim = (1,)
+        self.learning_rate = 0.001
         self.gamma = 0.99
         self.w_i = float(args['--wimit'])
         self.margin = float(args['--margin'])
         self.network = float(args['--network'])
         self.num_actions = env.action_dim
+        self.optimizer = Adam(lr=self.learning_rate)
         self.initModels()
         self.initTargetModels()
 
     def initModels(self):
 
-        ### Inputs
         S = Input(shape=self.s_dim)
         A = Input(shape=(1,), dtype='uint8')
-        G = Input(shape=self.g_dim)
-        M = Input(shape=self.g_dim)
-        TARGETS = Input(shape=(1,))
-        MCR = Input(shape=(1,), dtype='float32')
+        V = Input(shape=(self.env.N, self.s_dim))
+        TARGETS = Input(shape=(self.env.N, 1))
 
-        ### Q values and action models
-        qvals = self.create_critic_network(S, G, M)
-        self.model = Model([S, G, M], qvals)
-        self.qvals = K.function(inputs=[S, G, M], outputs=[qvals], updates=None)
+        qvals = self.create_critic_network(S, V)
+        self.model = Model([S, V], qvals)
+        self.qvals = K.function(inputs=[S, V], outputs=[qvals], updates=None)
+
         actionProbs = K.softmax(qvals)
-        self.actionProbs = K.function(inputs=[S, G, M], outputs=[actionProbs], updates=None)
+        self.actionProbs = K.function(inputs=[S, V], outputs=[actionProbs], updates=None)
+
         actionFilter = K.squeeze(K.one_hot(A, self.num_actions), axis=1)
         qval = K.sum(actionFilter * qvals, axis=1, keepdims=True)
+        actionProb = K.sum(actionFilter * actionProbs, axis=1, keepdims=True)
+        loss_dqn = K.mean(K.square(qval - TARGETS), axis=0)
         self.qval = K.function(inputs=[S, G, M, A], outputs=[qval], updates=None)
 
-        ### DQN Training
-        loss_dqn = K.mean(K.square(qval - TARGETS), axis=0)
-        inputs_dqn = [S, A, G, M, TARGETS]
-        updates_dqn = Adam(lr=0.001).get_updates(loss_dqn, self.model.trainable_weights)
-        self.metrics_dqn_names = ['loss_dqn', 'qval']
-        metrics_dqn = [loss_dqn, qval]
-        self.train = K.function(inputs_dqn, metrics_dqn, updates_dqn)
+        val = K.max(qvals, axis=1, keepdims=True)
+        self.val = K.function(inputs=[S, G, M], outputs=[val], updates=None)
 
-        ### Large margin loss
         qvalWidth = K.max(qvals, axis=1, keepdims=True) - K.min(qvals, axis=1, keepdims=True)
         onehot = 1 - K.squeeze(K.one_hot(A, self.num_actions), axis=1)
         onehotMargin = K.repeat_elements(self.margin * qvalWidth, self.num_actions, axis=1) * onehot
         imit = (K.max(qvals + onehotMargin, axis=1, keepdims=True) - qval)
-
-        ### Suboptimal demos
-        val = K.max(qvals, axis=1, keepdims=True)
+        advantage = K.maximum(MCR - val, 0)
         advClip = K.cast(K.greater(MCR, val), dtype='float32')
         goodexp = K.sum(advClip)
         imitFiltered = imit * advClip
-
-        ### Imitation
+        # loss_imit = K.mean(imitFiltered, axis=0)
         loss_imit = K.sum(imitFiltered, axis=0) / (K.sum(advClip) + 0.0001)
-        inputs_imit = [S, A, G, M, TARGETS, MCR]
-        self.metrics_imit_names = ['loss_imit']
-        metrics_imit = [loss_imit]
-        updates_imit = Adam(lr=0.01).get_updates(loss_dqn + self.w_i * loss_imit, self.model.trainable_weights)
-        self.imit = K.function(inputs_imit, metrics_imit, updates_imit)
+        inputs = [S, A, G, M, TARGETS, MCR]
+        self.metrics_names = ['loss_dqn', 'val', 'qval', 'loss_imit', 'goodexp']
+        metrics = [loss_dqn, val, qval, loss_imit, goodexp]
+
+        updates = self.optimizer.get_updates(loss_dqn + self.w_i * loss_imit, self.model.trainable_weights)
+        self.train = K.function(inputs, metrics, updates)
 
     def initTargetModels(self):
         S = Input(shape=self.s_dim)
-        G = Input(shape=self.g_dim)
-        M = Input(shape=self.g_dim)
+        V = Input(shape=(self.env.N, self.s_dim))
         A = Input(shape=(1,), dtype='uint8')
-        Tqvals = self.create_critic_network(S, G, M)
-        self.Tmodel = Model([S, G, M], Tqvals)
+        Tqvals = self.create_critic_network(S, V)
+        self.Tmodel = Model([S, V], Tqvals)
 
         actionFilter = K.squeeze(K.one_hot(A, self.num_actions), axis=1)
         Tqval = K.sum(actionFilter * Tqvals, axis=1, keepdims=True)
@@ -95,17 +88,17 @@ class CriticDQNGM(object):
 
     def compute_targets(self, r, t, q):
         targets = r + (1 - t) * self.gamma * np.squeeze(q)
-        targets = np.clip(targets, 0, self.env.R)
+        # targets = np.clip(targets, self.env.minQ, self.env.maxQ)
         return targets
 
-    def get_targets_dqn(self, r, t, s, g=None, m=None):
+    def get_targets_dqn(self, r, t, s):
         qvals = self.qvals([s, g, m])[0]
         a1 = np.expand_dims(np.argmax(qvals, axis=1), axis=1)
         q = self.Tqval([s, g, m, a1])[0]
         targets_dqn = self.compute_targets(r, t, q)
         return np.expand_dims(targets_dqn, axis=1)
 
-    def create_critic_network(self, S, G=None, M=None):
+    def create_critic_network(self, S, V):
         if self.network == '0':
             L1 = concatenate([multiply([subtract([S, G]), M]), S])
             L2 = Dense(400, activation="relu",

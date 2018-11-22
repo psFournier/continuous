@@ -17,10 +17,10 @@ class Agent():
         self.short_logger = short_logger
         self.log_dir = args['--log_dir']
         self.ep_steps = int(args['--ep_steps'])
+        self.ep_tasks = int(args['--ep_tasks'])
         self.eval_freq = int(args['--eval_freq'])
         self.batch_size = int(args['--batchsize'])
         self.max_steps = int(args['--max_steps'])
-        self.demo_freq = int(args['--demo_freq'])
         self.env_step = 0
         self.episode_step = 0
         self.stats = {}

@@ -39,9 +39,11 @@ class MultiReplayBuffer(object):
         self._next_idx = 0
         self._limit = limit
         self._taskBuffers = []
+        self._taskBuffersT = []
         self._names = names
         for _ in range(Ntasks):
             self._taskBuffers.append(TaskRingBuffer(limit))
+            self._taskBuffersT.append(TaskRingBuffer(limit))
 
     def __len__(self):
         return len(self._storage)
@@ -55,13 +57,28 @@ class MultiReplayBuffer(object):
             self._storage[self._next_idx] = item
         for i in np.where(item['u'])[0]:
             self._taskBuffers[i].append(self._next_idx)
+            if item['o'] == 1:
+                self._taskBuffersT[i].append(self._next_idx)
         self._next_idx = (self._next_idx + 1) % self._limit
 
     def sample(self, batchsize, task):
         exps = []
         res = None
         buffer = self._taskBuffers[task]
-        if buffer._numsamples >= 1 * batchsize:
+        if buffer._numsamples >= 10 * batchsize:
+            idxs = buffer.sample(batchsize)
+            for idx in idxs:
+                triplet = self._storage[idx]
+                exps.append(triplet)
+            res = {name: np.array([exp[name] for exp in exps]) for name in self._names}
+
+        return res
+
+    def sampleT(self, batchsize, task):
+        exps = []
+        res = None
+        buffer = self._taskBuffersT[task]
+        if buffer._numsamples >= batchsize:
             idxs = buffer.sample(batchsize)
             for idx in idxs:
                 triplet = self._storage[idx]

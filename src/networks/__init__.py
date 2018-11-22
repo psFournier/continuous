@@ -6,5 +6,6 @@ from .actorDDPG import ActorDDPG
 from .actorCriticDDPG import ActorCriticDDPG
 from .actorCriticDDPGG import ActorCriticDDPGG
 from .actorCriticDDPGGM import ActorCriticDDPGGM
+from .criticDQNGMall import CriticDQNGMall
 
 from .actorCriticDQNGM import ActorCriticDQNGM
