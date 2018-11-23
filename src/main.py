@@ -23,7 +23,7 @@ Options:
   --eps2 VAL            CP importance for goal selection [default: 1]
   --eps3 VAL            CP importance for goal selection [default: 1]
   --inv_grad YES_NO        Gradient inversion near action limits [default: 1]
-  --max_steps VAL          Maximum total steps [default: 500000]
+  --max_steps VAL          Maximum total steps [default: 300000]
   --ep_steps VAL           Maximum episode steps [default: 200]
   --ep_tasks VAL           Maximum episode tasks [default: 1]
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
@@ -36,10 +36,10 @@ Options:
   --demo VAL               Type of imitation [default: 0]
   --network VAL            network type [default: 0]
   --filter VAL             network type [default: 0]
-  --lrimit VAL             network type [default: 0]
-  --prop_demo VAL             network type [default: 0]
-  --freq_demo VAL             network type [default: 0]
+  --prop_demo VAL             network type [default: 0.015]
+  --freq_demo VAL             network type [default: 20000]
   --deter VAL             network type [default: 0]
+  --lrimit VAL             network type [default: 0.001]
 """
 
 def build_logger(args):

@@ -21,7 +21,7 @@ class CriticDQNGM(object):
         self.w_i = float(args['--wimit'])
         self.margin = float(args['--margin'])
         self.network = float(args['--network'])
-        self.filter = int(args['-filter'])
+        self.filter = int(args['--filter'])
         self.num_actions = env.action_dim
         self.initModels()
         self.initTargetModels()
@@ -56,10 +56,10 @@ class CriticDQNGM(object):
         self.train = K.function(inputs_dqn, metrics_dqn, updates_dqn)
 
         ### Large margin loss
-        qvalWidth = K.max(qvals, axis=1, keepdims=True) - K.min(qvals, axis=1, keepdims=True)
+        # qvalWidth = K.max(qvals, axis=1, keepdims=True) - K.min(qvals, axis=1, keepdims=True)
         onehot = 1 - K.squeeze(K.one_hot(A, self.num_actions), axis=1)
-        onehotMargin = K.repeat_elements(self.margin * qvalWidth, self.num_actions, axis=1) * onehot
-        imit = (K.max(qvals + onehotMargin, axis=1, keepdims=True) - qval)
+        # onehotMargin = K.repeat_elements(self.margin, self.num_actions, axis=1) * onehot
+        imit = (K.max(qvals + self.margin * onehot, axis=1, keepdims=True) - qval)
 
         ### Suboptimal demos
         val = K.max(qvals, axis=1, keepdims=True)
@@ -115,6 +115,8 @@ class CriticDQNGM(object):
         q = self.Tqval([s, g, m, a1])[0]
         targets_dqn = self.compute_targets(r, t, q)
         return np.expand_dims(targets_dqn, axis=1)
+
+
 
     def create_critic_network(self, S, G=None, M=None):
         if self.network == '0':

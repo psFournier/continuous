@@ -4,6 +4,7 @@ TARGET_CLIP = True
 INVERTED_GRADIENTS = True
 from networks import CriticDQNGM, CriticDQNGMall
 from agents.agent import Agent
+from networks.critic2 import Critic
 
 class DQNGM(Agent):
     def __init__(self, args, env, env_test, logger, short_logger):
