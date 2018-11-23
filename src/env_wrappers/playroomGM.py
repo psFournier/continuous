@@ -15,6 +15,7 @@ class PlayroomGM(Wrapper):
         self.eps2 = float(args['--eps2'])
         self.eps3 = float(args['--eps3'])
         self.demo = int(args['--demo'])
+        self.deterministic = bool(int(args['--deter']))
 
         self.feat = np.array(range(2,8))
         self.N = self.feat.shape[0]
@@ -94,6 +95,8 @@ class PlayroomGM(Wrapper):
         probs = self.get_probs(idxs=range(self.N), eps=self.eps3)
         idx = np.random.choice(self.N, p=probs)
         samples = self.buffer.sampleT(batchsize, idx)
+        if samples is not None:
+            self.queues[self.idx].process_samplesT(samples)
         return idx, samples
 
     def get_demo(self):
@@ -107,7 +110,7 @@ class PlayroomGM(Wrapper):
         elif self.demo == 2:
             task = np.random.choice([4, 7])
         while True:
-            a, done = self.opt_action(task)
+            a, done = self.opt_action(task, deterministic=self.deterministic)
             if done:
                 demo[-1]['t'] = 1
                 break
@@ -123,7 +126,7 @@ class PlayroomGM(Wrapper):
 
         return demo, task
 
-    def opt_action(self, t):
+    def opt_action(self, t, deterministic=False):
 
         if t== 4:
             obj = self.env.chest1
@@ -131,11 +134,11 @@ class PlayroomGM(Wrapper):
                 return -1, True
             else:
                 if self.env.door1.s == 1:
-                    return self.env.touch(obj)
+                    return self.env.touch(obj, deterministic)
                 elif self.env.keyDoor1.s == 1:
-                    return self.env.touch(self.env.door1)
+                    return self.env.touch(self.env.door1, deterministic)
                 else:
-                    return self.env.touch(self.env.keyDoor1)
+                    return self.env.touch(self.env.keyDoor1, deterministic)
 
         elif t == 7:
             obj = self.env.chest2
@@ -143,11 +146,11 @@ class PlayroomGM(Wrapper):
                 return -1, True
             else:
                 if self.env.door2.s == 1:
-                    return self.env.touch(obj)
+                    return self.env.touch(obj, deterministic)
                 elif self.env.keyDoor2.s == 1:
-                    return self.env.touch(self.env.door2)
+                    return self.env.touch(self.env.door2, deterministic)
                 else:
-                    return self.env.touch(self.env.keyDoor2)
+                    return self.env.touch(self.env.keyDoor2, deterministic)
         else:
             raise RuntimeError
 

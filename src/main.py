@@ -35,6 +35,11 @@ Options:
   --rnd_demo VAL           Amount of stochasticity in the tutor's actions [default: 0]
   --demo VAL               Type of imitation [default: 0]
   --network VAL            network type [default: 0]
+  --filter VAL             network type [default: 0]
+  --lrimit VAL             network type [default: 0]
+  --prop_demo VAL             network type [default: 0]
+  --freq_demo VAL             network type [default: 0]
+  --deter VAL             network type [default: 0]
 """
 
 def build_logger(args):

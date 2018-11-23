@@ -17,6 +17,7 @@ class CompetenceQueue():
     def init_stat(self):
         self.envstep = 0
         self.trainstep = 0
+        self.trainstepT = 0
         self.attempt = 0
         self.tutorsample = 0
         self.termstate = 0
@@ -30,6 +31,9 @@ class CompetenceQueue():
         self.trainstep += 1
         self.termstate += np.mean(samples['t'])
         self.tutorsample += np.mean(samples['o'])
+
+    def process_samplesT(self, samples):
+        self.trainstepT += 1
 
     def update(self):
         size = len(self.C)
@@ -45,7 +49,7 @@ class CompetenceQueue():
                 'attempt': float("{0:.3f}".format(self.attempt)),
                 'tutorsample': float("{0:.3f}".format(self.tutorsample))
                 }
-        self.init_stat()
+        # self.init_stat()
         return dict
 
     def get_short_stats(self):

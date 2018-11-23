@@ -183,17 +183,22 @@ class Playroom(Env):
         self.initialize()
         return np.array(self.state)
 
-    def go(self, x , y):
+    def go(self, x , y, deterministic):
         dx = x - self.x
         dy = y - self.y
-        if dx > 0:
-            return Actions.RIGHT
-        elif dx < 0:
-            return Actions.LEFT
-        elif dy > 0:
-                return Actions.UP
-        elif dy < 0:
-            return Actions.DOWN
+        p = []
+        if dx > 0 and not self.walls[self.x+1, self.y]:
+            p.append(Actions.RIGHT)
+        elif dx < 0 and not self.walls[self.x-1, self.y]:
+            p.append(Actions.LEFT)
+        if dy > 0 and not self.walls[self.x, self.y+1]:
+            p.append(Actions.UP)
+        elif dy < 0 and not self.walls[self.x, self.y-1]:
+            p.append(Actions.DOWN)
+        if p and deterministic:
+            return p[0]
+        elif p:
+            return np.random.choice(p)
         else:
             return None
 
@@ -205,8 +210,8 @@ class Playroom(Env):
     #     else:
     #         return a, False
 
-    def touch(self, o):
-        a = self.go(o.x, o.y)
+    def touch(self, o, deterministic):
+        a = self.go(o.x, o.y, deterministic)
         if a is None:
             return Actions.TOUCH, False
         else:
@@ -233,18 +238,33 @@ class Playroom(Env):
             res += obj.low
         return res
 
+    def opt_action(self, t, deterministic=False):
+
+        if t== 4:
+            obj = self.chest1
+            if obj.s == 1:
+                return -1, True
+            else:
+                if self.door1.s == 1:
+                    return self.touch(obj, deterministic)
+                elif self.keyDoor1.s == 1:
+                    return self.touch(self.door1, deterministic)
+                else:
+                    return self.touch(self.keyDoor1, deterministic)
+
 if __name__ == '__main__':
     env = Playroom()
-    env.reset()
-    print(env.state)
-    while env.keyDoor1.s == 0:
-        a, done = env.touch(env.keyDoor1)
-        env.step(a)
-        print(a, env.state)
-    while env.door1.s == 0:
-        a, done = env.touch(env.door1)
-        env.step(a)
-        print(a, env.state)
+    s = env.reset()
+    task = np.random.choice([4])
+    while True:
+        print(s)
+        a, done = env.opt_action(task, True)
+        if done:
+            break
+        else:
+            a = np.expand_dims(a, axis=1)
+            s = env.step(a, True)[0]
+
 
 
     # def render(self, mode='human'):

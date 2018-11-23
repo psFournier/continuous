@@ -17,9 +17,11 @@ class CriticDQNGM(object):
         self.s_dim = env.state_dim
         self.a_dim = (1,)
         self.gamma = 0.99
+        self.lr_imit = float(args['--lrimit'])
         self.w_i = float(args['--wimit'])
         self.margin = float(args['--margin'])
         self.network = float(args['--network'])
+        self.filter = int(args['-filter'])
         self.num_actions = env.action_dim
         self.initModels()
         self.initTargetModels()
@@ -45,7 +47,8 @@ class CriticDQNGM(object):
         self.qval = K.function(inputs=[S, G, M, A], outputs=[qval], updates=None)
 
         ### DQN Training
-        loss_dqn = K.mean(K.square(qval - TARGETS), axis=0)
+        l2errors = K.square(qval - TARGETS)
+        loss_dqn = K.mean(l2errors, axis=0)
         inputs_dqn = [S, A, G, M, TARGETS]
         updates_dqn = Adam(lr=0.001).get_updates(loss_dqn, self.model.trainable_weights)
         self.metrics_dqn_names = ['loss_dqn', 'qval']
@@ -62,14 +65,22 @@ class CriticDQNGM(object):
         val = K.max(qvals, axis=1, keepdims=True)
         advClip = K.cast(K.greater(MCR, val), dtype='float32')
         goodexp = K.sum(advClip)
-        imitFiltered = imit * advClip
 
         ### Imitation
-        loss_imit = K.sum(imitFiltered, axis=0) / (K.sum(advClip) + 0.0001)
+        if self.filter == 0:
+            loss_imit = K.mean(imit, axis=0)
+            loss_dqn_imit = K.mean(l2errors, axis=0)
+        elif self.filter == 1:
+            loss_imit = K.mean(imit * advClip, axis=0)
+            loss_dqn_imit = K.mean(l2errors, axis=0)
+        else:
+            loss_imit = K.mean(imit * advClip, axis=0)
+            loss_dqn_imit = K.mean(l2errors * advClip, axis=0)
+        loss = loss_dqn_imit + self.w_i * loss_imit
         inputs_imit = [S, A, G, M, TARGETS, MCR]
-        self.metrics_imit_names = ['loss_imit']
-        metrics_imit = [loss_imit]
-        updates_imit = Adam(lr=0.01).get_updates(loss_dqn + self.w_i * loss_imit, self.model.trainable_weights)
+        self.metrics_imit_names = ['loss_imit', 'loss_dqn_imit', 'qvals', 'goodexp']
+        metrics_imit = [loss_imit, loss_dqn_imit, qvals, goodexp]
+        updates_imit = Adam(lr=self.lr_imit).get_updates(loss, self.model.trainable_weights)
         self.imit = K.function(inputs_imit, metrics_imit, updates_imit)
 
     def initTargetModels(self):

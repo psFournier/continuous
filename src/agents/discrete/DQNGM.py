@@ -16,6 +16,8 @@ class DQNGM(Agent):
         self.env.train_metrics = {name: [0]*self.env.N for name in self.critic.metrics_dqn_names+self.critic.metrics_imit_names}
         self.rnd_demo = float(args['--rnd_demo'])
         self.demo = int(args['--demo'])
+        self.prop_demo = float(args['--prop_demo'])
+        self.freq_demo = int(args['--freq_demo'])
 
     def run(self):
 
@@ -32,6 +34,11 @@ class DQNGM(Agent):
 
         try:
             while self.env_step < self.max_steps:
+
+                if self.env_step % self.freq_demo == 0 and self.demo != 0:
+                    for _ in range(int(self.freq_demo * self.prop_demo)):
+                        self.imit()
+
                 # self.env.render(mode='human')
                 # self.env.unwrapped.viewer._record_video = True
                 # self.env.unwrapped.viewer._video_path = os.path.join(self.logger.get_dir(), "video_%07d.mp4")
@@ -63,9 +70,7 @@ class DQNGM(Agent):
                 if self.env_step % self.eval_freq == 0:
                     self.log()
 
-                if self.env_step % 10000 == 0 and self.demo != 0:
-                    for _ in range(500):
-                        self.imit()
+
 
         except KeyboardInterrupt:
             print("Keybord interruption")
@@ -90,6 +95,8 @@ class DQNGM(Agent):
             targets = self.critic.get_targets_dqn(samples['r1'][:, idx], samples['t'], samples['s1'], v, v)
             inputs = [samples['s0'], samples['a'], v, v, targets, samples['mcr'][:, [idx]]]
             metrics = self.critic.imit(inputs)
+            metrics[2] = 1/(np.where(np.argmax(metrics[2], axis=1) == samples['a'][:, 0],
+                                     0.99, 0.01 / self.env.action_dim))
             for i, name in enumerate(self.critic.metrics_imit_names):
                 self.env.train_metrics[name][idx] += np.mean(np.squeeze(metrics[i]))
             self.critic.target_train()
@@ -115,6 +122,7 @@ class DQNGM(Agent):
             for name, metric in self.env.train_metrics.items():
                 self.stats[name + str(f)] = float("{0:.3f}".format(metric[i]))
                 metric[i] = 0
+            self.env.queues[i].init_stat()
         for key in sorted(self.stats.keys()):
             self.logger.logkv(key, self.stats[key])
         for key in sorted(self.short_stats.keys()):
