@@ -10,7 +10,7 @@ ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
-if 0:
+if 1:
     for run in runs:
 
         config = pd.read_json(os.path.join(run, 'config.txt'), lines=True)
@@ -69,7 +69,7 @@ df2 = df
 # df2 = df2[(df2['--demo'] == 2)]
 df2 = df2[(df2['--lrimit'] == 0.001)]
 df2 = df2[(df2['--deter'] == 0)]
-# df2 = df2[(df2['--freq_demo'] == 300000)]
+# df2 = df2[(df2['--freq_demo'] == 20000)]
 # df2 = df2[(df2['--eps1'] == 0)]
 # df2 = df2[(df2['--eps2'] == 0)]
 # df2 = df2[(df2['--eps3'] == 1)]
@@ -81,7 +81,7 @@ df2 = df2[(df2['--deter'] == 0)]
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
 # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
 y = ['qval{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5]]]
-y = ['tutorsample{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5, 6, 7]]]
+y = ['qval{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5, 6, 7]]]
 
 # y = ['loss_dqn{}'.format(str(s)) for s in [i for i in [2, 3, 4]]]
 

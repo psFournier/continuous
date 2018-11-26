@@ -107,7 +107,7 @@ class Playroom(Env):
 
         self.door1 = Obj(self,
                          name='door1',
-                         pos=(6, 10),
+                         pos=(6, 9),
                          prop=[0, 1],
                          dep=[(self.keyDoor1, 1)])
 
@@ -226,9 +226,9 @@ class Playroom(Env):
 
     @property
     def state(self):
-        res = [self.x, self.y]
+        res = [self.x/(self.nC-1), self.y/(self.nR-1)]
         for obj in self.objects:
-            res += obj.state
+            res += [(a - c)/(b - c) for a,b,c in zip(obj.state, obj.high, obj.low)]
         return res
 
     @property
