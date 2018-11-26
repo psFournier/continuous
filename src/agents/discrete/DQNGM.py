@@ -67,7 +67,6 @@ class DQNGM(Agent):
                 else:
                     self.exp['s0'] = self.exp['s1']
                     self.exp['r0'] = self.exp['r1']
-
                 if self.env_step % self.eval_freq == 0:
                     self.log()
 

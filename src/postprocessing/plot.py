@@ -49,6 +49,11 @@ params = ['--agent',
           '--eps2',
           '--eps3',
           '--network',
+          '--prop_demo',
+          '--freq_demo',
+          '--deter',
+          '--filter',
+          '--lrimit'
           ]
 
 
@@ -57,13 +62,14 @@ df2 = df
 # df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
 # df2 = df2[(df2['--tutorTask'] == 'hard')]
-df2 = df2[(df2['--wimit'] == 1)]
-# df2 = df2[(df2['--opt_init'] == -20)]
-df2 = df2[(df2['--demo'] == 1)]
-df2 = df2[(df2['--network'] == 0)]
-# df2 = df2[(df2['--ep_tasks'] == 2)]
-# df2 = df2[(df2['--ep_tasks'] == 1)]
-df2 = df2[(df2['--margin'] == 0.3)]
+# df2 = df2[(df2['--wimit'] == 0)]
+# df2 = df2[(df2['--filter'] == 2)]
+# df2 = df2[(df2['--margin'] == 10)]
+
+# df2 = df2[(df2['--demo'] == 2)]
+df2 = df2[(df2['--lrimit'] == 0.001)]
+df2 = df2[(df2['--deter'] == 0)]
+# df2 = df2[(df2['--freq_demo'] == 300000)]
 # df2 = df2[(df2['--eps1'] == 0)]
 # df2 = df2[(df2['--eps2'] == 0)]
 # df2 = df2[(df2['--eps3'] == 1)]
@@ -75,6 +81,8 @@ df2 = df2[(df2['--margin'] == 0.3)]
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
 # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
 y = ['qval{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5]]]
+y = ['tutorsample{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5, 6, 7]]]
+
 # y = ['loss_dqn{}'.format(str(s)) for s in [i for i in [2, 3, 4]]]
 
 # x = ['attempts'+s for s in ['_light','_key1', '_chest1']]
@@ -102,19 +110,21 @@ paramsStudied = []
 for param in params:
     l = df2[param].unique()
     print(param, l)
-    if len(l) > 1:
+    if len(l) > 0:
         paramsStudied.append(param)
 print(df2['num_run'].unique())
 
 op_dict = {a:[np.median, np.mean, np.std] for a in y}
-avg = 0
+avg = 1
 if avg:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
 
 print(paramsStudied)
 a, b = 2, 2
-fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=False, sharex=True)
+a, b = 2, 3
+
+fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
 colors = ['b', 'r']
 p = 'num_run'
 if avg:
@@ -138,13 +148,16 @@ for j, (name, g) in enumerate(df2.groupby(p)):
 
         # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
         # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
+        # m = 6/(20000*0.015)
+        m = (6/2000)
+        # m = 1
         if avg:
-            ax2[i % a, i // a].plot(g['step'][(g['step'] - 12000)%10000==0], 1/(g[valy]['mean'][(g['step'] - 12000)%10000==0]/(500/6)), label=label)
-
+            # ax2[i % a, i // a].plot(g['step'][g[valy]['mean']!=0], g[valy]['mean'][g[valy]['mean']!=0] * m, label=label)
+            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'] * m, label=label)
         else:
             # n = 50  # the larger n is, the smoother curve will be
             # yy = lfilter([1.0 / n] * n, 1, g[valy])
-            ax2[i % a, i // a].plot(g['step'][(g['step'] - 12000)%10000==0], g[valy][(g['step'] - 12000)%10000==0]/(2000/6), label=None)
+            ax2[i % a, i // a].plot(g['step'], g[valy] * m, label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy2], label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy3], label=None)
 
@@ -160,12 +173,12 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
         ax2[i % a, i // a].set_title(label=valy)
         if i == 0: ax2[i % a, i // a].legend()
-        ax2[i % a, i // a].set_xlim([0, 300001])
+        ax2[i % a, i // a].set_xlim([0, 150000])
 
         ax2[i % a, i // a].xaxis.set_major_locator(ticker.MultipleLocator(50000))
         ax2[i % a, i // a].xaxis.set_minor_locator(ticker.MultipleLocator(10000))
         ax2[i % a, i // a].grid(True, which='minor')
-        # ax2[i % a, i // a].set_ylim([0, 2000])
+        # ax2[i % a, i // a].set_ylim([0, 25])
     # break
     # ax[0,0].legend()
 

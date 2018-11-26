@@ -88,7 +88,7 @@ class PlayroomGM(Wrapper):
         idx = np.random.choice(self.N, p=probs)
         samples = self.buffer.sample(batchsize, idx)
         if samples is not None:
-            self.queues[self.idx].process_samples(samples)
+            self.queues[idx].process_samples(samples)
         return idx, samples
 
     def sampleT(self, batchsize):
@@ -96,7 +96,7 @@ class PlayroomGM(Wrapper):
         idx = np.random.choice(self.N, p=probs)
         samples = self.buffer.sampleT(batchsize, idx)
         if samples is not None:
-            self.queues[self.idx].process_samplesT(samples)
+            self.queues[idx].process_samplesT(samples)
         return idx, samples
 
     def get_demo(self):

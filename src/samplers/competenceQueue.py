@@ -20,7 +20,7 @@ class CompetenceQueue():
         self.trainstepT = 0
         self.attempt = 0
         self.tutorsample = 0
-        self.termstate = 0
+        self.terminal = 0
 
     def process_ep(self, episode):
         self.C.append(episode[-1]['t'])
@@ -29,7 +29,7 @@ class CompetenceQueue():
 
     def process_samples(self, samples):
         self.trainstep += 1
-        self.termstate += np.mean(samples['t'])
+        self.terminal += np.mean(samples['t'])
         self.tutorsample += np.mean(samples['o'])
 
     def process_samplesT(self, samples):
@@ -45,7 +45,7 @@ class CompetenceQueue():
     def get_stats(self):
         dict = {'envstep': float("{0:.3f}".format(self.envstep)),
                 'trainstep': float("{0:.3f}".format(self.trainstep)),
-                'termstate': float("{0:.3f}".format(self.termstate)),
+                'terminal': float("{0:.3f}".format(self.terminal)),
                 'attempt': float("{0:.3f}".format(self.attempt)),
                 'tutorsample': float("{0:.3f}".format(self.tutorsample))
                 }
