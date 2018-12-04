@@ -88,13 +88,17 @@ class Dqn1():
             self.stats[key] = val
 
         for f in self.env.feat:
-            self.stats['qval'+str(f)] /= self.stats['envstep'+str(f)]
+            self.stats['qval'+str(f)] /= (self.stats['envstep'+str(f)] + 0.01)
 
         self.stats['step'] = step
 
         for key in sorted(self.stats.keys()):
             self.logger.logkv(key, self.stats[key])
         self.logger.dumpkvs()
+
+        for f in self.env.feat:
+            self.stats['qval'+str(f)] = 0
+
 
 
 

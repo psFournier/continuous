@@ -112,6 +112,7 @@ class Critic1(object):
         q = self.Tqval([s, g, v, a1])[0]
         t = (r == self.env.R)
         targets = r + (1 - t) * self.gamma * q.squeeze()
+        targets = np.clip(targets, 0, self.env.R)
         return np.expand_dims(targets, axis=1)
 
     def create_critic_network(self, S, G=None, M=None):

@@ -6,19 +6,16 @@ from .critic import Critic2
 from utils.util import softmax
 
 class Dqn2():
-    def __init__(self, args, env, logger, short_logger):
+    def __init__(self, args, env, logger):
         self.env = env
         self.logger = logger
-        self.short_logger = short_logger
         self.log_dir = args['--log_dir']
         self.batch_size = int(args['--batchsize'])
-        self.stats = {}
-        self.short_stats = {}
+        self.stats = {'qval'+str(f): 0 for f in self.env.feat}
+        self.stats['step'] = 0
         self.exp = {}
         self.trajectory = []
         self.critic = Critic2(args, env)
-        self.env.train_metrics = {name: [0] * self.env.N for name in
-                                  self.critic.metrics_dqn_names + self.critic.metrics_imit_names}
 
     def reset(self, state):
         self.exp = {}
@@ -31,8 +28,10 @@ class Dqn2():
 
     def act(self):
         input = [np.expand_dims(self.exp['s0'], axis=0)]
-        qvals = self.critic.qvals(input)[0].squeeze()[self.env.idx]
-        action = np.random.choice(range(self.env.action_dim), p=softmax(qvals, theta=1))
+        qvals = self.critic.qvals(input)[0].squeeze()
+        for i, f in enumerate(self.env.feat):
+            self.stats['qval'+str(f)] += np.mean(np.squeeze(qvals[i]))
+        action = np.random.choice(range(self.env.action_dim), p=softmax(qvals[self.env.idx], theta=1))
         action = np.expand_dims(action, axis=1)
         self.exp['a'] = action
         return action
@@ -58,9 +57,7 @@ class Dqn2():
             s0 = samples['s0'][u0]
             a = samples['a'][u0]
             inputs = [s0, np.expand_dims(u1, axis=1), a, targets]
-            metrics = self.critic.train(inputs)
-            # for i, name in enumerate(self.critic.metrics_dqn_names):
-            #     self.env.train_metrics[name][idx] += np.mean(np.squeeze(metrics[i]))
+            _ = self.critic.train(inputs)
             self.critic.target_train()
 
     def end_episode(self):
@@ -82,21 +79,18 @@ class Dqn2():
             self.critic.target_train()
 
     def log(self, step):
-        self.stats, self.short_stats = self.env.get_stats()
+
+        for key, val in self.env.get_stats().items():
+            self.stats[key] = val
+
+        for f in self.env.feat:
+            self.stats['qval'+str(f)] /= (step - self.stats['step'])
+
         self.stats['step'] = step
-        self.short_stats['step'] = step
-        # for i, f in enumerate(self.env.feat):
-        #     for name, metric in self.env.train_metrics.items():
-        #         self.stats[name + str(f)] = float("{0:.3f}".format(metric[i]))
-        #         metric[i] = 0
-        #     self.env.queues[i].init_stat()
+
         for key in sorted(self.stats.keys()):
             self.logger.logkv(key, self.stats[key])
-        for key in sorted(self.short_stats.keys()):
-            self.short_logger.logkv(key, self.short_stats[key])
         self.logger.dumpkvs()
-        self.short_logger.dumpkvs()
-
 
 
 
