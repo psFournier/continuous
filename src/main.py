@@ -21,7 +21,7 @@ Options:
   --ep_tasks VAL           Maximum episode tasks [default: 1]
   --log_dir DIR            Logging directory [default: /home/pierre/PycharmProjects/continuous/log/local/]
   --eval_freq VAL          Logging frequency [default: 2000]
-  --margin VAL             Large margin loss margin [default: 0.1]
+  --margin VAL             Large margin loss margin [default: 1]
   --gamma VAL              Discount factor [default: 0.99]
   --batchsize VAL          Batch size [default: 64]
   --wimit VAL              Weight for imitaiton loss with imitaiton [default: 1]
@@ -33,6 +33,7 @@ Options:
   --freq_demo VAL             network type [default: 20000]
   --deter VAL             network type [default: 0]
   --lrimit VAL             network type [default: 0.001]
+  --rndv VAL               [default: 0]
 """
 
 if __name__ == '__main__':
@@ -98,7 +99,7 @@ if __name__ == '__main__':
 
     for _ in range(demo * 100):
         demonstration, task = wrapper_test.get_demo()
-        agent.process_trajectory(demo)
+        agent.process_trajectory(demonstration)
 
     while env_step < int(args['--max_steps']):
 

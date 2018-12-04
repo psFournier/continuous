@@ -34,7 +34,7 @@ class Critic1(object):
         G = Input(shape=self.g_dim)
         M = Input(shape=self.g_dim)
         TARGETS = Input(shape=(1,))
-        MCR = Input(shape=(1,), dtype='float32')
+        # MCR = Input(shape=(1,), dtype='float32')
 
         ### Q values and action models
         qvals = self.create_critic_network(S, G, M)
@@ -62,24 +62,23 @@ class Critic1(object):
         imit = (K.max(qvals + self.margin * onehot, axis=1, keepdims=True) - qval)
 
         ### Suboptimal demos
-        val = K.max(qvals, axis=1, keepdims=True)
-        advClip = K.cast(K.greater(MCR, val), dtype='float32')
-        goodexp = K.sum(advClip)
+        # val = K.max(qvals, axis=1, keepdims=True)
+        # advClip = K.cast(K.greater(MCR, val), dtype='float32')
+        # goodexp = K.sum(advClip)
 
         ### Imitation
-        if self.filter == 0:
-            loss_imit = K.mean(imit, axis=0)
-            loss_dqn_imit = K.mean(l2errors, axis=0)
-        elif self.filter == 1:
-            loss_imit = K.mean(imit * advClip, axis=0)
-            loss_dqn_imit = K.mean(l2errors, axis=0)
-        else:
-            loss_imit = K.mean(imit * advClip, axis=0)
-            loss_dqn_imit = K.mean(l2errors * advClip, axis=0)
+        loss_imit = K.mean(imit, axis=0)
+        loss_dqn_imit = K.mean(l2errors, axis=0)
+        # elif self.filter == 1:
+        #     loss_imit = K.mean(imit * advClip, axis=0)
+        #     loss_dqn_imit = K.mean(l2errors, axis=0)
+        # else:
+        #     loss_imit = K.mean(imit * advClip, axis=0)
+        #     loss_dqn_imit = K.mean(l2errors * advClip, axis=0)
         loss = loss_dqn_imit + self.w_i * loss_imit
-        inputs_imit = [S, A, G, M, TARGETS, MCR]
+        inputs_imit = [S, A, G, M, TARGETS]
         self.metrics_imit_names = ['loss_imit', 'loss_dqn_imit', 'qvals', 'goodexp']
-        metrics_imit = [loss_imit, loss_dqn_imit, qvals, goodexp]
+        metrics_imit = [loss_imit, loss_dqn_imit, qvals]
         updates_imit = Adam(lr=self.lr_imit).get_updates(loss, self.model.trainable_weights)
         self.imit = K.function(inputs_imit, metrics_imit, updates_imit)
 
@@ -104,16 +103,18 @@ class Critic1(object):
             target_weights[i] = self.tau * weights[i] + (1 - self.tau)* target_weights[i]
         self.Tmodel.set_weights(target_weights)
 
-    def get_targets_dqn(self, s, r, g, v):
+    def get_targets_dqn(self, s, g, v, r=None):
         qvals = self.qvals([s, g, v])[0]
         probs = softmax(qvals, theta=1, axis=1)
         actions = [np.random.choice(range(self.env.action_dim), p=prob) for prob in probs]
         a1 = np.expand_dims(np.array(actions), axis=1)
         q = self.Tqval([s, g, v, a1])[0]
+        if r is None:
+            r = self.env.get_r(s, g, v)
         t = (r == self.env.R)
-        targets = r + (1 - t) * self.gamma * q.squeeze()
+        targets = r + (1 - t) * self.gamma * q
         targets = np.clip(targets, 0, self.env.R)
-        return np.expand_dims(targets, axis=1)
+        return targets
 
     def create_critic_network(self, S, G=None, M=None):
         if self.network == '0':

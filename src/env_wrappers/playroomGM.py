@@ -68,10 +68,6 @@ class PlayroomGM(Wrapper):
             if any(u!=0):
                 self.buffer.append(exp.copy())
 
-    def sample(self, batchsize):
-        samples = self.buffer.sample(batchsize)
-        return samples
-
     # def sample(self, batchsize):
     #     probs = self.get_probs(idxs=range(self.N), eps=self.eps2)
     #     idx = np.random.choice(self.N, p=probs)
@@ -92,23 +88,22 @@ class PlayroomGM(Wrapper):
         demo = []
         exp = {}
         exp['s0'] = self.env.reset()
-        exp['r0'] = self.get_r(exp['s0'])
-        exp['t'] = 0
+        exp['r0'] = self.get_r(exp['s0'], self.g, self.vs).squeeze()
+        exp['g'] = self.g
         if self.demo == 1:
             task = np.random.choice([4])
         elif self.demo == 2:
             task = np.random.choice([4, 7])
+        exp['v'] = self.vs[task]
         while True:
             a, done = self.opt_action(task, deterministic=self.deterministic)
             if done:
-                demo[-1]['t'] = 1
                 break
             else:
                 exp['a'] = np.expand_dims(a, axis=1)
                 exp['s1'] = self.env.step(exp['a'], True)[0]
-                exp['r1'] = self.get_r(exp['s1'])
+                exp['r1'] = self.get_r(exp['s1'], self.g, self.vs).squeeze()
                 exp['o'] = 1
-                exp['t'] = 0
                 demo.append(exp.copy())
                 exp['s0'] = exp['s1']
                 exp['r0'] = exp['r1']

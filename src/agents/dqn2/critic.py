@@ -118,7 +118,7 @@ class Critic2(object):
             target_weights[i] = self.tau * weights[i] + (1 - self.tau)* target_weights[i]
         self.targetmodel.set_weights(target_weights)
 
-    def get_targets_dqn(self, s, r, task):
+    def get_targets_dqn(self, s, task, r):
         qvals = self.qvals([s])[0]
         batchsize, _, numactions = qvals.shape
         qvals_for_task = qvals[np.arange(batchsize)[:, np.newaxis], task, np.arange(numactions)]

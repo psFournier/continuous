@@ -53,7 +53,7 @@ class Dqn2():
             u0, u1 = np.where(samples['u'])
             s1 = samples['s1'][u0]
             r1 = samples['r1'][u0, u1]
-            targets = self.critic.get_targets_dqn(s1, r1, np.expand_dims(u1, axis=1))
+            targets = self.critic.get_targets_dqn(s1, np.expand_dims(u1, axis=1), r1)
             s0 = samples['s0'][u0]
             a = samples['a'][u0]
             inputs = [s0, np.expand_dims(u1, axis=1), a, targets]
