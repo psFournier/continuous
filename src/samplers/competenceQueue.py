@@ -16,24 +16,24 @@ class CompetenceQueue():
 
     def init_stat(self):
         self.envstep = 0
-        self.trainstep = 0
-        self.trainstepT = 0
-        self.attempt = 0
-        self.tutorsample = 0
-        self.terminal = 0
+        # self.trainstep = 0
+        # self.trainstepT = 0
+        # self.attempt = 0
+        # self.tutorsample = 0
+        # self.terminal = 0
 
-    def process_ep(self, episode):
-        self.C.append(episode[-1]['t'])
+    def process_ep(self, episode, term):
+        self.C.append(term)
         self.envstep += len(episode)
-        self.attempt += 1
+        # self.attempt += 1
 
-    def process_samples(self, samples):
-        self.trainstep += 1
-        self.terminal += np.mean(samples['t'])
-        self.tutorsample += np.mean(samples['o'])
-
-    def process_samplesT(self, samples):
-        self.trainstepT += 1
+    # def process_samples(self, samples):
+    #     self.trainstep += 1
+    #     self.terminal += np.mean(samples['t'])
+    #     self.tutorsample += np.mean(samples['o'])
+    #
+    # def process_samplesT(self, samples):
+    #     self.trainstepT += 1
 
     def update(self):
         size = len(self.C)
@@ -43,16 +43,7 @@ class CompetenceQueue():
             self.CP = self.C_avg[-1] - self.C_avg[0]
 
     def get_stats(self):
-        dict = {'envstep': float("{0:.3f}".format(self.envstep)),
-                'trainstep': float("{0:.3f}".format(self.trainstep)),
-                'terminal': float("{0:.3f}".format(self.terminal)),
-                'attempt': float("{0:.3f}".format(self.attempt)),
-                'tutorsample': float("{0:.3f}".format(self.tutorsample))
-                }
-        # self.init_stat()
-        return dict
-
-    def get_short_stats(self):
         dict = {'C': float("{0:.3f}".format(self.C_avg[-1])),
-                'CP': float("{0:.3f}".format(self.CP))}
+                'CP': float("{0:.3f}".format(self.CP)),
+                'envstep': float("{0:.3f}".format(self.envstep))}
         return dict

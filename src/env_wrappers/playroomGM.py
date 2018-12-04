@@ -2,9 +2,6 @@ import numpy as np
 from gym import Wrapper
 from samplers.competenceQueue import CompetenceQueue
 from buffers import MultiReplayBuffer, ReplayBuffer
-import math
-
-from envs.playroom import Actions
 
 class PlayroomGM(Wrapper):
     def __init__(self, env, args):
@@ -23,45 +20,32 @@ class PlayroomGM(Wrapper):
         vs[np.arange(self.N), self.feat] = 1
         self.vs = vs / np.sum(vs, axis=1, keepdims=True)
         self.R = 100
-
-        self.idx = None
+        self.idx = -1
+        self.v = np.zeros(shape=(self.state_dim[0], 1))
+        self.g = np.ones(shape=(self.state_dim[0]))
         self.queues = [CompetenceQueue() for _ in range(self.N)]
+        self.names = ['s0', 'r0', 'a', 's1', 'r1', 'g', 'v', 'o', 'u']
+        self.buffer = ReplayBuffer(limit=int(1e5), names=self.names)
 
-        self.state_low = self.env.low
-        self.state_high = self.env.high
-        self.init_state = np.array(self.env.initstate)
-
-        self.names = ['s0', 'r0', 'a', 's1', 'r1', 't', 'u', 'o', 'mcr']
-        self.buffer = MultiReplayBuffer(limit=int(1e6), Ntasks=self.N, names=self.names)
-
-    def reset(self):
-        exp = {}
-        exp['s0'] = self.env.reset()
-        exp['r0'] = self.get_r(exp['s0'])
-        exp['t'] = 0
+    def reset(self, exp):
+        self.idx, self.v = self.sample_v(exp['s0'])
+        exp['g'] = self.g
+        exp['v'] = self.v
         return exp
 
-    def get_r(self, s):
-        return self.R * np.dot(self.vs, s == 1)
+    def get_r(self, s, g, v):
+        return self.R * np.sum(np.multiply(v, s==g), axis=1, keepdims=True)
 
     def sample_v(self, s):
         remaining_v = [i for i in range(self.N) if s[self.feat[i]] != 1]
         probs = self.get_probs(idxs=remaining_v, eps=self.eps1)
         idx = np.random.choice(remaining_v, p=probs)
-        return idx
-
-    def step(self, exp):
-        exp['o'] = 0
-        exp['s1'] = self.env.step(exp['a'])[0]
-        exp['r1'] = self.get_r(exp['s1'])
-        exp['t'] = 0
-        exp['i'] = self.idx
-        if exp['r1'][self.idx] == self.R:
-            exp['t'] = 1
-        return exp
+        v = self.vs[idx]
+        return idx, v
 
     def end_episode(self, episode):
-        self.queues[self.idx].process_ep(episode)
+        term = episode[-1]['r1'][self.idx] == self.R
+        self.queues[self.idx].process_ep(episode, term)
         base_util = np.zeros(shape=(self.N,))
         base_util[self.idx] = 1
         self.process_trajectory(episode, base_util=base_util)
@@ -71,33 +55,38 @@ class PlayroomGM(Wrapper):
             u = np.zeros(shape=(self.N,))
         else:
             u = base_util
-        mcr = np.zeros(shape=(self.N,))
+        u = np.expand_dims(u, axis=1)
+        # mcr = np.zeros(shape=(self.N,))
         for exp in reversed(trajectory):
-            r_idx = np.where(exp['r1'] > exp['r0'])
-            u[r_idx] += 1
-            u_idx = np.where(u != 0)
-            mcr[u_idx] = exp['r1'][u_idx] + self.gamma * mcr[u_idx]
-            u_c = u.copy()
-            exp['u'] = u_c
-            exp['mcr'] = mcr
-            if any(u_c!=0):
+            u = self.gamma * u
+            u[np.where(exp['r1'] > exp['r0'])] = 1
+
+            # u_idx = np.where(u != 0)
+            # mcr[u_idx] = exp['r1'][u_idx] + self.gamma * mcr[u_idx]
+            exp['u'] = u.squeeze()
+            # exp['mcr'] = mcr
+            if any(u!=0):
                 self.buffer.append(exp.copy())
 
     def sample(self, batchsize):
-        probs = self.get_probs(idxs=range(self.N), eps=self.eps2)
-        idx = np.random.choice(self.N, p=probs)
-        samples = self.buffer.sample(batchsize, idx)
-        if samples is not None:
-            self.queues[idx].process_samples(samples)
-        return idx, samples
+        samples = self.buffer.sample(batchsize)
+        return samples
 
-    def sampleT(self, batchsize):
-        probs = self.get_probs(idxs=range(self.N), eps=self.eps3)
-        idx = np.random.choice(self.N, p=probs)
-        samples = self.buffer.sampleT(batchsize, idx)
-        if samples is not None:
-            self.queues[idx].process_samplesT(samples)
-        return idx, samples
+    # def sample(self, batchsize):
+    #     probs = self.get_probs(idxs=range(self.N), eps=self.eps2)
+    #     idx = np.random.choice(self.N, p=probs)
+    #     samples = self.buffer.sample(batchsize, idx)
+    #     if samples is not None:
+    #         self.queues[idx].process_samples(samples)
+    #     return idx, samples
+    #
+    # def sampleT(self, batchsize):
+    #     probs = self.get_probs(idxs=range(self.N), eps=self.eps3)
+    #     idx = np.random.choice(self.N, p=probs)
+    #     samples = self.buffer.sampleT(batchsize, idx)
+    #     if samples is not None:
+    #         self.queues[idx].process_samplesT(samples)
+    #     return idx, samples
 
     def get_demo(self):
         demo = []
@@ -156,17 +145,12 @@ class PlayroomGM(Wrapper):
 
     def get_stats(self):
         stats = {}
-        short_stats = {}
         for i, f in enumerate(self.feat):
             self.queues[i].update()
-            short = self.queues[i].get_short_stats()
-            for key, val in short.items():
-                short_stats[key+str(f)] = val
+            for key, val in self.queues[i].get_stats().items():
                 stats[key + str(f)] = val
-            long = self.queues[i].get_stats()
-            for key, val in long.items():
-                stats[key+str(f)] = val
-        return stats, short_stats
+            self.queues[i].init_stat()
+        return stats
 
     def get_probs(self, idxs, eps):
         cps = [np.maximum(abs(q.CP + 0.05) - 0.05, 0) for q in self.queues]

@@ -1,13 +1,4 @@
-from .continuous.DDPG2 import DDPG
-from .continuous.TD3 import TD3
-from .discrete.DQN import DQN
-from .discrete.DQNG import DQNG
-# from .discrete.DQNG1 import DQNG1
-# from .discrete.DQNG2 import DQNG2
-# from .discrete.DQNG01 import DQNG01
-# from .discrete.DQNG02 import DQNG02
-from .discrete.DQNGM import DQNGM
-from .discrete.Qoff import Qoff
-from .continuous.DDPGG import DDPGG
-from .discrete.ACDQNGM import ACDQNGM
-from .continuous.DDPGGM import DDPGGM
+from .dqn1.dqn import Dqn1
+from .dqn1.critic import Critic1
+from .dqn2.critic import Critic2
+from .dqn2.dqn import Dqn2

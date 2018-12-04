@@ -5,11 +5,11 @@ from keras.layers import Dense, Input, Lambda, Reshape, Dropout
 from keras.optimizers import Adam
 import keras.backend as K
 from keras.layers.merge import concatenate, multiply, add, subtract, maximum, Dot
-from .criticDQNG import CriticDQNG
 import numpy as np
-from keras.losses import mse
+from utils.util import softmax
 
-class CriticDQNGM(object):
+
+class Critic1(object):
     def __init__(self, args, env):
         self.g_dim = env.goal_dim
         self.env = env
@@ -104,19 +104,15 @@ class CriticDQNGM(object):
             target_weights[i] = self.tau * weights[i] + (1 - self.tau)* target_weights[i]
         self.Tmodel.set_weights(target_weights)
 
-    def compute_targets(self, r, t, q):
-        targets = r + (1 - t) * self.gamma * np.squeeze(q)
-        targets = np.clip(targets, 0, self.env.R)
-        return targets
-
-    def get_targets_dqn(self, r, t, s, g=None, m=None):
-        qvals = self.qvals([s, g, m])[0]
-        a1 = np.expand_dims(np.argmax(qvals, axis=1), axis=1)
-        q = self.Tqval([s, g, m, a1])[0]
-        targets_dqn = self.compute_targets(r, t, q)
-        return np.expand_dims(targets_dqn, axis=1)
-
-
+    def get_targets_dqn(self, s, r, g, v):
+        qvals = self.qvals([s, g, v])[0]
+        probs = softmax(qvals, theta=1, axis=1)
+        actions = [np.random.choice(range(self.env.action_dim), p=prob) for prob in probs]
+        a1 = np.expand_dims(np.array(actions), axis=1)
+        q = self.Tqval([s, g, v, a1])[0]
+        t = (r == self.env.R)
+        targets = r + (1 - t) * self.gamma * q.squeeze()
+        return np.expand_dims(targets, axis=1)
 
     def create_critic_network(self, S, G=None, M=None):
         if self.network == '0':

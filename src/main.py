@@ -1,16 +1,9 @@
 import tensorflow as tf
 import numpy as np
-import argparse
-import pprint as pp
-from agents import DQN, DQNG, TD3, DDPG, DQNGM, Qoff, DDPGG, ACDQNGM, DDPGGM
-from utils.logger import Logger
-import datetime
-from utils.util import load
-import json
-import os
+from utils.util import build_logger
 from env_wrappers.registration import make
-import gym.spaces
 from docopt import docopt
+from agents import Dqn1, Dqn2
 
 help = """
 
@@ -42,27 +35,14 @@ Options:
   --lrimit VAL             network type [default: 0.001]
 """
 
-def build_logger(args):
-    param_strings = [args['--agent'], args['--env']]
-    now = datetime.datetime.now()
-    log_dir = os.path.join(args['--log_dir'], '_'.join(param_strings), now.strftime("%Y%m%d%H%M%S_%f"))
-    os.makedirs(log_dir, exist_ok=True)
-    args['--time'] = now
-    print(args)
-    with open(os.path.join(log_dir, 'config.txt'), 'w') as config_file:
-        config_file.write(json.dumps(args, default=str))
-    logger = Logger(dir=os.path.join(log_dir,'log_steps'),
-                         format_strs=['json', 'tensorboard_{}'.format(int(args['--eval_freq']))])
-    short_logger = Logger(dir=os.path.join(log_dir,'log_steps'),
-                         format_strs=['stdout'.format(int(args['--eval_freq']))])
-
-    return logger, short_logger
-
 if __name__ == '__main__':
+
     args = docopt(help)
-    logger, short_logger = build_logger(args)
-    env = make(args['--env'], args)
-    env_test = make(args['--env'], args)
+
+    logger = build_logger(args)
+    env, wrapper = make(args['--env'], args)
+    env_test, wrapper_test = make(args['--env'], args)
+
     seed = args['--seed']
     if seed is not None:
         seed = int(seed)
@@ -71,26 +51,30 @@ if __name__ == '__main__':
         env.seed(seed)
         env_test.seed(seed)
 
+    if args['--agent'] == '1':
+        agent = Dqn1(args, wrapper, logger)
+    elif args['--agent'] == '2':
+        agent = Dqn2(args, wrapper, logger)
     # if args['agent'] == 'ddpg':
     #     agent = DDPG(args, env, env_test, logger)
     # elif args['agent'] == 'td3':
     #     agent = TD3(args, env, env_test, logger)
-    if args['--agent'] == 'qoff':
-        agent = Qoff(args, env, env_test, logger)
-    elif args['--agent'] == 'dqn':
-        agent = DQN(args, env, env_test, logger)
-    elif args['--agent'] == 'dqng':
-        agent = DQNG(args, env, env_test, logger)
-    elif args['--agent'] == 'dqngm':
-        agent = DQNGM(args, env, env_test, logger, short_logger)
-    elif args['--agent'] == 'acdqngm':
-        agent = ACDQNGM(args, env, env_test, logger)
-    elif args['--agent'] == 'ddpg':
-        agent = DDPG(args, env, env_test, logger)
-    elif args['--agent'] == 'ddpgg':
-        agent = DDPGG(args, env, env_test, logger)
-    elif args['--agent'] == 'ddpggm':
-        agent = DDPGGM(args, env, env_test, logger)
+    # if args['--agent'] == 'qoff':
+    #     agent = Qoff(args, env, env_test, logger)
+    # elif args['--agent'] == 'dqn':
+    #     agent = DQN(args, env, env_test, logger)
+    # elif args['--agent'] == 'dqng':
+    #     agent = DQNG(args, env, env_test, logger)
+    # elif args['--agent'] == 'dqngm':
+    #     agent = DQNGM(args, env, env_test, logger, short_logger)
+    # elif args['--agent'] == 'acdqngm':
+    #     agent = ACDQNGM(args, env, env_test, logger)
+    # elif args['--agent'] == 'ddpg':
+    #     agent = DDPG(args, env, env_test, logger)
+    # elif args['--agent'] == 'ddpgg':
+    #     agent = DDPGG(args, env, env_test, logger)
+    # elif args['--agent'] == 'ddpggm':
+    #     agent = DDPGGM(args, env, env_test, logger)
     else:
         raise RuntimeError
     # elif args['agent'] == 'qlearning':
@@ -104,5 +88,39 @@ if __name__ == '__main__':
     #                            'policy.pkl'), 'rb') as input:
     #         Q_tutor = pickle.load(input)
     #     agent = QlearningfD.QlearningfD(args, sess, env, env_test, Q_tutor, logger)
+    env_step = 0
+    episode_step = 0
+    demo = int(args['--demo'])
+    imit_steps = int(float(args['--freq_demo']) * float(args['--prop_demo']))
+    max_episode_steps = int(args['--ep_steps'])
+    state = env.reset()
+    agent.reset(state)
 
-    agent.run()
+    for _ in range(demo * 100):
+        demonstration, task = wrapper_test.get_demo()
+        agent.process_trajectory(demo)
+
+    while env_step < int(args['--max_steps']):
+
+        if env_step % int(args['--freq_demo']) == 0 and demo != 0:
+            for _ in range(imit_steps):
+                agent.imit()
+        # self.env.render(mode='human')
+        # self.env.unwrapped.viewer._record_video = True
+        # self.env.unwrapped.viewer._video_path = os.path.join(self.logger.get_dir(), "video_%07d.mp4")
+        # self.env.unwrapped.viewer._run_speed = 0.125
+        a = agent.act()
+        state = env.step(a)[0]
+        term = agent.step(state)
+
+        env_step += 1
+        episode_step += 1
+
+        if term or episode_step >= max_episode_steps:
+            agent.end_episode()
+            state = env.reset()
+            agent.reset(state)
+            episode_step = 0
+
+        if env_step % int(args['--eval_freq'])== 0:
+            agent.log(env_step)

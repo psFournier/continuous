@@ -87,7 +87,7 @@ class Playroom(Env):
         self.nC = 13
         self.walls = np.zeros((13, 13))
         for i in range(13):
-            if i != 3 and i != 10:
+            if i != 3 and i != 9:
                 self.walls[6, i] = 1
         for i in range(7, 13):
             self.walls[i, 6] = 1

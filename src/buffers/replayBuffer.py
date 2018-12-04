@@ -17,10 +17,12 @@ class ReplayBuffer(object):
             self._storage[self._next_idx] = item
         self._next_idx = (self._next_idx + 1) % self._limit
 
-    def sample(self, batch_size):
-        idxs = [np.random.randint(0, len(self._storage) - 1) for _ in range(batch_size)]
-        exps = []
-        for i in idxs:
-            exps.append(self._storage[i])
-        res = {name: np.array([exp[name] for exp in exps]) for name in self._names}
+    def sample(self, batchsize):
+        res = None
+        if len(self._storage) >= 10000:
+            idxs = [np.random.randint(0, len(self._storage) - 1) for _ in range(batchsize)]
+            exps = []
+            for i in idxs:
+                exps.append(self._storage[i])
+            res = {name: np.array([exp[name] for exp in exps]) for name in self._names}
         return res
