@@ -12,11 +12,18 @@ class Dqn1():
         self.log_dir = args['--log_dir']
         self.batch_size = int(args['--batchsize'])
         self.rndv = int(args['--rndv'])
-        self.stats = {'qval'+str(f): 0 for f in self.env.feat}
+        self.stats = {}
+        self.initstats()
         self.stats['step'] = 0
         self.exp = {}
         self.trajectory = []
         self.critic = Critic1(args, env)
+
+    def initstats(self):
+        for f in self.env.feat:
+            self.stats['qval'+str(f)] = 0
+        self.stats['qvalAll'] = 0
+        self.stats['loss'] = 0
 
     def reset(self, state):
         self.exp = {}
@@ -68,7 +75,9 @@ class Dqn1():
             s0 = samples['s0'][u0]
             a = samples['a'][u0]
             inputs = [s0, a, g, v, targets]
-            _ = self.critic.train(inputs)
+            loss, qval = self.critic.train(inputs)
+            self.stats['qvalAll'] += np.mean(np.squeeze(qval))
+            self.stats['loss'] += np.mean(loss)
             self.critic.target_train()
 
     def end_episode(self):
@@ -111,8 +120,7 @@ class Dqn1():
             self.logger.logkv(key, self.stats[key])
         self.logger.dumpkvs()
 
-        for f in self.env.feat:
-            self.stats['qval'+str(f)] = 0
+        self.initstats()
 
 
 

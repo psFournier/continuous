@@ -5,12 +5,12 @@ import os
 import numpy as np
 from scipy.signal import lfilter
 import matplotlib.ticker as ticker
-DIR = '../../log/cluster/last/'
+DIR = '../../log/cluster/0512/'
 ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
 
-if 1:
+if 0:
     for run in runs:
 
         config = pd.read_json(os.path.join(run, 'config.txt'), lines=True)
@@ -40,7 +40,7 @@ params = ['--agent',
           '--gamma',
           '--ep_tasks',
           '--rnd_demo',
-          '--wimit',
+          # '--wimit',
           '--ep_steps',
           '--inv_grad',
           '--margin',
@@ -53,7 +53,8 @@ params = ['--agent',
           '--freq_demo',
           '--deter',
           '--filter',
-          '--lrimit'
+          '--lrimit',
+          '--rndv'
           ]
 
 
@@ -66,9 +67,9 @@ df2 = df
 # df2 = df2[(df2['--filter'] == 2)]
 # df2 = df2[(df2['--margin'] == 10)]
 
-# df2 = df2[(df2['--demo'] == 2)]
-df2 = df2[(df2['--lrimit'] == 0.001)]
-df2 = df2[(df2['--deter'] == 0)]
+df2 = df2[(df2['--demo'] == 0)]
+# df2 = df2[(df2['--rndv'] == 1)]
+# df2 = df2[(df2['--deter'] == 0)]
 # df2 = df2[(df2['--freq_demo'] == 20000)]
 # df2 = df2[(df2['--eps1'] == 0)]
 # df2 = df2[(df2['--eps2'] == 0)]
@@ -80,8 +81,8 @@ df2 = df2[(df2['--deter'] == 0)]
 # y = ['agentR']
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
 # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
-y = ['qval{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5]]]
-y = ['qval{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5, 6, 7]]]
+y = ['C{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5]]]
+# y = ['qval{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5, 6, 7]]]
 
 # y = ['loss_dqn{}'.format(str(s)) for s in [i for i in [2, 3, 4]]]
 
@@ -110,11 +111,16 @@ paramsStudied = []
 for param in params:
     l = df2[param].unique()
     print(param, l)
-    if len(l) > 0:
+    if len(l) > 1:
         paramsStudied.append(param)
 print(df2['num_run'].unique())
 
-op_dict = {a:[np.median, np.mean, np.std] for a in y}
+def quant_inf(x):
+    return x.quantile(0.2)
+def quant_sup(x):
+    return x.quantile(0.8)
+
+op_dict = {a:[np.median, np.mean, np.std, quant_inf, quant_sup] for a in y}
 avg = 1
 if avg:
     df2 = df2.groupby(x + params).agg(op_dict).reset_index()
@@ -149,11 +155,11 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'], label=label)
         # ax2[i % a, i // a].plot(g['step'], g[valy]['mean'].ewm(com=5).mean(), label=label)
         # m = 6/(20000*0.015)
-        m = (6/2000)
-        # m = 1
+        # m = (6/2000)
+        m = 1
         if avg:
             # ax2[i % a, i // a].plot(g['step'][g[valy]['mean']!=0], g[valy]['mean'][g[valy]['mean']!=0] * m, label=label)
-            ax2[i % a, i // a].plot(g['step'], g[valy]['mean'] * m, label=label)
+            ax2[i % a, i // a].plot(g['step'], g[valy]['median'] * m, label=label)
         else:
             # n = 50  # the larger n is, the smoother curve will be
             # yy = lfilter([1.0 / n] * n, 1, g[valy])
@@ -165,20 +171,20 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         # ax2[i % a, i // a].plot(g['step'], abs(g[valy].rolling(window=20).mean().diff(10)))
         # ax2[i % a, i // a].plot(g['step'], g[val]['median'].ewm(5).mean().diff(10),
         #                         label='CP_' + str(i) + "_smooth")
-        # ax2[i % a, i // a].fill_between(g['step'],
-        #                                 g[valy]['quant_inf'],
-        #                                 g[valy]['quant_sup'], alpha=0.25, linewidth=0)
+        ax2[i % a, i // a].fill_between(g['step'],
+                                        g[valy]['quant_inf'],
+                                        g[valy]['quant_sup'], alpha=0.25, linewidth=0)
         # ax2[i % a, i // a].fill_between(g['step'],
         #                                 g[valy]['mean'] - 0.5*g[valy]['std'],
         #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
         ax2[i % a, i // a].set_title(label=valy)
         if i == 0: ax2[i % a, i // a].legend()
-        ax2[i % a, i // a].set_xlim([0, 150000])
+        ax2[i % a, i // a].set_xlim([0, 300000])
 
         ax2[i % a, i // a].xaxis.set_major_locator(ticker.MultipleLocator(50000))
         ax2[i % a, i // a].xaxis.set_minor_locator(ticker.MultipleLocator(10000))
         ax2[i % a, i // a].grid(True, which='minor')
-        # ax2[i % a, i // a].set_ylim([0, 25])
+        # ax2[i % a, i // a].set_ylim([0, 200])
     # break
     # ax[0,0].legend()
 

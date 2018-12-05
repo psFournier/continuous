@@ -7,6 +7,7 @@ import keras.backend as K
 from keras.layers.merge import concatenate, multiply, add, subtract, maximum, Dot
 import numpy as np
 from utils.util import softmax
+from utils.util import huber_loss
 
 
 class Critic1(object):
@@ -49,6 +50,7 @@ class Critic1(object):
         ### DQN Training
         l2errors = K.square(qval - TARGETS)
         loss_dqn = K.mean(l2errors, axis=0)
+        # loss_dqn = huber_loss(TARGETS, qval, 1)
         inputs_dqn = [S, A, G, M, TARGETS]
         updates_dqn = Adam(lr=0.001).get_updates(loss_dqn, self.model.trainable_weights)
         self.metrics_dqn_names = ['loss_dqn', 'qval']
