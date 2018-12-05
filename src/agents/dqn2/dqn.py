@@ -11,11 +11,18 @@ class Dqn2():
         self.logger = logger
         self.log_dir = args['--log_dir']
         self.batch_size = int(args['--batchsize'])
-        self.stats = {'qval'+str(f): 0 for f in self.env.feat}
+        self.stats = {}
+        self.initstats()
         self.stats['step'] = 0
         self.exp = {}
         self.trajectory = []
         self.critic = Critic2(args, env)
+
+    def initstats(self):
+        for f in self.env.feat:
+            self.stats['qval'+str(f)] = 0
+        self.stats['qvalAll'] = 0
+        self.stats['loss'] = 0
 
     def reset(self, state):
         self.exp = {}
@@ -48,7 +55,7 @@ class Dqn2():
 
     def train(self):
 
-        samples = self.env.sample(self.batch_size)
+        samples = self.env.buffer.sample(self.batch_size)
         if samples is not None:
             u0, u1 = np.where(samples['u'])
             s1 = samples['s1'][u0]
@@ -57,7 +64,9 @@ class Dqn2():
             s0 = samples['s0'][u0]
             a = samples['a'][u0]
             inputs = [s0, np.expand_dims(u1, axis=1), a, targets]
-            _ = self.critic.train(inputs)
+            loss, qval = self.critic.train(inputs)
+            self.stats['qvalAll'] += np.mean(np.squeeze(qval))
+            self.stats['loss'] += np.mean(loss)
             self.critic.target_train()
 
     def end_episode(self):
@@ -66,16 +75,16 @@ class Dqn2():
 
     def imit(self):
 
-        idx, samples = self.env.sampleT(self.batch_size)
-        v = np.repeat(np.expand_dims(self.env.vs[idx], 0), self.batch_size, axis=0)
+        samples = self.env.buffer.sampleT(self.batch_size)
         if samples is not None:
-            targets = self.critic.get_targets_dqn(samples['r1'][:, idx], samples['t'], samples['s1'], v, v)
-            inputs = [samples['s0'], samples['a'], v, v, targets, samples['mcr'][:, [idx]]]
-            metrics = self.critic.imit(inputs)
-            metrics[2] = 1/(np.where(np.argmax(metrics[2], axis=1) == samples['a'][:, 0],
-                                     0.99, 0.01 / self.env.action_dim))
-            for i, name in enumerate(self.critic.metrics_imit_names):
-                self.env.train_metrics[name][idx] += np.mean(np.squeeze(metrics[i]))
+            u0, u1 = np.where(samples['u'])
+            s1 = samples['s1'][u0]
+            r1 = samples['r1'][u0, u1]
+            targets = self.critic.get_targets_dqn(s1, np.expand_dims(u1, axis=1), r1)
+            s0 = samples['s0'][u0]
+            a = samples['a'][u0]
+            inputs = [s0, np.expand_dims(u1, axis=1), a, targets]
+            _ = self.critic.imit(inputs)
             self.critic.target_train()
 
     def log(self, step):
@@ -84,13 +93,19 @@ class Dqn2():
             self.stats[key] = val
 
         for f in self.env.feat:
-            self.stats['qval'+str(f)] /= (step - self.stats['step'])
+            self.stats['qval'+str(f)] /= (self.stats['envstep'+str(f)] + 0.01)
 
+        self.stats['qvalAll'] /= (step - self.stats['step'])
+        self.stats['loss'] /= (step - self.stats['step'])
         self.stats['step'] = step
 
         for key in sorted(self.stats.keys()):
             self.logger.logkv(key, self.stats[key])
         self.logger.dumpkvs()
+
+        self.initstats()
+
+
 
 
 

@@ -36,7 +36,7 @@ class Critic2(object):
         TASKS = Input(shape=(1,), dtype='int32')
         ACTIONS = Input(shape=(1,), dtype='int32')
         TARGETS = Input(shape=(1,))
-        MCR = Input(shape=(1,), dtype='float32')
+        # MCR = Input(shape=(1,), dtype='float32')
 
         ### Q values model
         qvals = self.create_critic_network(S)
@@ -73,24 +73,24 @@ class Critic2(object):
         imit = (K.max(qvals_per_task + self.margin * onehot, axis=1, keepdims=True) - qval)
 
         ### Suboptimal demos
-        val = K.max(qvals_per_task, axis=1, keepdims=True)
-        advClip = K.cast(K.greater(MCR, val), dtype='float32')
-        goodexp = K.sum(advClip)
+        # val = K.max(qvals_per_task, axis=1, keepdims=True)
+        # advClip = K.cast(K.greater(MCR, val), dtype='float32')
+        # goodexp = K.sum(advClip)
 
         ### Imitation
-        if self.filter == 0:
-            loss_imit = K.mean(imit, axis=0)
-            loss_dqn_imit = K.mean(l2errors, axis=0)
-        elif self.filter == 1:
-            loss_imit = K.mean(imit * advClip, axis=0)
-            loss_dqn_imit = K.mean(l2errors, axis=0)
-        else:
-            loss_imit = K.mean(imit * advClip, axis=0)
-            loss_dqn_imit = K.mean(l2errors * advClip, axis=0)
+        # if self.filter == 0:
+        loss_imit = K.mean(imit, axis=0)
+        loss_dqn_imit = K.mean(l2errors, axis=0)
+        # elif self.filter == 1:
+        #     loss_imit = K.mean(imit * advClip, axis=0)
+        #     loss_dqn_imit = K.mean(l2errors, axis=0)
+        # else:
+        #     loss_imit = K.mean(imit * advClip, axis=0)
+        #     loss_dqn_imit = K.mean(l2errors * advClip, axis=0)
         loss = loss_dqn_imit + self.w_i * loss_imit
-        inputs_imit = [S, TASKS, ACTIONS, TARGETS, MCR]
+        inputs_imit = [S, TASKS, ACTIONS, TARGETS]
         self.metrics_imit_names = ['loss_imit', 'loss_dqn_imit', 'qvals', 'goodexp']
-        metrics_imit = [loss_imit, loss_dqn_imit, qvals, goodexp]
+        metrics_imit = [loss_imit, loss_dqn_imit, qvals]
         updates_imit = Adam(lr=self.lr_imit).get_updates(loss, self.model.trainable_weights)
         self.imit = K.function(inputs_imit, metrics_imit, updates_imit)
 

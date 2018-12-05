@@ -98,13 +98,14 @@ class Dqn1():
             a = samples['a'][u0]
             inputs = [s0, a, g, v, targets]
             _ = self.critic.imit(inputs)
+            self.critic.target_train()
 
             # metrics = self.critic.imit(inputs)
             # metrics[2] = 1/(np.where(np.argmax(metrics[2], axis=1) == samples['a'][:, 0],
             #                          0.99, 0.01 / self.env.action_dim))
             # for i, name in enumerate(self.critic.metrics_imit_names):
             #     self.env.train_metrics[name][idx] += np.mean(np.squeeze(metrics[i]))
-            # self.critic.target_train()
+
 
     def log(self, step):
 
