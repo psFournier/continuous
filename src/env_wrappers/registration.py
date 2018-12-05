@@ -24,7 +24,7 @@ class EnvSpec(object):
         """Instantiates an instance of the environment with appropriate kwargs"""
         if self._entry_point is not None:
             cls = load(self._entry_point)
-            env = cls(**self._kwargs)
+            env = cls(args, **self._kwargs)
         else:
             raise error.Error('Attempting to make deprecated envs {}. (HINT: is there a newer registered version of this envs?)'.format(self.id))
 

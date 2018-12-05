@@ -82,7 +82,7 @@ class Obj():
 class Playroom(Env):
     metadata = {'render.modes': ['human', 'ansi']}
 
-    def __init__(self):
+    def __init__(self, args):
         self.nR = 13
         self.nC = 13
         self.walls = np.zeros((13, 13))
@@ -91,6 +91,7 @@ class Playroom(Env):
                 self.walls[6, i] = 1
         for i in range(7, 13):
             self.walls[i, 6] = 1
+        self.tutoronly = [int(f) for f in args['--tutoronly'].split(',')]
         self.initialize()
 
     def initialize(self):
@@ -115,7 +116,7 @@ class Playroom(Env):
                           name='chest1',
                           pos=(12, 12),
                           prop=[0, 1],
-                          dep=[])
+                          dep=[(self.keyDoor1, 1), (self.door1, 1)])
 
         self.keyDoor2 = Obj(self,
                             name='keyDoor2',
@@ -127,14 +128,16 @@ class Playroom(Env):
                          name='door2',
                          pos=(6, 3),
                          prop=[0, 1],
-                         dep=[(self.keyDoor2, 1)],
-                         tutor_only=True)
+                         dep=[(self.keyDoor2, 1)])
 
         self.chest2 = Obj(self,
                           name='chest2',
                           pos=(12, 0),
                           prop=[0, 1],
-                          dep=[])
+                          dep=[(self.keyDoor2, 1), (self.door2, 1)])
+
+        for i, o in enumerate(self.objects):
+            o.tutor_only = (i+2 in self.tutoronly)
 
         self.initstate = self.state.copy()
         self.lastaction = None
