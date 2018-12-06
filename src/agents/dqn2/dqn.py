@@ -11,6 +11,7 @@ class Dqn2():
         self.logger = logger
         self.log_dir = args['--log_dir']
         self.batch_size = int(args['--batchsize'])
+        self.eps3 = float(args['--eps3'])
         self.stats = {}
         self.initstats()
         self.stats['step'] = 0
@@ -78,12 +79,20 @@ class Dqn2():
         samples = self.env.buffer.sampleT(self.batch_size)
         if samples is not None:
             u0, u1 = np.where(samples['u'])
-            s1 = samples['s1'][u0]
-            r1 = samples['r1'][u0, u1]
-            targets = self.critic.get_targets_dqn(s1, np.expand_dims(u1, axis=1), r1)
-            s0 = samples['s0'][u0]
-            a = samples['a'][u0]
-            inputs = [s0, np.expand_dims(u1, axis=1), a, targets]
+            idx = []
+            cps = self.env.get_cps()
+            m = max(cps)
+            for i, t in enumerate(u1):
+                if cps[t] != 0 or m == 0 or np.random.rand() < self.eps3:
+                    idx.append(i)
+            u0_filtered = u0[np.array(idx)]
+            u1_filtered = u1[np.array(idx)]
+            s1 = samples['s1'][u0_filtered]
+            r1 = samples['r1'][u0_filtered, u1_filtered]
+            targets = self.critic.get_targets_dqn(s1, np.expand_dims(u1_filtered, axis=1), r1)
+            s0 = samples['s0'][u0_filtered]
+            a = samples['a'][u0_filtered]
+            inputs = [s0, np.expand_dims(u1_filtered, axis=1), a, targets]
             _ = self.critic.imit(inputs)
             self.critic.target_train()
 
@@ -93,7 +102,7 @@ class Dqn2():
             self.stats[key] = val
 
         for f in self.env.feat:
-            self.stats['qval'+str(f)] /= (self.stats['envstep'+str(f)] + 0.01)
+            self.stats['qval'+str(f)] /= (step - self.stats['step'])
 
         self.stats['qvalAll'] /= (step - self.stats['step'])
         self.stats['loss'] /= (step - self.stats['step'])

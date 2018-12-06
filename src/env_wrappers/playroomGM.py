@@ -158,8 +158,11 @@ class PlayroomGM(Wrapper):
             self.queues[i].init_stat()
         return stats
 
+    def get_cps(self):
+        return [np.maximum(abs(q.CP + 0.05) - 0.05, 0) for q in self.queues]
+
     def get_probs(self, idxs, eps):
-        cps = [np.maximum(abs(q.CP + 0.05) - 0.05, 0) for q in self.queues]
+        cps = self.get_cps()
         vals = [cps[idx] for idx in idxs]
         l = len(vals)
         s = np.sum(vals)

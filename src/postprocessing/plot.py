@@ -5,7 +5,7 @@ import os
 import numpy as np
 from scipy.signal import lfilter
 import matplotlib.ticker as ticker
-DIR = '../../log/cluster/0512/'
+DIR = '../../log/cluster/last/'
 ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
@@ -40,7 +40,7 @@ params = ['--agent',
           '--gamma',
           '--ep_tasks',
           '--rnd_demo',
-          # '--wimit',
+          '--wimit',
           '--ep_steps',
           '--inv_grad',
           '--margin',
@@ -54,7 +54,9 @@ params = ['--agent',
           '--deter',
           '--filter',
           '--lrimit',
-          '--rndv'
+          '--rndv',
+          '--features',
+          '--tutoronly'
           ]
 
 
@@ -63,17 +65,19 @@ df2 = df
 # df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
 # df2 = df2[(df2['--tutorTask'] == 'hard')]
-# df2 = df2[(df2['--wimit'] == 0)]
+df2 = df2[(df2['--wimit'] == 1)]
 # df2 = df2[(df2['--filter'] == 2)]
 # df2 = df2[(df2['--margin'] == 10)]
 
-df2 = df2[(df2['--demo'] == 0)]
+# df2 = df2[(df2['--demo'] == 0)]
 # df2 = df2[(df2['--rndv'] == 1)]
 # df2 = df2[(df2['--deter'] == 0)]
 # df2 = df2[(df2['--freq_demo'] == 20000)]
 # df2 = df2[(df2['--eps1'] == 0)]
 # df2 = df2[(df2['--eps2'] == 0)]
 # df2 = df2[(df2['--eps3'] == 1)]
+df2 = df2[(df2['--tutoronly'] != -1)]
+df2 = df2[(df2['--demo'] != 7) & (df2['--demo'] != -1)]
 
 
 
@@ -81,7 +85,7 @@ df2 = df2[(df2['--demo'] == 0)]
 # y = ['agentR']
 # y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
 # y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
-y = ['C{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5]]]
+y = ['qval{}'.format(str(s)) for s in [i for i in [2, 3, 4]]]
 # y = ['qval{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5, 6, 7]]]
 
 # y = ['loss_dqn{}'.format(str(s)) for s in [i for i in [2, 3, 4]]]
@@ -106,6 +110,8 @@ y = ['C{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5]]]
 # y2 = ['CP'+s for s in ['_light','_key1', '_chest1']]
 # y3 = ['trainstep'+s for s in ['_light','_key1', '_chest1']]
 
+for i in [2, 3, 4, 5, 6, 7]:
+    df2['qval'+str(i)] = df2['qval'+str(i)] * df2['envstep'+str(i)]/2000
 
 paramsStudied = []
 for param in params:
@@ -128,7 +134,7 @@ if avg:
 
 print(paramsStudied)
 a, b = 2, 2
-a, b = 2, 3
+# a, b = 2, 3
 
 fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
 colors = ['b', 'r']
@@ -179,12 +185,12 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
         ax2[i % a, i // a].set_title(label=valy)
         if i == 0: ax2[i % a, i // a].legend()
-        ax2[i % a, i // a].set_xlim([0, 300000])
+        ax2[i % a, i // a].set_xlim([0, 200000])
 
         ax2[i % a, i // a].xaxis.set_major_locator(ticker.MultipleLocator(50000))
         ax2[i % a, i // a].xaxis.set_minor_locator(ticker.MultipleLocator(10000))
         ax2[i % a, i // a].grid(True, which='minor')
-        # ax2[i % a, i // a].set_ylim([0, 200])
+        # ax2[i % a, i // a].set_ylim([0, 1000])
     # break
     # ax[0,0].legend()
 
