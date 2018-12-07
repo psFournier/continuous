@@ -96,7 +96,7 @@ class Playroom(Env):
 
     def initialize(self):
         # self.seenpos = set()
-        self.x, self.y = randint(0, 5), randint(0, self.nC - 1)
+        self.x, self.y = 0, 6
         # self.seenpos.add((self.x, self.y))
         self.objects = []
 
@@ -151,29 +151,32 @@ class Playroom(Env):
             return False
 
     def step(self, a, tutor=False):
+        env_a = a
+        if self.lastaction is not None and np.random.rand() < 0.25:
+            env_a = self.lastaction
+        self.lastaction = a
 
-        if a == Actions.UP:
+        if env_a == Actions.UP:
             if self.y < self.nR - 1 and not self.walls[self.x, self.y + 1] and self.check_door():
                 self.y += 1
 
-        elif a == Actions.DOWN:
+        elif env_a == Actions.DOWN:
             if self.y > 0 and not self.walls[self.x, self.y - 1] and self.check_door():
                 self.y -= 1
 
-        elif a == Actions.RIGHT:
+        elif env_a == Actions.RIGHT:
             if self.x < self.nC - 1 and not self.walls[self.x + 1, self.y] and self.check_door():
                 self.x += 1
 
-        elif a == Actions.LEFT:
+        elif env_a == Actions.LEFT:
             if self.x > 0 and not self.walls[self.x - 1, self.y] and self.check_door():
                 self.x -= 1
 
-        elif a == Actions.TOUCH:
+        elif env_a == Actions.TOUCH:
             obj = self.underagent()
             if obj != 0:
                 self.objects[obj - 1].touch(tutor)
 
-        self.lastaction = a
         return np.array(self.state),
 
     def underagent(self):
@@ -186,7 +189,7 @@ class Playroom(Env):
         self.initialize()
         return np.array(self.state)
 
-    def go(self, x , y, deterministic):
+    def go(self, x , y):
         dx = x - self.x
         dy = y - self.y
         p = []
@@ -198,9 +201,8 @@ class Playroom(Env):
             p.append(Actions.UP)
         elif dy < 0 and not self.walls[self.x, self.y-1]:
             p.append(Actions.DOWN)
-        if p and deterministic:
-            return p[0]
-        elif p:
+
+        if p:
             return np.random.choice(p)
         else:
             return None
@@ -213,8 +215,8 @@ class Playroom(Env):
     #     else:
     #         return a, False
 
-    def touch(self, o, deterministic):
-        a = self.go(o.x, o.y, deterministic)
+    def touch(self, o):
+        a = self.go(o.x, o.y)
         if a is None:
             return Actions.TOUCH, False
         else:
@@ -241,27 +243,23 @@ class Playroom(Env):
             res += obj.low
         return res
 
-    def opt_action(self, t, deterministic=False):
-
-        if t== 4:
-            obj = self.chest1
-            if obj.s == 1:
-                return -1, True
-            else:
-                if self.door1.s == 1:
-                    return self.touch(obj, deterministic)
-                elif self.keyDoor1.s == 1:
-                    return self.touch(self.door1, deterministic)
-                else:
-                    return self.touch(self.keyDoor1, deterministic)
+    def opt_action(self, t):
+        obj = self.objects[t-2]
+        if obj.s == 1:
+            return -1, True
+        else:
+            for dep, val in obj.dep:
+                if dep.s != val:
+                    return self.touch(dep)
+            return self.touch(obj)
 
 if __name__ == '__main__':
-    env = Playroom()
+    env = Playroom(args={'--tutoronly': '4,5,6'})
     s = env.reset()
     task = np.random.choice([4])
     while True:
         print(s)
-        a, done = env.opt_action(task, True)
+        a, done = env.opt_action(task)
         if done:
             break
         else:

@@ -10,7 +10,6 @@ class PlayroomGM(Wrapper):
         self.gamma = float(args['--gamma'])
         self.eps = float(args['--eps'])
         self.demo_f = [int(f) for f in args['--demo'].split(',')]
-        self.deterministic = bool(int(args['--deter']))
 
         self.feat = np.array([int(f) for f in args['--features'].split(',')])
         self.N = self.feat.shape[0]
@@ -97,7 +96,7 @@ class PlayroomGM(Wrapper):
         task = np.random.choice(self.demo_f)
         exp['v'] = self.vs[self.demo_f.index(task)]
         while True:
-            a, done = self.opt_action(task, deterministic=self.deterministic)
+            a, done = self.opt_action(task)
             if done:
                 break
             else:
@@ -111,15 +110,15 @@ class PlayroomGM(Wrapper):
 
         return demo, task
 
-    def opt_action(self, t, deterministic=False):
+    def opt_action(self, t):
         obj = self.env.objects[t-2]
         if obj.s == 1:
             return -1, True
         else:
             for dep, val in obj.dep:
                 if dep.s != val:
-                    return self.env.touch(dep, deterministic)
-            return self.env.touch(obj, deterministic)
+                    return self.env.touch(dep)
+            return self.env.touch(obj)
         #     if self.env.door1.s == 1:
         #         return self.env.touch(obj, deterministic)
         #     elif self.env.keyDoor1.s == 1:
