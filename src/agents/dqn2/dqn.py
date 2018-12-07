@@ -93,8 +93,7 @@ class Dqn2():
             a = samples['a'][u0]
             inputs = [s0, np.expand_dims(u1, axis=1), a, targets]
             _ = self.critic.imit(inputs)
-            for i, f in enumerate(self.env.feat):
-                self.stats['imitstep' + str(f)] += 1
+            self.stats['imitstep' + str(self.env.feat[t])] += 1
             self.critic.target_train()
 
     def log(self, step):
