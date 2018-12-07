@@ -8,9 +8,7 @@ class PlayroomGM(Wrapper):
         super(PlayroomGM, self).__init__(env)
 
         self.gamma = float(args['--gamma'])
-        self.eps1 = float(args['--eps1'])
-        self.eps2 = float(args['--eps2'])
-        self.eps3 = float(args['--eps3'])
+        self.eps = float(args['--eps'])
         self.demo_f = [int(f) for f in args['--demo'].split(',')]
         self.deterministic = bool(int(args['--deter']))
 
@@ -25,7 +23,7 @@ class PlayroomGM(Wrapper):
         self.g = np.ones(shape=(self.state_dim[0]))
         self.queues = [CompetenceQueue() for _ in range(self.N)]
         self.names = ['s0', 'r0', 'a', 's1', 'r1', 'g', 'v', 'o', 'u']
-        self.buffer = ReplayBuffer(limit=int(1e5), names=self.names)
+        self.buffer = ReplayBuffer(limit=int(1e5), names=self.names, N=self.N)
 
     def reset(self, exp):
         self.idx, self.v = self.sample_v(exp['s0'])
@@ -38,10 +36,16 @@ class PlayroomGM(Wrapper):
 
     def sample_v(self, s):
         remaining_v = [i for i in range(self.N) if s[self.feat[i]] != 1]
-        probs = self.get_probs(idxs=remaining_v, eps=self.eps1)
+        probs = self.get_probs(idxs=remaining_v, eps=self.eps)
         idx = np.random.choice(remaining_v, p=probs)
         v = self.vs[idx]
         return idx, v
+
+    def sampleT(self, batch_size):
+        probs = self.get_probs(idxs=range(self.N), eps=self.eps)
+        t = np.random.choice(range(self.N), p=probs)
+        samples = self.buffer.sampleT(batch_size, t)
+        return samples, t
 
     def end_episode(self, episode):
         term = episode[-1]['r1'][self.idx] == self.R

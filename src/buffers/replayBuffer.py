@@ -29,12 +29,12 @@ class RingBuffer(object):
         return res
 
 class ReplayBuffer(object):
-    def __init__(self, limit, names):
+    def __init__(self, limit, names, N):
         self._storage = []
         self._next_idx = 0
         self._limit = limit
         self._names = names
-        self._tutorBuffer = RingBuffer(limit)
+        self._tutorBuffers = [RingBuffer(limit) for _ in range(N)]
 
     def __len__(self):
         return len(self._storage)
@@ -44,10 +44,12 @@ class ReplayBuffer(object):
             self._storage.append(item)
         else:
             if self._storage[self._next_idx]['o']:
-                self._tutorBuffer.pop()
+                for t in np.where(self._storage[self._next_idx]['u'])[0]:
+                    self._tutorBuffers[t].pop()
             self._storage[self._next_idx] = item
         if item['o']:
-            self._tutorBuffer.append(self._next_idx)
+            for t in np.where(item['u'])[0]:
+                self._tutorBuffers[t].append(self._next_idx)
         self._next_idx = (self._next_idx + 1) % self._limit
 
     def sample(self, batchsize):
@@ -60,10 +62,10 @@ class ReplayBuffer(object):
             res = {name: np.array([exp[name] for exp in exps]) for name in self._names}
         return res
 
-    def sampleT(self, batchsize):
+    def sampleT(self, batchsize, t):
         res = None
-        if self._tutorBuffer._numsamples >= batchsize:
-            idxs = self._tutorBuffer.sample(batchsize)
+        if self._tutorBuffers[t]._numsamples >= 1000:
+            idxs = self._tutorBuffers[t].sample(batchsize)
             exps = []
             for i in idxs:
                 exps.append(self._storage[i])

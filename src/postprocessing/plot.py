@@ -65,7 +65,7 @@ df2 = df
 # df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
 # df2 = df2[(df2['--tutorTask'] == 'hard')]
-df2 = df2[(df2['--wimit'] == 1)]
+# df2 = df2[(df2['--wimit'] == 1)]
 # df2 = df2[(df2['--filter'] == 2)]
 # df2 = df2[(df2['--margin'] == 10)]
 
@@ -76,39 +76,11 @@ df2 = df2[(df2['--wimit'] == 1)]
 # df2 = df2[(df2['--eps1'] == 0)]
 # df2 = df2[(df2['--eps2'] == 0)]
 # df2 = df2[(df2['--eps3'] == 1)]
-df2 = df2[(df2['--tutoronly'] != -1)]
-df2 = df2[(df2['--demo'] != 7) & (df2['--demo'] != -1)]
+# df2 = df2[(df2['--tutoronly'] == -1)]
+df2 = df2[(df2['--demo'] == 4)]
 
+y = ['C{}'.format(str(s)) for s in [i for i in [2, 3, 4]]]
 
-
-# y = ['R']
-# y = ['agentR']
-# y = ['agentR_'+s for s in ['[0.02]','[0.04]','[0.06]','[0.08]','[0.1]']]
-# y = ['agentR'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
-y = ['qval{}'.format(str(s)) for s in [i for i in [2, 3, 4]]]
-# y = ['qval{}'.format(str(s)) for s in [i for i in [2, 3, 4, 5, 6, 7]]]
-
-# y = ['loss_dqn{}'.format(str(s)) for s in [i for i in [2, 3, 4]]]
-
-# x = ['attempts'+s for s in ['_light','_key1', '_chest1']]
-
-# y = ['R_key1', 'R_key2', 'R_key3', 'R_key4', 'R_light1',
-#    'R_light2', 'R_light3', 'R_light4', 'R_xy']
-
-# y = ['loss_dqn', 'qval', 'loss_imit']
-# y = ['good_exp', 'loss_dqn2', 'qval2', 'val2']
-# y = ['loss_imit']
-# y = ['model_2_loss', 'model_3_loss', 'model_3_advantage_loss', 'model_3_imit_loss', 'model_3_lambda_2_loss']
-# y = ['R' + i for i in ['_agent', '_light', '_key1', '_chest1', '_chest2', '_chest3']]
-# y = ['loss', 'advantage_loss']
-# x = ['step'+s for s in ['_light','_key1', '_key2', '_key3', '_key4', '_chest1', '_chest2', '_chest3', '_chest4']]
-# y = ['R'+i for i in ['_agent', '_passenger', '_taxi']]
-# x = ['step'+i for i in ['_agent', '_passenger', '_taxi']]
-# y = ['R_'+str(i) for i in range(5)]
-# y = ['T']
-# y = ['R_0']
-# y2 = ['CP'+s for s in ['_light','_key1', '_chest1']]
-# y3 = ['trainstep'+s for s in ['_light','_key1', '_chest1']]
 
 for i in [2, 3, 4, 5, 6, 7]:
     df2['qval'+str(i)] = df2['qval'+str(i)] * df2['envstep'+str(i)]/2000
@@ -133,7 +105,7 @@ if avg:
 
 
 print(paramsStudied)
-a, b = 2, 2
+a, b = 2,2
 # a, b = 2, 3
 
 fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
@@ -185,7 +157,7 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
         ax2[i % a, i // a].set_title(label=valy)
         if i == 0: ax2[i % a, i // a].legend()
-        ax2[i % a, i // a].set_xlim([0, 200000])
+        ax2[i % a, i // a].set_xlim([0, 300000])
 
         ax2[i % a, i // a].xaxis.set_major_locator(ticker.MultipleLocator(50000))
         ax2[i % a, i // a].xaxis.set_minor_locator(ticker.MultipleLocator(10000))

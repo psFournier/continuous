@@ -12,9 +12,7 @@ Usage:
 
 Options:
   --seed SEED              Random seed
-  --eps1 VAL            CP importance for goal selection [default: 1]
-  --eps2 VAL            CP importance for goal selection [default: 1]
-  --eps3 VAL            CP importance for goal selection [default: 1]
+  --eps VAL                [default: 1]
   --inv_grad YES_NO        Gradient inversion near action limits [default: 1]
   --max_steps VAL          Maximum total steps [default: 300000]
   --ep_steps VAL           Maximum episode steps [default: 200]
