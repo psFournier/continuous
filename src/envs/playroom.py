@@ -96,7 +96,7 @@ class Playroom(Env):
 
     def initialize(self):
         # self.seenpos = set()
-        self.x, self.y = 0, 6
+        self.x, self.y = randint(0, 5), randint(0, self.nC - 1)
         # self.seenpos.add((self.x, self.y))
         self.objects = []
 

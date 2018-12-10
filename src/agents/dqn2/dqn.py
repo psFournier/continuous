@@ -111,7 +111,7 @@ class Dqn2():
         for key in sorted(self.stats.keys()):
             self.logger.logkv(key, self.stats[key])
         self.logger.dumpkvs()
-
+        print(len(self.env.buffer))
         self.initstats()
 
 

@@ -45,9 +45,7 @@ params = ['--agent',
           '--inv_grad',
           '--margin',
           '--demo',
-          '--eps1',
-          '--eps2',
-          '--eps3',
+          '--eps',
           '--network',
           '--prop_demo',
           '--freq_demo',
@@ -74,12 +72,12 @@ df2 = df
 # df2 = df2[(df2['--deter'] == 0)]
 # df2 = df2[(df2['--freq_demo'] == 20000)]
 # df2 = df2[(df2['--eps1'] == 0)]
-# df2 = df2[(df2['--eps2'] == 0)]
+df2 = df2[(df2['--eps'] != 0.6)]
 # df2 = df2[(df2['--eps3'] == 1)]
-# df2 = df2[(df2['--tutoronly'] == -1)]
-df2 = df2[(df2['--demo'] == 4)]
+df2 = df2[(df2['--tutoronly'] == -1)]
+# df2 = df2[(df2['--demo'] != '4,7')]
 
-y = ['C{}'.format(str(s)) for s in [i for i in [2, 3, 4]]]
+y = ['C{}'.format(str(s)) for s in [i for i in [4]]]
 
 
 for i in [2, 3, 4, 5, 6, 7]:
@@ -105,7 +103,7 @@ if avg:
 
 
 print(paramsStudied)
-a, b = 2,2
+a, b = 1,1
 # a, b = 2, 3
 
 fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
@@ -141,7 +139,7 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         else:
             # n = 50  # the larger n is, the smoother curve will be
             # yy = lfilter([1.0 / n] * n, 1, g[valy])
-            ax2[i % a, i // a].plot(g['step'], g[valy] * m, label=None)
+            ax2[i % a, i // a].plot(g['step'][g[valy]!=0], g[valy][g[valy]!=0] , label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy2], label=None)
             # ax2[i % a, i // a].plot(g['step'], g[valy3], label=None)
 

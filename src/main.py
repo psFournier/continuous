@@ -32,8 +32,8 @@ Options:
   --lrimit VAL             network type [default: 0.001]
   --rndv VAL               [default: 0]
   --demo VAL               [default: -1]
-  --features VAL           [default: 2,3,4]
-  --tutoronly VAL          [default: 5,6,7]
+  --features VAL           [default: 2,3,4,5,6,7]
+  --tutoronly VAL          [default: -1]
 """
 
 if __name__ == '__main__':
@@ -97,12 +97,12 @@ if __name__ == '__main__':
     state = env.reset()
     agent.reset(state)
 
-    if demo != [-1]:
-        for _ in range(100):
-            demonstration, task = wrapper_test.get_demo()
-            agent.process_trajectory(demonstration)
-
     while env_step < int(args['--max_steps']):
+
+        if env_step % int(1e5) == 0 and demo != [-1]:
+            for _ in range(100):
+                demonstration, task = wrapper_test.get_demo()
+                agent.process_trajectory(demonstration)
 
         if env_step % int(args['--freq_demo']) == 0 and demo != [-1]:
             for _ in range(imit_steps):

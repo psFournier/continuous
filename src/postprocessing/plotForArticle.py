@@ -44,9 +44,7 @@ params = ['--agent',
           '--inv_grad',
           '--margin',
           '--demo',
-          '--eps1',
-          '--eps2',
-          '--eps3',
+          '--eps',
           '--network',
           '--prop_demo',
           '--freq_demo',
@@ -64,7 +62,10 @@ df2 = df
 # df2 = df2[(df2['--env'] == 'Playroom3GM-v0')]
 # df2 = df2[(df2['--imit'] == 2)]
 # df2 = df2[(df2['--tutorTask'] == 'hard')]
-df2 = df2[(df2['--wimit'] == 1)]
+df2 = df2[(df2['--eps'] != 0.6)]
+# df2 = df2[(df2['--eps3'] == 1)]
+df2 = df2[(df2['--tutoronly'] == -1)]
+# df2 = df2[(df2['--demo'] != '4,7')]
 # df2 = df2[(df2['--filter'] == 2)]
 # df2 = df2[(df2['--margin'] == 10)]
 
@@ -80,7 +81,7 @@ df2 = df2[(df2['--wimit'] == 1)]
 for i in [2, 3, 4, 5, 6, 7]:
     df2['qval'+str(i)] = df2['qval'+str(i)] * df2['envstep'+str(i)]/2000
 
-y = ['C4']
+y = ['C4', 'C7']
 x = ['step']
 
 def quant_inf(x):
@@ -95,28 +96,31 @@ for param in params:
     l = df2[param].unique()
     print(param, l)
 
-a, b = 1,2
+a, b = 3,1
 fig, ax = plt.subplots(a, b, figsize=(18,9), squeeze=False, sharey=True, sharex=True)
-fig.text(0.08, 0.5, 'Competence of the agent on affecting object 1', va='center', rotation='vertical', fontsize='large')
+fig.text(0.5, 0.04, 'Steps', ha='center')
+# fig.text(0.5, 0.9, 'Competence ', va='center', rotation='vertical', fontsize='large')
+labels = ['no demonstrations', 'demonstrations for object 1\nand curriculum', 'demonstrations for object 1']
+for i, (n1, g1) in enumerate(df2.groupby(['--demo', '--eps'])):
+    if i!=0:
+        idx = i-1
+        for j, valy in enumerate(y):
+            ax[idx % a, idx // a].plot(g1['step'], g1[valy]['median'], label='Competence on object '+str(j+1))
+            ax[idx % a, idx // a].fill_between(g1['step'],
+                                           g1[valy]['quant_inf'],
+                                           g1[valy]['quant_sup'], alpha=0.25, linewidth=0)
+            # ax2[i % a, i // a].fill_between(g['step'],
+            #                                 g[valy]['mean'] - 0.5*g[valy]['std'],
+            #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
+            # ax[i % a, i // a].set_title(label='Demonstrations given for object 2')
+            # ax[i % a, i // a].set_xlabel(xlabel='Steps', fontsize='large')
+            ax[idx % a, idx // a].set_ylabel(ylabel=labels[idx], fontsize='large')
+            if idx == 0: ax[idx % a, idx // a].legend(loc='lower right', bbox_to_anchor=(0.97, 0.035), prop={'size':10})
+            ax[idx % a, idx // a].set_xlim([0, 350000])
 
-for i, (n1, g1) in enumerate(df2.groupby('--tutoronly')):
-    for j, (n2, g2) in enumerate(g1.groupby('--demo')):
-        ax[i % a, i // a].plot(g2['step'], g2['C4']['median'], label=['with no demos', 'with demos for object 1',
-                                                                      'with demos for object 2','with demos for objects 1 and 2'][j])
-        ax[i % a, i // a].fill_between(g2['step'],
-                                       g2['C4']['quant_inf'],
-                                       g2['C4']['quant_sup'], alpha=0.25, linewidth=0)
-        # ax2[i % a, i // a].fill_between(g['step'],
-        #                                 g[valy]['mean'] - 0.5*g[valy]['std'],
-        #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
-        ax[i % a, i // a].set_title(label='When object 2 can be affected by {}'.format(
-            ['both the agent and the tutor', 'the tutor only'][i]))
-        if i == 0: ax[i % a, i // a].legend(loc='lower right', bbox_to_anchor=(0.97, 0.035), prop={'size':10})
-        ax[i % a, i // a].set_xlim([0, 300000])
-
-        ax[i % a, i // a].xaxis.set_major_locator(ticker.MultipleLocator(50000))
-        ax[i % a, i // a].xaxis.set_minor_locator(ticker.MultipleLocator(10000))
-        ax[i % a, i // a].grid(True, which='minor')
-        # ax2[i % a, i // a].set_ylim([0, 1000])
+            ax[idx % a, idx // a].xaxis.set_major_locator(ticker.MultipleLocator(50000))
+            ax[idx % a, idx // a].xaxis.set_minor_locator(ticker.MultipleLocator(10000))
+            ax[idx % a, idx // a].grid(True, which='minor')
+            # ax2[i % a, i // a].set_ylim([0, 1000])
 
 plt.show()

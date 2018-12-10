@@ -2,236 +2,222 @@ import numpy as np
 from gym import Env
 from random import randint
 
-MAP = [
-    " _ _ _ _ _ _ _ _ ",
-    "|               |",
-    "|               |",
-    "|               |",
-    "|               |",
-    "|               |",
-    "|               |",
-    "|               |",
-    "|_ _ _ _ _ _ _ _|",
-]
-
 class Actions:
-    NOOP = 0
-    UP = 1
-    DOWN = 2
-    LEFT = 3
-    RIGHT = 4
-    TOUCH = 5
-
-def gencoordinates(m, n):
-    seen = set()
-
-    x, y = randint(m, n), randint(m, n)
-
-    while True:
-        seen.add((x, y))
-        yield (x, y)
-        x, y = randint(m, n), randint(m, n)
-        while (x, y) in seen:
-            x, y = randint(m, n), randint(m, n)
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
+    TOUCH = 4
+    # TAKE = 5
 
 class Obj():
-    def __init__(self, env, name, prop, dep=None):
+    def __init__(self, env, name, pos, prop, dep, tutor_only=False):
         self.env = env
         self.name = name
+        self.x, self.y = pos
         self.prop = prop
         self.dep = dep
         self.env.objects.append(self)
+        # self.g = self.gencoordinates()
         self.init()
+        self.tutor_only = tutor_only
+
+    # def gencoordinates(self):
+    #
+    #     while True:
+    #         x, y = 0, 0
+    #         while (self.ix+x, self.iy+y) in self.env.seenpos:
+    #             x, y = 0, 0
+    #         self.env.seenpos.add((self.ix+x, self.iy+y))
+    #         yield (self.ix+x, self.iy+y)
 
     def init(self):
-        self.x, self.y = next(self.env.g)
+        # self.x, self.y = next(self.g)
         self.s = 0
 
-    def act(self, a):
-        pass
+    def touch(self, tutor):
+        if self.s == 0 and all([o.s == s for o, s in self.dep]) and (not self.tutor_only or tutor):
+            self.s = np.random.choice([0, 1], p=self.prop)
 
     @property
     def state(self):
-        return [self.x, self.y, self.s]
+        return [self.s]
 
     @property
     def high(self):
-        return [self.env.maxR, self.env.maxC, 1]
+        return [1]
 
     @property
     def low(self):
-        return [0, 0, 0]
+        return [0]
 
-class Light(Obj):
-    def __init__(self, env, name, prop):
-        super(Light, self).__init__(env, name, prop)
+    # def init(self):
+    #     self.x, self.y = next(self.g)
+    #     n = 0
+    #     p = [1]
+    #     for o, s in self.dep[:-1]:
+    #         if o.s == s:
+    #             n += 1
+    #             p[0] -= 0.1
+    #             p.append(0.1)
+    #     self.s = np.random.choice(range(n+1), p=p)
 
-    def act(self, a):
-        if a == Actions.TOUCH and self.s == 0:
-            self.s = np.random.choice([0, 1], p=self.prop)
 
-    def init(self):
-        self.x, self.y = next(self.env.g)
-        self.s = np.random.choice([0, 1], p=[0.9, 0.1])
-
-class Key(Obj):
-    def __init__(self, env, name, prop, dep):
-        super(Key, self).__init__(env, name, prop, dep)
-
-    def act(self, a):
-        dep_ok = self.s < len(self.dep) and all([o.s == s for o, s in self.dep[:self.s+1]])
-        if dep_ok and a == Actions.TOUCH and self.s == 0:
-            self.s = np.random.choice([0, 1], p=self.prop)
-
-    def init(self):
-        self.x, self.y = next(self.env.g)
-        n = 0
-        p = [1]
-        for o, s in self.dep:
-            if o.s == s:
-                n += 1
-                p[0] -= 0.1
-                p.append(0.1)
-        self.s = np.random.choice(range(n+1), p=p)
-
-class Chest(Obj):
-    def __init__(self, env, name, prop, dep):
-        super(Chest, self).__init__(env, name, prop, dep)
-
-    def act(self, a):
-        dep_ok = self.s < len(self.dep) and all([o.s == s for o, s in self.dep[:self.s+1]])
-        if dep_ok and a == Actions.TOUCH:
-            self.s = np.random.choice([self.s, self.s + 1], p=self.prop)
-
-    def init(self):
-        self.x, self.y = next(self.env.g)
-        n = 0
-        p = [1]
-        for o, s in self.dep[:-1]:
-            if o.s == s:
-                n += 1
-                p[0] -= 0.1
-                p.append(0.1)
-        self.s = np.random.choice(range(n+1), p=p)
-
-    @property
-    def high(self):
-        return [self.env.maxR, self.env.maxC, len(self.dep)]
-
-class Playroom2(Env):
+class Playroom(Env):
     metadata = {'render.modes': ['human', 'ansi']}
 
-    def __init__(self):
-        self.desc = np.asarray(MAP, dtype='c')
-        self.maxR = self.desc.shape[0] - 2
-        self.maxC = (self.desc.shape[1] - 1) // 2 - 1
+    def __init__(self, args):
+        self.nR = 13
+        self.nC = 13
+        self.walls = np.zeros((13, 13))
+        for i in range(13):
+            if i != 3 and i != 9:
+                self.walls[6, i] = 1
+        for i in range(7, 13):
+            self.walls[i, 6] = 1
+        self.tutoronly = [int(f) for f in args['--tutoronly'].split(',')]
         self.initialize()
 
-    def initialize(self, random=True):
-        self.g = gencoordinates(0, self.maxR)
-        self.x, self.y = next(self.g)
+    def initialize(self):
+        # self.seenpos = set()
+        self.x, self.y = 0, 6
+        # self.seenpos.add((self.x, self.y))
         self.objects = []
-        self.light = Light(self,
-                           name='light',
-                           prop=[0, 1])
-        self.key1 = Key(self,
-                        name='key1',
-                        prop=[0, 1],
-                        dep=[(self.light, 1)])
-        self.chest1 = Chest(self,
-                            name='chest1',
+
+        self.keyDoor1 = Obj(self,
+                            name='keyDoor1',
+                            pos=(0, 12),
                             prop=[0, 1],
-                            dep=[(self.light, 1), (self.key1, 1)])
-        if not random:
-            self.light.s = 0
-            self.key1.s = 0
-            self.chest1.s = 0
+                            dep=[])
+
+        self.door1 = Obj(self,
+                         name='door1',
+                         pos=(6, 9),
+                         prop=[0, 1],
+                         dep=[(self.keyDoor1, 1)])
+
+        self.chest1 = Obj(self,
+                          name='chest1',
+                          pos=(12, 12),
+                          prop=[0, 1],
+                          dep=[(self.keyDoor1, 1), (self.door1, 1)])
+
+        self.keyDoor2 = Obj(self,
+                            name='keyDoor2',
+                            pos=(0, 0),
+                            prop=[0, 1],
+                            dep=[])
+
+        self.door2 = Obj(self,
+                         name='door2',
+                         pos=(6, 3),
+                         prop=[0, 1],
+                         dep=[(self.keyDoor2, 1)])
+
+        self.chest2 = Obj(self,
+                          name='chest2',
+                          pos=(12, 0),
+                          prop=[0, 1],
+                          dep=[(self.keyDoor2, 1), (self.door2, 1)])
+
+        for i, o in enumerate(self.objects):
+            o.tutor_only = (i+2 in self.tutoronly)
 
         self.initstate = self.state.copy()
         self.lastaction = None
 
-    def act(self, a):
-        objunder = self.underagent()
-        if objunder is not None and a == Actions.TOUCH:
-            objunder.act(a)
-
-    def step(self, a):
-        if a == Actions.UP and self.desc[1 + self.x, 1 + 2 * self.y] == b" ":
-            self.x += 1
-        elif a == Actions.DOWN and self.desc[self.x, 1 + 2 * self.y] == b" ":
-            self.x -= 1
-        elif a == Actions.LEFT and self.desc[1 + self.x, 2 * self.y] == b" ":
-            self.y -= 1
-        elif a == Actions.RIGHT and self.desc[1 + self.x, 2 * self.y + 2] == b" ":
-            self.y += 1
+    def check_door(self):
+        obj = self.underagent()
+        if obj <= 0 or self.objects[obj - 1] not in [self.door1, self.door2] or \
+                        self.objects[obj - 1].s == 1:
+            return True
         else:
-            self.act(a)
+            return False
+
+    def step(self, a, tutor=False):
+        env_a = a
+        if self.lastaction is not None and np.random.rand() < 0.25:
+            env_a = self.lastaction
         self.lastaction = a
+
+        if env_a == Actions.UP:
+            if self.y < self.nR - 1 and not self.walls[self.x, self.y + 1] and self.check_door():
+                self.y += 1
+
+        elif env_a == Actions.DOWN:
+            if self.y > 0 and not self.walls[self.x, self.y - 1] and self.check_door():
+                self.y -= 1
+
+        elif env_a == Actions.RIGHT:
+            if self.x < self.nC - 1 and not self.walls[self.x + 1, self.y] and self.check_door():
+                self.x += 1
+
+        elif env_a == Actions.LEFT:
+            if self.x > 0 and not self.walls[self.x - 1, self.y] and self.check_door():
+                self.x -= 1
+
+        elif env_a == Actions.TOUCH:
+            obj = self.underagent()
+            if obj != 0:
+                self.objects[obj - 1].touch(tutor)
+
         return np.array(self.state),
 
     def underagent(self):
-        for obj in self.objects:
+        for i, obj in enumerate(self.objects):
             if obj.x == self.x and obj.y == self.y:
-                return obj
-        return None
+                return i+1
+        return 0
 
-    def reset(self, random=True):
-        self.initialize(random)
+    def reset(self):
+        self.initialize()
         return np.array(self.state)
 
     def go(self, x , y):
         dx = x - self.x
         dy = y - self.y
-        if dx > 0:
-            a = Actions.UP
-        elif dx < 0:
-            a = Actions.DOWN
-        elif dy > 0:
-            a = Actions.RIGHT
-        elif dy < 0:
-            a = Actions.LEFT
-        else:
-            a = None
-        return a
+        p = []
+        if dx > 0 and not self.walls[self.x+1, self.y]:
+            p.append(Actions.RIGHT)
+        elif dx < 0 and not self.walls[self.x-1, self.y]:
+            p.append(Actions.LEFT)
+        if dy > 0 and not self.walls[self.x, self.y+1]:
+            p.append(Actions.UP)
+        elif dy < 0 and not self.walls[self.x, self.y-1]:
+            p.append(Actions.DOWN)
 
-    def opt_action(self, task, goal):
-        obj = self.objects[task]
-        if obj is None:
-            a = self.go(goal[0], goal[1])
-            if a is not None:
-                return a, False
-            else:
-                return Actions.NOOP, True
+        if p:
+            return np.random.choice(p)
         else:
-            if obj.dep is not None:
-                for o, s in obj.dep[:goal]:
-                    if o.s != s:
-                        a = self.go(o.x, o.y)
-                        if a is None:
-                            return Actions.TOUCH, False
-                        else:
-                            return a, False
-            if obj.s < goal:
-                a = self.go(obj.x, obj.y)
-                if a is None:
-                    return Actions.TOUCH, False
-                else:
-                    return a, False
-            else:
-                return Actions.NOOP, True
+            return None
+
+    # def take(self, i):
+    #     obj = self.objects[i]
+    #     a = self.go(obj.x, obj.y)
+    #     if a is None:
+    #         return Actions.TAKE, False
+    #     else:
+    #         return a, False
+
+    def touch(self, o):
+        a = self.go(o.x, o.y)
+        if a is None:
+            return Actions.TOUCH, False
+        else:
+            return a, False
 
     @property
     def high(self):
-        res = [self.maxR, self.maxC]
+        res = [self.nC - 1, self.nR - 1]
         for obj in self.objects:
             res += obj.high
         return res
 
     @property
     def state(self):
-        res = [self.x, self.y]
+        res = [self.x/(self.nC-1), self.y/(self.nR-1)]
         for obj in self.objects:
-            res += obj.state
+            res += [(a - c)/(b - c) for a,b,c in zip(obj.state, obj.high, obj.low)]
         return res
 
     @property
@@ -241,17 +227,29 @@ class Playroom2(Env):
             res += obj.low
         return res
 
-if __name__ == '__main__':
-    env = Playroom2()
-    env.reset()
-    print(env.state)
-    while True:
-        a, done = env.opt_action(env.chest1, 2)
-        if not done:
-            env.step(a)
+    def opt_action(self, t):
+        obj = self.objects[t-2]
+        if obj.s == 1:
+            return -1, True
         else:
+            for dep, val in obj.dep:
+                if dep.s != val:
+                    return self.touch(dep)
+            return self.touch(obj)
+
+if __name__ == '__main__':
+    env = Playroom(args={'--tutoronly': '4,5,6'})
+    s = env.reset()
+    task = np.random.choice([4])
+    while True:
+        print(s)
+        a, done = env.opt_action(task)
+        if done:
             break
-        print(a, env.state)
+        else:
+            a = np.expand_dims(a, axis=1)
+            s = env.step(a, True)[0]
+
 
 
     # def render(self, mode='human'):

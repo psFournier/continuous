@@ -64,7 +64,7 @@ class ReplayBuffer(object):
 
     def sampleT(self, batchsize, t):
         res = None
-        if self._tutorBuffers[t]._numsamples >= 1000:
+        if self._tutorBuffers[t]._numsamples >= batchsize:
             idxs = self._tutorBuffers[t].sample(batchsize)
             exps = []
             for i in idxs:
