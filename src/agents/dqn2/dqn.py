@@ -21,8 +21,9 @@ class Dqn2():
     def initstats(self):
         for f in self.env.feat:
             self.stats['qval'+str(f)] = 0
+            self.stats['sample' + str(f)] = 0
+            self.stats['tderror' + str(f)] = 0
             self.stats['imitstep'+str(f)] = 0
-        self.stats['qvalAll'] = 0
         self.stats['loss'] = 0
 
     def reset(self, state):
@@ -37,8 +38,8 @@ class Dqn2():
     def act(self):
         input = [np.expand_dims(self.exp['s0'], axis=0)]
         qvals = self.critic.qvals(input)[0].squeeze()
-        for i, f in enumerate(self.env.feat):
-            self.stats['qval'+str(f)] += np.mean(np.squeeze(qvals[i]))
+        # for i, f in enumerate(self.env.feat):
+        #     self.stats['qval'+str(f)] += np.mean(np.squeeze(qvals[i]))
         action = np.random.choice(range(self.env.action_dim), p=softmax(qvals[self.env.idx], theta=1))
         action = np.expand_dims(action, axis=1)
         self.exp['a'] = action
@@ -64,8 +65,12 @@ class Dqn2():
             s0 = samples['s0'][u0]
             a = samples['a'][u0]
             inputs = [s0, np.expand_dims(u1, axis=1), a, targets]
-            loss, qval = self.critic.train(inputs)
-            self.stats['qvalAll'] += np.mean(np.squeeze(qval))
+            loss, qvals, tderrors = self.critic.train(inputs)
+            for i, f in enumerate(self.env.feat):
+                idxs = np.where(u1==i)
+                self.stats['qval' + str(f)] += np.sum(qvals[idxs])
+                self.stats['tderror' + str(f)] += np.sum(tderrors[idxs])
+                self.stats['sample' + str(f)] += idxs[0].size
             self.stats['loss'] += np.mean(loss)
             self.critic.target_train()
 
@@ -102,16 +107,16 @@ class Dqn2():
             self.stats[key] = val
 
         for f in self.env.feat:
-            self.stats['qval'+str(f)] /= (step - self.stats['step'])
+            if self.stats['sample' + str(f)] !=0:
+                self.stats['qval' + str(f)] /= self.stats['sample' + str(f)]
+                self.stats['tderror' + str(f)] /= self.stats['sample' + str(f)]
 
-        self.stats['qvalAll'] /= (step - self.stats['step'])
         self.stats['loss'] /= (step - self.stats['step'])
         self.stats['step'] = step
 
         for key in sorted(self.stats.keys()):
             self.logger.logkv(key, self.stats[key])
         self.logger.dumpkvs()
-        print(len(self.env.buffer))
         self.initstats()
 
 

@@ -56,12 +56,13 @@ class Critic2(object):
         self.qval = K.function(inputs=[S, TASKS, ACTIONS], outputs=[qval], updates=None)
 
         ### DQN Training
-        l2errors = K.square(qval - TARGETS)
+        td_errors = qval - TARGETS
+        l2errors = K.square(td_errors)
         loss_dqn = K.mean(l2errors, axis=0)
         inputs_dqn = [S, TASKS, ACTIONS, TARGETS]
         updates_dqn = Adam(lr=0.001).get_updates(loss_dqn, self.model.trainable_weights)
         self.metrics_dqn_names = ['loss_dqn', 'qval']
-        metrics_dqn = [loss_dqn, qval]
+        metrics_dqn = [loss_dqn, qval, td_errors]
         self.train = K.function(inputs_dqn, metrics_dqn, updates_dqn)
 
         ### Large margin loss

@@ -90,7 +90,7 @@ def quant_sup(x):
     return x.quantile(0.8)
 
 op_dict = {a:[np.median, np.mean, np.std, quant_inf, quant_sup] for a in y}
-df2 = df2.groupby(x + params).agg(op_dict).reset_index()
+# df2 = df2.groupby(x + params).agg(op_dict).reset_index()
 
 for param in params:
     l = df2[param].unique()
@@ -105,10 +105,10 @@ for i, (n1, g1) in enumerate(df2.groupby(['--demo', '--eps'])):
     if i!=0:
         idx = i-1
         for j, valy in enumerate(y):
-            ax[idx % a, idx // a].plot(g1['step'], g1[valy]['median'], label='Competence on object '+str(j+1))
-            ax[idx % a, idx // a].fill_between(g1['step'],
-                                           g1[valy]['quant_inf'],
-                                           g1[valy]['quant_sup'], alpha=0.25, linewidth=0)
+            ax[idx % a, idx // a].plot(g1['step'], g1[valy], label='Competence on object '+str(j+1))
+            # ax[idx % a, idx // a].fill_between(g1['step'],
+            #                                g1[valy]['quant_inf'],
+            #                                g1[valy]['quant_sup'], alpha=0.25, linewidth=0)
             # ax2[i % a, i // a].fill_between(g['step'],
             #                                 g[valy]['mean'] - 0.5*g[valy]['std'],
             #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)

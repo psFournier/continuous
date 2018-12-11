@@ -41,8 +41,9 @@ class PlayroomGM(Wrapper):
         return idx, v
 
     def sampleT(self, batch_size):
-        probs = self.get_probs(idxs=range(self.N), eps=self.eps)
-        t = np.random.choice(range(self.N), p=probs)
+        idxs = [i for i in range(self.N) if self.buffer._tutorBuffers[i]._numsamples > batch_size]
+        probs = self.get_probs(idxs=idxs, eps=self.eps)
+        t = np.random.choice(idxs, p=probs)
         samples = self.buffer.sampleT(batch_size, t)
         return samples, t
 
@@ -94,7 +95,7 @@ class PlayroomGM(Wrapper):
         exp['r0'] = self.get_r(exp['s0'], self.g, self.vs).squeeze()
         exp['g'] = self.g
         task = np.random.choice(self.demo_f)
-        exp['v'] = self.vs[self.demo_f.index(task)]
+        exp['v'] = self.vs[list(self.feat).index(task)]
         while True:
             a, done = self.opt_action(task)
             if done:
@@ -111,46 +112,7 @@ class PlayroomGM(Wrapper):
         return demo, task
 
     def opt_action(self, t):
-        obj = self.env.objects[t-2]
-        if obj.s == 1:
-            return -1, True
-        else:
-            for dep, val in obj.dep:
-                if dep.s != val:
-                    return self.env.touch(dep)
-            return self.env.touch(obj)
-        #     if self.env.door1.s == 1:
-        #         return self.env.touch(obj, deterministic)
-        #     elif self.env.keyDoor1.s == 1:
-        #         return self.env.touch(self.env.door1, deterministic)
-        #     else:
-        #         return self.env.touch(self.env.keyDoor1, deterministic)
-        #
-        # if t== 4:
-        #     obj = self.env.chest1
-        #     if obj.s == 1:
-        #         return -1, True
-        #     else:
-        #         if self.env.door1.s == 1:
-        #             return self.env.touch(obj, deterministic)
-        #         elif self.env.keyDoor1.s == 1:
-        #             return self.env.touch(self.env.door1, deterministic)
-        #         else:
-        #             return self.env.touch(self.env.keyDoor1, deterministic)
-        #
-        # elif t == 7:
-        #     obj = self.env.chest2
-        #     if obj.s == 1:
-        #         return -1, True
-        #     else:
-        #         if self.env.door2.s == 1:
-        #             return self.env.touch(obj, deterministic)
-        #         elif self.env.keyDoor2.s == 1:
-        #             return self.env.touch(self.env.door2, deterministic)
-        #         else:
-        #             return self.env.touch(self.env.keyDoor2, deterministic)
-        # else:
-        #     raise RuntimeError
+        return self.env.opt_action(t)
 
     def get_stats(self):
         stats = {}
@@ -174,9 +136,6 @@ class PlayroomGM(Wrapper):
         else:
             probs = [eps / l + (1 - eps) * v / s for v in vals]
         return probs
-
-    def done(self, exp):
-        return all([exp['s1'][f] == 1 for f in [[4], [7]]])
 
     @property
     def state_dim(self):

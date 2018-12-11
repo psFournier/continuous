@@ -5,7 +5,7 @@ import os
 import numpy as np
 from scipy.signal import lfilter
 import matplotlib.ticker as ticker
-DIR = '../../log/cluster/last/'
+DIR = '../../log/cluster/1112/'
 ENV = '*-v0'
 runs = glob.glob(os.path.join(DIR, ENV, '*'))
 frames = []
@@ -74,10 +74,10 @@ df2 = df
 # df2 = df2[(df2['--eps1'] == 0)]
 df2 = df2[(df2['--eps'] != 0.6)]
 # df2 = df2[(df2['--eps3'] == 1)]
-df2 = df2[(df2['--tutoronly'] == -1)]
+# df2 = df2[(df2['--tutoronly'] == -1)]
 # df2 = df2[(df2['--demo'] != '4,7')]
 
-y = ['C{}'.format(str(s)) for s in [i for i in [4]]]
+y = ['C{}'.format(str(s)) for s in [i for i in [4,7]]]
 
 
 for i in [2, 3, 4, 5, 6, 7]:
@@ -103,7 +103,7 @@ if avg:
 
 
 print(paramsStudied)
-a, b = 1,1
+a, b = 2,1
 # a, b = 2, 3
 
 fig2, ax2 = plt.subplots(a, b, figsize=(18,10), squeeze=False, sharey=True, sharex=True)
@@ -155,7 +155,7 @@ for j, (name, g) in enumerate(df2.groupby(p)):
         #                                 g[valy]['mean'] + 0.5*g[valy]['std'], alpha=0.25, linewidth=0)
         ax2[i % a, i // a].set_title(label=valy)
         if i == 0: ax2[i % a, i // a].legend()
-        ax2[i % a, i // a].set_xlim([0, 300000])
+        ax2[i % a, i // a].set_xlim([0, 400000])
 
         ax2[i % a, i // a].xaxis.set_major_locator(ticker.MultipleLocator(50000))
         ax2[i % a, i // a].xaxis.set_minor_locator(ticker.MultipleLocator(10000))

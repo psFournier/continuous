@@ -22,6 +22,7 @@ class Dqn1():
     def initstats(self):
         for f in self.env.feat:
             self.stats['qval'+str(f)] = 0
+            self.stats['imitstep'+str(f)] = 0
         self.stats['qvalAll'] = 0
         self.stats['loss'] = 0
 
@@ -55,7 +56,6 @@ class Dqn1():
         return self.exp['r1'][self.env.idx] == self.env.R
 
     def train(self):
-
         samples = self.env.buffer.sample(self.batch_size)
         if samples is not None:
             u0, u1 = np.where(samples['u'])
@@ -86,9 +86,10 @@ class Dqn1():
 
     def imit(self):
 
-        samples = self.env.buffer.sampleT(self.batch_size)
+        samples, t = self.env.sampleT(self.batch_size)
         if samples is not None:
-            u0, u1 = np.where(samples['u'])
+            # u0, u1 = np.where(samples['u'])
+            u0, u1 = np.array(range(self.batch_size)), np.array([t] * self.batch_size)
             s1 = samples['s1'][u0]
             g = samples['g'][u0]
             v = self.env.vs[u1]
@@ -98,14 +99,8 @@ class Dqn1():
             a = samples['a'][u0]
             inputs = [s0, a, g, v, targets]
             _ = self.critic.imit(inputs)
+            self.stats['imitstep' + str(self.env.feat[t])] += 1
             self.critic.target_train()
-
-            # metrics = self.critic.imit(inputs)
-            # metrics[2] = 1/(np.where(np.argmax(metrics[2], axis=1) == samples['a'][:, 0],
-            #                          0.99, 0.01 / self.env.action_dim))
-            # for i, name in enumerate(self.critic.metrics_imit_names):
-            #     self.env.train_metrics[name][idx] += np.mean(np.squeeze(metrics[i]))
-
 
     def log(self, step):
 
@@ -113,8 +108,10 @@ class Dqn1():
             self.stats[key] = val
 
         for f in self.env.feat:
-            self.stats['qval'+str(f)] /= (self.stats['envstep'+str(f)] + 0.01)
+            self.stats['qval'+str(f)] /= (step - self.stats['step'])
 
+        self.stats['qvalAll'] /= (step - self.stats['step'])
+        self.stats['loss'] /= (step - self.stats['step'])
         self.stats['step'] = step
 
         for key in sorted(self.stats.keys()):

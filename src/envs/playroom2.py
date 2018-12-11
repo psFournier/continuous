@@ -8,35 +8,23 @@ class Actions:
     LEFT = 2
     RIGHT = 3
     TOUCH = 4
-    # TAKE = 5
+
 
 class Obj():
-    def __init__(self, env, name, pos, prop, dep, tutor_only=False):
+    def __init__(self, env, pos, prop, dep, tutor_only=False):
         self.env = env
-        self.name = name
         self.x, self.y = pos
         self.prop = prop
         self.dep = dep
         self.env.objects.append(self)
-        # self.g = self.gencoordinates()
         self.init()
         self.tutor_only = tutor_only
 
-    # def gencoordinates(self):
-    #
-    #     while True:
-    #         x, y = 0, 0
-    #         while (self.ix+x, self.iy+y) in self.env.seenpos:
-    #             x, y = 0, 0
-    #         self.env.seenpos.add((self.ix+x, self.iy+y))
-    #         yield (self.ix+x, self.iy+y)
-
     def init(self):
-        # self.x, self.y = next(self.g)
         self.s = 0
 
     def touch(self, tutor):
-        if self.s == 0 and all([o.s == s for o, s in self.dep]) and (not self.tutor_only or tutor):
+        if self.s == 0 and (not self.tutor_only or tutor):
             self.s = np.random.choice([0, 1], p=self.prop)
 
     @property
@@ -45,94 +33,61 @@ class Obj():
 
     @property
     def high(self):
-        return [1]
+        return [len(self.dep) + 1]
 
     @property
     def low(self):
         return [0]
 
-    # def init(self):
-    #     self.x, self.y = next(self.g)
-    #     n = 0
-    #     p = [1]
-    #     for o, s in self.dep[:-1]:
-    #         if o.s == s:
-    #             n += 1
-    #             p[0] -= 0.1
-    #             p.append(0.1)
-    #     self.s = np.random.choice(range(n+1), p=p)
-
-
-class Playroom(Env):
+POS = [(0, 0), (5, 0), (10, 0), (10, 5), (10, 10), (5, 10), (0, 10), (0, 5)]
+class Playroom2(Env):
     metadata = {'render.modes': ['human', 'ansi']}
 
     def __init__(self, args):
-        self.nR = 13
-        self.nC = 13
-        self.walls = np.zeros((13, 13))
-        for i in range(13):
-            if i != 3 and i != 9:
-                self.walls[6, i] = 1
-        for i in range(7, 13):
-            self.walls[i, 6] = 1
+        self.nR = 11
+        self.nC = 11
         self.tutoronly = [int(f) for f in args['--tutoronly'].split(',')]
         self.initialize()
 
     def initialize(self):
-        # self.seenpos = set()
-        self.x, self.y = 0, 6
-        # self.seenpos.add((self.x, self.y))
+        self.x, self.y = 5, 5
         self.objects = []
 
-        self.keyDoor1 = Obj(self,
-                            name='keyDoor1',
-                            pos=(0, 12),
-                            prop=[0, 1],
-                            dep=[])
+        self.obj1 = Obj(self,
+                        pos=(5,9),
+                        prop=[0.5, 0.5],
+                        dep=[POS[i] for i in [5,4,7,3][:1]])
 
-        self.door1 = Obj(self,
-                         name='door1',
-                         pos=(6, 9),
-                         prop=[0, 1],
-                         dep=[(self.keyDoor1, 1)])
+        self.obj2 = Obj(self,
+                        pos=(8,8),
+                        prop=[0.5, 0.5],
+                        dep=[POS[i] for i in [1,4,6,7][:1]])
 
-        self.chest1 = Obj(self,
-                          name='chest1',
-                          pos=(12, 12),
-                          prop=[0, 1],
-                          dep=[(self.keyDoor1, 1), (self.door1, 1)])
+        self.obj3 = Obj(self,
+                        pos=(8,2),
+                        prop=[0.5, 0.5],
+                        dep=[POS[i] for i in [5,2,6,4][:1]])
 
-        self.keyDoor2 = Obj(self,
-                            name='keyDoor2',
-                            pos=(0, 0),
-                            prop=[0, 1],
-                            dep=[])
+        self.obj4 = Obj(self,
+                        pos=(5,1),
+                        prop=[0.5, 0.5],
+                        dep=[POS[i] for i in [4,5,0,2][:1]])
 
-        self.door2 = Obj(self,
-                         name='door2',
-                         pos=(6, 3),
-                         prop=[0, 1],
-                         dep=[(self.keyDoor2, 1)])
+        self.obj5 = Obj(self,
+                        pos=(2,2),
+                        prop=[0.5, 0.5],
+                        dep=[POS[i] for i in [0,1,6,5][:1]])
 
-        self.chest2 = Obj(self,
-                          name='chest2',
-                          pos=(12, 0),
-                          prop=[0, 1],
-                          dep=[(self.keyDoor2, 1), (self.door2, 1)])
+        self.obj6 = Obj(self,
+                        pos=(2,8),
+                        prop=[0.5, 0.5],
+                        dep=[POS[i] for i in [3,2,4,6][:1]])
 
         for i, o in enumerate(self.objects):
             o.tutor_only = (i+2 in self.tutoronly)
 
         self.initstate = self.state.copy()
         self.lastaction = None
-
-    def check_door(self):
-        obj = self.underagent()
-        if obj <= 0 or self.objects[obj - 1] not in [self.door1, self.door2] or \
-                        self.objects[obj - 1].s == 1:
-            return True
-        else:
-            return False
 
     def step(self, a, tutor=False):
         env_a = a
@@ -141,25 +96,28 @@ class Playroom(Env):
         self.lastaction = a
 
         if env_a == Actions.UP:
-            if self.y < self.nR - 1 and not self.walls[self.x, self.y + 1] and self.check_door():
+            if self.y < self.nR - 1:
                 self.y += 1
 
         elif env_a == Actions.DOWN:
-            if self.y > 0 and not self.walls[self.x, self.y - 1] and self.check_door():
+            if self.y > 0:
                 self.y -= 1
 
         elif env_a == Actions.RIGHT:
-            if self.x < self.nC - 1 and not self.walls[self.x + 1, self.y] and self.check_door():
+            if self.x < self.nC - 1:
                 self.x += 1
 
         elif env_a == Actions.LEFT:
-            if self.x > 0 and not self.walls[self.x - 1, self.y] and self.check_door():
+            if self.x > 0:
                 self.x -= 1
 
         elif env_a == Actions.TOUCH:
             obj = self.underagent()
             if obj != 0:
                 self.objects[obj - 1].touch(tutor)
+            for obj in self.objects:
+                if obj.s > obj.low[0] and obj.s < obj.high[0] and (self.x, self.y) == obj.dep[obj.s - 1]:
+                    obj.s = np.random.choice([obj.s, obj.s + 1], p=obj.prop)
 
         return np.array(self.state),
 
@@ -177,30 +135,21 @@ class Playroom(Env):
         dx = x - self.x
         dy = y - self.y
         p = []
-        if dx > 0 and not self.walls[self.x+1, self.y]:
+        if dx > 0:
             p.append(Actions.RIGHT)
-        elif dx < 0 and not self.walls[self.x-1, self.y]:
+        elif dx < 0:
             p.append(Actions.LEFT)
-        if dy > 0 and not self.walls[self.x, self.y+1]:
+        if dy > 0:
             p.append(Actions.UP)
-        elif dy < 0 and not self.walls[self.x, self.y-1]:
+        elif dy < 0:
             p.append(Actions.DOWN)
-
         if p:
             return np.random.choice(p)
         else:
             return None
 
-    # def take(self, i):
-    #     obj = self.objects[i]
-    #     a = self.go(obj.x, obj.y)
-    #     if a is None:
-    #         return Actions.TAKE, False
-    #     else:
-    #         return a, False
-
-    def touch(self, o):
-        a = self.go(o.x, o.y)
+    def touch(self, x, y):
+        a = self.go(x, y)
         if a is None:
             return Actions.TOUCH, False
         else:
@@ -229,18 +178,18 @@ class Playroom(Env):
 
     def opt_action(self, t):
         obj = self.objects[t-2]
-        if obj.s == 1:
+        if obj.state == obj.high:
             return -1, True
+        elif obj.s == 0:
+            return self.touch(obj.x, obj.y)
         else:
-            for dep, val in obj.dep:
-                if dep.s != val:
-                    return self.touch(dep)
-            return self.touch(obj)
+            dep = obj.dep[obj.s - 1]
+            return self.touch(dep[0], dep[1])
 
 if __name__ == '__main__':
-    env = Playroom(args={'--tutoronly': '4,5,6'})
+    env = Playroom2(args={'--tutoronly': '-1'})
     s = env.reset()
-    task = np.random.choice([4])
+    task = np.random.choice([5])
     while True:
         print(s)
         a, done = env.opt_action(task)
